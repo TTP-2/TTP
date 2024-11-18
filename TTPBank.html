@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BNZ - Online Banking</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .container {
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        h1, h2 {
+            color: #007bff;
+            text-align: center;
+        }
+        input[type="text"], input[type="password"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .hidden {
+            display: none;
+        }
+        .dashboard {
+            text-align: center;
+        }
+        .account-actions {
+            margin-top: 20px;
+        }
+        p {
+            font-size: 14px;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="container">
+        <h1>Welcome to BNZ</h1>
+        <h2>Online Banking</h2>
+        <input type="text" id="username" placeholder="Enter your username">
+        <input type="password" id="password" placeholder="Enter your password">
+        <button onclick="login()">Login</button>
+        <p id="login-message"></p>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="container hidden">
+        <h1>Your Account</h1>
+        <h2>Balance: $<span id="balance">0</span></h2>
+        <div class="account-actions">
+            <input type="number" id="amount" placeholder="Enter amount">
+            <button onclick="deposit()">Deposit</button>
+            <button onclick="withdraw()">Withdraw</button>
+        </div>
+        <button onclick="logout()">Logout</button>
+        <p id="message"></p>
+    </div>
+
+    <script>
+        let balance = 0;
+        const validUsername = "bnzuser";
+        const validPassword = "password123";
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (username === validUsername && password === validPassword) {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                document.getElementById('login-message').textContent = '';
+            } else {
+                document.getElementById('login-message').textContent = 'Invalid username or password.';
+            }
+        }
+
+        function logout() {
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        function deposit() {
+            const amount = parseFloat(document.getElementById('amount').value);
+            if (amount > 0) {
+                balance += amount;
+                updateBalance();
+                setMessage(`Deposited $${amount}`);
+            } else {
+                setMessage("Please enter a valid amount.");
+            }
+        }
+
+        function withdraw() {
+            const amount = parseFloat(document.getElementById('amount').value);
+            if (amount > 0 && amount <= balance) {
+                balance -= amount;
+                updateBalance();
+                setMessage(`Withdrew $${amount}`);
+            } else if (amount > balance) {
+                setMessage("Insufficient funds.");
+            } else {
+                setMessage("Please enter a valid amount.");
+            }
+        }
+
+        function updateBalance() {
+            document.getElementById('balance').textContent = balance.toFixed(2);
+        }
+
+        function setMessage(msg) {
+            document.getElementById('message').textContent = msg;
+        }
+    </script>
+</body>
+</html>
