@@ -10,7 +10,11 @@
 </head>
 <body>
 <h1>TTP Roll Call</h1>
-<h4>Me/Finn</h4><button><img src="https://files.oaiusercontent.com/file-db2QkZPOvqszb5BexrhkzljG?se=2024-11-19T05%3A18%3A20Z&sp=r&sv=2024-08-04&sr=b&rscc=max-age%3D604800%2C%20immutable%2C%20private&rscd=attachment%3B%20filename%3D9014b659-810a-4ff4-95e9-d0ec860397c4.webp&sig=Mwi6XkHnvU%2BGLaY4%2B5FIeI0xF6iViBUoV4%2Byjshw7To%3D"></button>
+<h4>Me/Finn</h4>
+<br>
+<br>
+<button onclick="Away()">&#9992;</button>
+<p id="Away"></p>
 <button onclick="Finn()"><p id="Finn">Unmarked</p></button>
 <br>
 <br>
@@ -62,44 +66,48 @@
 <input type="text" placeholder="Comment(optional)">
 <script>
     function Finn() {
-        let text = document.getElementById('Finn')
+        let text = document.getElementById('Finn');
         text.innerText = "Present";
     }
     function James() {
-        let text = document.getElementById('James')
+        let text = document.getElementById('James');
         text.innerText = "Present";
     }
     function Will() {
-        let text = document.getElementById('Will')
+        let text = document.getElementById('Will');
         text.innerText = "Present";
     }
     function Caleb() {
-        let text = document.getElementById('Caleb')
+        let text = document.getElementById('Caleb');
         text.innerText = "Present";
     }
     function HarryL() {
-        let text = document.getElementById('HarryL')
+        let text = document.getElementById('HarryL');
         text.innerText = "Present";
     }
     function Brie() {
-        let text = document.getElementById('Brie')
+        let text = document.getElementById('Brie');
         text.innerText = "Present";
     }
     function Blake() {
-        let text = document.getElementById('Blake')
+        let text = document.getElementById('Blake');
         text.innerText = "Present";
     }
     function Creedence() {
-        let text = document.getElementById('Creedence')
+        let text = document.getElementById('Creedence');
         text.innerText = "Present";
     }
     function JackO() {
-        let text = document.getElementById('JackO')
+        let text = document.getElementById('JackO');
         text.innerText = "Present";
     }
     function Abihman() {
-        let text = document.getElementById('Abihman')
+        let text = document.getElementById('Abihman');
         text.innerText = "Present";
+    }
+    function Away() {
+        let Away = document.getElementById('Away');
+        Away.innerText = "Away on Vacation☀";
     }
 </script>
 </body>
