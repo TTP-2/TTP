@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>TTP Roll Call</title>
+<style>
+    button {
+        border: none;
+    }
+</style>
+</head>
+<body>
+<h1>TTP Roll Call</h1>
+<button id="green" onclick="turnGreen()"><p id="textChange">Unmarked</p></button>
+<script>
+    function turnGreen() {
+        let button = document.getElementById('green');
+        button.style.backgroundColor = "green";
+        let text = document.getElementById('textChange')
+        text.innerText = "Present";
+    }
+</script>
+</body>
+</html>
