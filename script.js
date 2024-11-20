@@ -9,4 +9,6 @@ function reply() {
   else if (userInput.includes('how are you')) {
     respoce = "I'm doing very well thank you"
   }
+  response.textContent = response;
+  document.getElementById("userInput").value = "";
 }
