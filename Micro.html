@@ -4,16 +4,26 @@
 <title>Online HTML Editor</title>
 <style>
     body {
-        background-color: teal;
+        background-color: gray;
     }
     input {
         border: none;
-        width: 470px;
+        width: 410px;
         height: 20px;
         text-align: center;
     }
     h1 {
         text-align: center;
+    }
+    button {
+        width: 55px;
+        height: 15px;
+        padding-bottom: 7px;
+        padding-top: 14px;
+        border-radius: 50px;
+        border: none;
+        background-color: teal;
+        cursor: pointer;
     }
 </style>
 </head>
@@ -21,6 +31,8 @@
 <h1>Micro(AI of TTP)</h1>
 <hr>
 <input type="text" placeholder="Message Micro" id="userInput">
+<button onclick="reply()"></button>
 <p id="Responce"></p>
+<script src="script.js"></script>
 </body>
 </html>
