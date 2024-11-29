@@ -2,17 +2,30 @@
 <html>
   <head>
     <title>TTP Home</title>
-    <meta name="keywords" content="TTP.com, ttp.com, TTP, ttp">
     <style>
     h1 {
         text-align: center;
+    }
+    button {
+      border: none;
+      background-color: teal;
+      width: 100px;
+      height: 20px;
+      border-radius: 50px;
     }
     </style>
   </head>
   <body>
     <h1>TTP <sup>nz</sup></h1>
     <hr>
-    <p>Hello there Finn here✋, I just want to let you know that we make movies, podcasts and even <b>games</b>!</p>
+    <p>Hello there Finn here✋, I just want to let you know that we make movies, podcasts and even <b>games</b>! <button  onclick="openCustomWindow()">Open in app</a></p>
     <hr>
+    <script>
+    function openCustomWindow() {
+        const url = "https://preview.construct.net/local.html";
+        const windowFeatures = "width=800,height=600,top=100,left=100,scrollbars=yes";
+        window.open(url, "_blank", windowFeatures);
+    }
+    </script>
   </body>
 </html>
