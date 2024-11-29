@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sound Recorder</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #007bff;
+      color: white;
+    }
+    button:disabled {
+      background-color: #ccc;
+    }
+    audio {
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Sound Recorder</h1>
+  <button id="start-btn">Start Recording</button>
+  <button id="stop-btn" disabled>Stop Recording</button>
+  <h2>Playback</h2>
+  <audio id="audio-player" controls></audio>
+  <button id="download-btn" disabled>Download</button>
+
+  <script>
+    const startButton = document.getElementById("start-btn");
+    const stopButton = document.getElementById("stop-btn");
+    const audioPlayer = document.getElementById("audio-player");
+    const downloadButton = document.getElementById("download-btn");
+
+    let mediaRecorder;
+    let audioChunks = [];
+
+    // Start Recording
+    startButton.addEventListener("click", async () => {
+      // Request microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+
+      // Collect audio data when available
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+
+      // Enable stop button and disable start button
+      mediaRecorder.onstart = () => {
+        startButton.disabled = true;
+        stopButton.disabled = false;
+      };
+
+      // Stop recording and prepare the audio file
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+        const audioURL = URL.createObjectURL(audioBlob);
+        audioPlayer.src = audioURL;
+        downloadButton.disabled = false;
+
+        // Prepare download link
+        downloadButton.onclick = () => {
+          const a = document.createElement("a");
+          a.href = audioURL;
+          a.download = "recording.webm";
+          a.click();
+        };
+
+        // Reset for next recording
+        audioChunks = [];
+        startButton.disabled = false;
+        stopButton.disabled = true;
+      };
+
+      mediaRecorder.start();
+    });
+
+    // Stop Recording
+    stopButton.addEventListener("click", () => {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+      }
+    });
+  </script>
+</body>
+</html>
