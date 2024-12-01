@@ -4,65 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Messaging Website</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: black;
-        }
-        header {
-            background: #6200ea;
-            color: white;
-            padding: 1rem;
-            text-align: center;
-        }
-        #chat-container {
-            width: 90%;
-            margin: 1rem auto;
-            max-width: 600px;
-        }
-        #messages {
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            padding: 1rem;
-            height: 300px;
-            overflow-y: auto;
-            background: #fff;
-        }
-        .message {
-            margin: 0.5rem 0;
-            padding: 0.5rem;
-            border-radius: 5px;
-        }
-        .sent {
-            background-color: #e1f5fe;
-            text-align: right;
-        }
-        .received {
-            background-color: #e8f5e9;
-            text-align: left;
-        }
-        #message-form {
-            display: flex;
-            margin-top: 1rem;
-        }
-        #message-input {
-            flex: 1;
-            padding: 0.5rem;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        #send-button {
-            padding: 0.5rem 1rem;
-            background: #6200ea;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-left: 0.5rem;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
@@ -71,71 +13,11 @@
     <div id="chat-container">
         <div id="messages"></div>
         <form id="message-form">
-            <input type="text" id="message-input" placeholder="Type your message..." required />
-            <button type="submit" id="send-button">Send</button>
+            <input type="text" id="message-input" placeholder="Type your message..." required>
+            <button type="submit">Send</button>
         </form>
     </div>
-
     <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io(); // Connect to the server
-
-        const messagesDiv = document.getElementById('messages');
-        const messageForm = document.getElementById('message-form');
-        const messageInput = document.getElementById('message-input');
-
-        // Display a new message
-        function displayMessage(message, type) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}`;
-            messageDiv.textContent = message;
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Auto-scroll to the bottom
-        }
-
-        // Handle incoming messages
-        socket.on('message', (data) => {
-            displayMessage(data.message, 'received');
-        });
-
-        // Send a new message
-        messageForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const message = messageInput.value;
-            displayMessage(message, 'sent');
-            socket.emit('message', { message });
-            messageInput.value = '';
-        });
-        const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
-
-app.use(express.static(__dirname + '/public')); // Serve static files
-
-// WebSocket connection
-io.on('connection', (socket) => {
-    console.log('A user connected');
-
-    // Broadcast a message to all connected clients
-    socket.on('message', (data) => {
-        io.emit('message', data); // Send the message to all clients
-    });
-
-    socket.on('disconnect', () => {
-        console.log('A user disconnected');
-    });
-});
-
-// Start the server
-const PORT = 3000;
-server.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-});
-
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
