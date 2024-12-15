@@ -3,15 +3,38 @@
   <head>
     <title>TTP Studio</title>
     <style>
-      .H1-1 {
-        text-style: cursive;
-      }
+    button {
+        border: none;
+        background-color: teal;
+        width: 150px;
+        height: 60px;
+        border-radius: 40px;
+    }
+    button:hover {
+        background-color: white;
+        border: teal solid 3px;
+    }
+    button:active {
+        border: orange solid 3px;
+    }
     </style>
   </head>
   <body>
-    <h1 class="H1-1">Welcome To TTP Studio</h1>
+    <h1>Welcome To TTP Studio</h1>
     <hr>
-    <h1>Pick Your Own movie</h1>
-    
+    <h4>Pick Your Own movie</h4>
+    <button>Drama</button>
+    <button>Comedy</button>
+    <button>Violence</button>
+    <br>
+    <br>
+    <button>Random</button>
+    <button onclick="Other()">Other</button>
+    <p id="P"></p>
+    <script>
+        function Other() {
+            document.getElementById('P').innerHTML = "Please choose one!";
+        }
+    </script>
   </body>
 </html>
