@@ -26,17 +26,15 @@
     <h1>Welcome To TTP Studio</h1>
     <hr>
     <h4>Pick Your Own movie</h4>
-    <button>Drama</button>
-    <button>Comedy</button>
-    <button>Violence</button>
-    <br>
-    <br>
-    <button>Random</button>
+    <button><a>Drama</a></button>
+    <button><a>Comedy</a></button>
+    <button><a>Violence</a></button>
+    <button><a>Random</a></button>
     <button onclick="Other()">Other</button>
     <p id="P"></p>
     <script>
         function Other() {
-            document.getElementById('P').innerHTML = "Please choose one!";
+            const name = document.getElementById('P').innerHTML = "Please choose one!";
         }
     </script>
   </body>
