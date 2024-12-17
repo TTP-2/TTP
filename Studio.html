@@ -22,6 +22,7 @@
   </head>
   <body>
     <h1>Welcome To TTP Studio</h1>
+    <h4 id="Christmas"></h4>
     <hr>
     <h4>Pick Your Own movie</h4>
     <button><a>Drama</a></button>
@@ -34,6 +35,9 @@
     <script>
         function Other() {
             const name = document.getElementById('P').innerHTML = "Please choose one!";
+        }
+        if (new Date().getMonth() === 11) {
+          document.getElementById('Christmas').innerHTML = "Have a very Merrey Christmas"
         }
     </script>
   </body>
