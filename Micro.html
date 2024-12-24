@@ -11,6 +11,10 @@
             font-size: 15px;
             text-align: center;
             border: 1px solid teal;
+            position: absolute;
+            margin-top: 6px;
+            margin-left: 21px;
+
         }
 
         button {
@@ -26,17 +30,22 @@
 
         div {
             border: dashed 1px black;
-            width: 150px;
-            height: 30px;
+            width: 350px;
+            margin: auto;
+        }
+        p {
+            text-align: center;
         }
     </style>
 </head>
 
 <body>
+<div>
     <input id="input" type="text" placeholder="Message Micro" onkeypress="checkEnter(event)">
     <br>
     <br>
     <p id="Message"></p>
+</div>
     <script>
         function checkEnter(event) {
             if (event.key === "Enter" && input.value === "hi") {
