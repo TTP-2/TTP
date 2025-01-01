@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Message Board</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #messages { margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; max-height: 200px; overflow-y: auto; }
+        .message { margin: 5px 0; padding: 5px; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+    <h1>Message Board</h1>
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Write a message..." style="width: 80%;">
+    <button id="sendMessage">Send</button>
+
+    <script>
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendMessage = document.getElementById('sendMessage');
+
+        // Fetch existing messages
+        async function fetchMessages() {
+            const response = await fetch('/messages');
+            const data = await response.json();
+            messagesDiv.innerHTML = data.map(msg => `<div class="message">${msg}</div>`).join('');
+        }
+
+        // Send a new message
+        sendMessage.addEventListener('click', async () => {
+            const message = messageInput.value.trim();
+            if (message) {
+                await fetch('/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                messageInput.value = '';
+                fetchMessages();
+            }
+        });
+
+        // Initial fetch
+        fetchMessages();
+      const express = require('express');
+const bodyParser = require('body-parser');
+const fs = require('fs');
+
+const app = express();
+const PORT = 3000;
+
+// Middleware
+app.use(bodyParser.json());
+app.use(express.static('public')); // Serve static files like the HTML
+
+// Fake database (file-based for simplicity)
+const dbFile = './messages.json';
+let messages = fs.existsSync(dbFile) ? JSON.parse(fs.readFileSync(dbFile)) : [];
+
+// Endpoint to get messages
+app.get('/messages', (req, res) => {
+    res.json(messages);
+});
+
+// Endpoint to post a message
+app.post('/messages', (req, res) => {
+    const { message } = req.body;
+    if (message) {
+        messages.push(message);
+        fs.writeFileSync(dbFile, JSON.stringify(messages));
+        res.status(200).send('Message saved');
+    } else {
+        res.status(400).send('Invalid message');
+    }
+});
+
+// Start server
+app.listen(PORT, () => {
+    console.log(`Server is running at http://localhost:${PORT}`);
+});
+
+    </script>
+</body>
+</html>
