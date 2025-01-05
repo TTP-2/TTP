@@ -52,5 +52,45 @@
     <p>PG, R16</p>
     <h4>Coming Mar 5, 2025</h4>
 </div>
+    <script>
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+
+        // Function to load saved messages from localStorage
+        function loadMessages() {
+            const messages = JSON.parse(localStorage.getItem('messages')) || [];
+            messagesDiv.innerHTML = messages.map(msg => `<div class="message">${msg}</div>`).join('');
+        }
+
+        // Function to save a new message to localStorage
+        function saveMessage(message) {
+            const messages = JSON.parse(localStorage.getItem('messages')) || [];
+            messages.push(message); // Add the new message to the array
+            localStorage.setItem('messages', JSON.stringify(messages)); // Save the updated array to localStorage
+        }
+
+        // Event listener for pressing Enter key
+        messageInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                const message = messageInput.value.trim(); // Get and trim the input
+                if (message) {
+                    // Display the message
+                    const newMessage = document.createElement('div');
+                    newMessage.classList.add('message');
+                    newMessage.textContent = message;
+                    messagesDiv.appendChild(newMessage);
+
+                    // Save the message to localStorage
+                    saveMessage(message);
+
+                    // Clear the input field after submission
+                    messageInput.value = '';
+                }
+            }
+        });
+
+        // Load messages when the page is loaded
+        loadMessages();
+    </script>
 </body>
 </html>
