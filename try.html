@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Save Words Forever</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #output p { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>Persistent Input Example</h1>
+    <input type="text" id="inputText" placeholder="Type something and press Enter" />
+    <section id="output"></section>
+
+    <script>
+        const inputText = document.getElementById('inputText');
+        const outputSection = document.getElementById('output');
+
+        // Function to load saved words from localStorage
+        function loadSavedWords() {
+            const savedWords = JSON.parse(localStorage.getItem('words')) || [];
+            savedWords.forEach(word => {
+                const newParagraph = document.createElement('p');
+                newParagraph.textContent = word;
+                outputSection.appendChild(newParagraph);
+            });
+        }
+
+        // Function to save a new word
+        function saveWord(word) {
+            const savedWords = JSON.parse(localStorage.getItem('words')) || [];
+            savedWords.push(word);
+            localStorage.setItem('words', JSON.stringify(savedWords));
+        }
+
+        // Event listener for Enter key
+        inputText.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Prevent default Enter behavior
+                const text = inputText.value.trim(); // Get and trim input
+                if (text) {
+                    const newParagraph = document.createElement('p');
+                    newParagraph.textContent = text; // Display text
+                    outputSection.appendChild(newParagraph);
+                    saveWord(text); // Save text to localStorage
+                    inputText.value = ''; // Clear input field
+                }
+            }
+        });
+
+        // Load saved words on page load
+        loadSavedWords();
+    </script>
+</body>
+</html>
