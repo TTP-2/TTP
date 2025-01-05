@@ -1,50 +1,60 @@
-<!docktype html>
-<html>
-  <head>
-    <title>TTP Studio</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTP messages</title>
     <style>
-    button {
-        border: none;
-        background-color: teal;
-        width: 150px;
-        height: 60px;
-        border-radius: 40px;
-        box-shadow: 5px 5px 10px;
-        cursor: pointer;
-    }
-    p {
-      color: teal;
-    }
-    button:hover {
-        box-shadow: 3px 3px 10px;
-    }
-    a {
-      text-decoration: none;
-      color: black;
-    }
+        body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
+        #messages { margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; max-height: 200px; overflow-y: auto; }
+        .message { margin: 5px 0; padding: 5px; border-bottom: 1px solid #eee; }
+        input { padding: 10px; width: 80%; font-size: 16px; }
     </style>
-  </head>
-  <body>
-    <h1>Welcome To TTP Studio</h1>
-    <h4 id="Christmas"></h4>
-    <hr>
-    <h4>Pick Your Own movie</h4>
-    <button><a>Drama</a></button>
-    <button><a>Comedy</a></button>
-    <button><a>Random</a></button>
-    <button onclick="Other()">Other</button>
-    <p id="P"></p>
-    <hr>
-    <button>
-      <a href="https://ttp-2.github.io/TTP/TTPCode.html">I'm a staff member</a>
-    </button>
+</head>
+<body>
+    <h1>TTP <sup>messages</sup></h1>
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Write a message..." />
+
     <script>
-        function Other() {
-            const name = document.getElementById('P').innerHTML = "Please choose one!";
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+
+        // Function to load saved messages from localStorage
+        function loadMessages() {
+            const messages = JSON.parse(localStorage.getItem('messages')) || [];
+            messagesDiv.innerHTML = messages.map(msg => `<div class="message">${msg}</div>`).join('');
         }
-        if (new Date().getMonth() === 11) {
-          document.getElementById('Christmas').innerHTML = "Have a very Merry Christmas"
+
+        // Function to save a new message to localStorage
+        function saveMessage(message) {
+            const messages = JSON.parse(localStorage.getItem('messages')) || [];
+            messages.push(message); // Add the new message to the array
+            localStorage.setItem('messages', JSON.stringify(messages)); // Save the updated array to localStorage
         }
+
+        // Event listener for pressing Enter key
+        messageInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                const message = messageInput.value.trim(); // Get and trim the input
+                if (message) {
+                    // Display the message
+                    const newMessage = document.createElement('div');
+                    newMessage.classList.add('message');
+                    newMessage.textContent = message;
+                    messagesDiv.appendChild(newMessage);
+
+                    // Save the message to localStorage
+                    saveMessage(message);
+
+                    // Clear the input field after submission
+                    messageInput.value = '';
+                }
+            }
+        });
+
+        // Load messages when the page is loaded
+        loadMessages();
     </script>
-  </body>
+</body>
 </html>
