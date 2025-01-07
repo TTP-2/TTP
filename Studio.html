@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Persistent Videos and Images</title>
+  <title>TTP Studios</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -33,71 +33,112 @@
   </style>
 </head>
 <body>
-  <h1>Upload Videos and Images</h1>
-  <button id="uploadButton">Choose Files</button>
-  <input type="file" id="fileInput" accept="video/*,image/*" multiple style="display: none;">
-  
+  <h1>TTP Studios - Record Video & Take Picture</h1>
+  <button id="recordVideoButton">Record Video</button>
+  <button id="takePictureButton">Take Picture</button>
+
+  <div id="videoContainer">
+    <video id="videoElement" width="640" height="480" autoplay></video>
+    <button id="startRecordingButton" style="display:none;">Start Recording</button>
+    <button id="stopRecordingButton" style="display:none;">Stop Recording</button>
+  </div>
+
   <div id="preview"></div>
 
   <script>
-    const uploadButton = document.getElementById('uploadButton');
-    const fileInput = document.getElementById('fileInput');
+    const recordVideoButton = document.getElementById('recordVideoButton');
+    const takePictureButton = document.getElementById('takePictureButton');
+    const videoElement = document.getElementById('videoElement');
     const preview = document.getElementById('preview');
+    const startRecordingButton = document.getElementById('startRecordingButton');
+    const stopRecordingButton = document.getElementById('stopRecordingButton');
+    
+    let mediaRecorder;
+    let videoChunks = [];
+    let currentStream;
 
-    const SERVER_URL = 'http://localhost:3000';  // Adjust the URL if necessary
-
-    // Fetch and display all saved files on page load
-    async function fetchFiles() {
+    // Access the camera and display video stream
+    async function initCamera() {
       try {
-        const response = await fetch(`${SERVER_URL}/files`);
-        const files = await response.json();
-        preview.innerHTML = ''; // Clear preview area
-
-        files.forEach(file => {
-          if (file.type.startsWith('video/')) {
-            const video = document.createElement('video');
-            video.src = file.url;
-            video.controls = true;
-            preview.appendChild(video);
-          } else if (file.type.startsWith('image/')) {
-            const img = document.createElement('img');
-            img.src = file.url;
-            preview.appendChild(img);
-          }
+        currentStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true
         });
+        videoElement.srcObject = currentStream;
+        startRecordingButton.style.display = 'inline-block';
       } catch (error) {
-        console.error('Error fetching files:', error);
+        console.error('Error accessing camera:', error);
       }
     }
 
-    // Handle file uploads
-    fileInput.addEventListener('change', async () => {
-      const files = fileInput.files;
+    // Start recording video
+    function startRecording() {
+      videoChunks = [];
+      mediaRecorder = new MediaRecorder(currentStream);
+      mediaRecorder.ondataavailable = event => {
+        videoChunks.push(event.data);
+      };
+      mediaRecorder.onstop = () => {
+        const videoBlob = new Blob(videoChunks, { type: 'video/webm' });
+        const videoURL = URL.createObjectURL(videoBlob);
+        uploadFile(videoBlob, 'video');
+        displayPreview(videoURL, 'video');
+      };
+      mediaRecorder.start();
+      startRecordingButton.style.display = 'none';
+      stopRecordingButton.style.display = 'inline-block';
+    }
+
+    // Stop recording video
+    function stopRecording() {
+      mediaRecorder.stop();
+      stopRecordingButton.style.display = 'none';
+      startRecordingButton.style.display = 'inline-block';
+    }
+
+    // Take a picture
+    function takePicture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 480;
+      const context = canvas.getContext('2d');
+      context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+      const imageData = canvas.toDataURL('image/jpeg');
+      uploadFile(imageData, 'image');
+      displayPreview(imageData, 'image');
+    }
+
+    // Upload file to server
+    async function uploadFile(fileData, type) {
       const formData = new FormData();
-      Array.from(files).forEach(file => {
-        formData.append('files', file);
-      });
+      formData.append('file', fileData);
+      formData.append('type', type);
 
       try {
-        await fetch(`${SERVER_URL}/upload`, {
+        await fetch('http://localhost:3000/upload', {
           method: 'POST',
           body: formData,
         });
-
-        // Refresh the preview area
-        fetchFiles();
       } catch (error) {
-        console.error('Error uploading files:', error);
+        console.error('Error uploading file:', error);
       }
-    });
+    }
 
-    // Open file picker when button is clicked
-    uploadButton.addEventListener('click', () => {
-      fileInput.click();
-    });
+    // Display preview of uploaded video or image
+    function displayPreview(fileURL, type) {
+      const previewElement = type === 'video' ? document.createElement('video') : document.createElement('img');
+      previewElement.src = fileURL;
+      if (type === 'video') {
+        previewElement.controls = true;
+      }
+      preview.appendChild(previewElement);
+    }
 
-    // Fetch files on initial load
-    fetchFiles();
+    // Event listeners
+    recordVideoButton.addEventListener('click', initCamera);
+    startRecordingButton.addEventListener('click', startRecording);
+    stopRecordingButton.addEventListener('click', stopRecording);
+    takePictureButton.addEventListener('click', takePicture);
     const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
@@ -107,13 +148,13 @@ const fs = require('fs');
 const app = express();
 const PORT = 3000;
 
-// Enable CORS for cross-origin requests
+// Enable CORS
 app.use(cors());
 
-// Static file serving (uploads/ folder)
+// Serve static files from the uploads folder
 app.use(express.static('uploads'));
 
-// Configure Multer for file uploads
+// Multer setup for file upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
@@ -121,22 +162,21 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Endpoint to upload files
-app.post('/upload', upload.array('files'), (req, res) => {
-  const files = req.files.map(file => ({
-    url: `${req.protocol}://${req.get('host')}/${file.filename}`,
-    type: file.mimetype,
-  }));
+// Handle file uploads
+app.post('/upload', upload.single('file'), (req, res) => {
+  const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+  console.log('Uploaded file:', fileUrl);
 
-  // Save metadata to data.json file
+  // Save file metadata
   const dataPath = 'uploads/data.json';
   const existingData = fs.existsSync(dataPath) ? JSON.parse(fs.readFileSync(dataPath)) : [];
-  fs.writeFileSync(dataPath, JSON.stringify([...existingData, ...files], null, 2));
+  existingData.push({ url: fileUrl, type: req.body.type });
 
-  res.status(200).json(files);
+  fs.writeFileSync(dataPath, JSON.stringify(existingData, null, 2));
+  res.status(200).json({ message: 'File uploaded successfully!' });
 });
 
-// Endpoint to get all saved files
+// Get all uploaded files
 app.get('/files', (req, res) => {
   const dataPath = 'uploads/data.json';
   if (fs.existsSync(dataPath)) {
