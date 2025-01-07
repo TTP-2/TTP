@@ -84,61 +84,33 @@
 </head>
 <body>
   <header>
-    <h1>TTP Studios - Record Video & Take Picture</h1>
+    <h1>TTP Studios - Camera Preview</h1>
   </header>
   <div class="button-container">
-    <button id="recordVideoButton">Record Video</button>
+    <button id="startCameraButton">Start Camera</button>
     <button id="takePictureButton">Take Picture</button>
   </div>
   <div id="videoContainer">
     <video id="videoElement" width="640" height="480" autoplay></video>
-    <button id="startRecordingButton" style="display:none;">Start Recording</button>
-    <button id="stopRecordingButton" style="display:none;">Stop Recording</button>
   </div>
   <div id="preview"></div>
 
   <script>
-    const recordVideoButton = document.getElementById('recordVideoButton');
+    const startCameraButton = document.getElementById('startCameraButton');
     const takePictureButton = document.getElementById('takePictureButton');
     const videoElement = document.getElementById('videoElement');
     const preview = document.getElementById('preview');
-    const startRecordingButton = document.getElementById('startRecordingButton');
-    const stopRecordingButton = document.getElementById('stopRecordingButton');
-    let mediaRecorder;
-    let videoChunks = [];
     let currentStream;
 
     async function initCamera() {
       try {
-        currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        currentStream = await navigator.mediaDevices.getUserMedia({ video: true });
         videoElement.srcObject = currentStream;
-        startRecordingButton.style.display = 'inline-block';
+        startCameraButton.style.display = 'none';
+        takePictureButton.style.display = 'inline-block';
       } catch (error) {
         console.error('Error accessing camera:', error);
       }
-    }
-
-    function startRecording() {
-      videoChunks = [];
-      mediaRecorder = new MediaRecorder(currentStream);
-      mediaRecorder.ondataavailable = event => {
-        videoChunks.push(event.data);
-      };
-      mediaRecorder.onstop = () => {
-        const videoBlob = new Blob(videoChunks, { type: 'video/webm' });
-        const videoURL = URL.createObjectURL(videoBlob);
-        saveToLocalStorage(videoURL, 'video');
-        displayPreview(videoURL, 'video');
-      };
-      mediaRecorder.start();
-      startRecordingButton.style.display = 'none';
-      stopRecordingButton.style.display = 'inline-block';
-    }
-
-    function stopRecording() {
-      mediaRecorder.stop();
-      stopRecordingButton.style.display = 'none';
-      startRecordingButton.style.display = 'inline-block';
     }
 
     function takePicture() {
@@ -148,23 +120,15 @@
       const context = canvas.getContext('2d');
       context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
       const imageData = canvas.toDataURL('image/jpeg');
-      saveToLocalStorage(imageData, 'image');
-      displayPreview(imageData, 'image');
+      displayPreview(imageData);
     }
 
-    function saveToLocalStorage(fileData, type) {
-      const mediaArray = JSON.parse(localStorage.getItem('media')) || [];
-      mediaArray.push({ url: fileData, type: type });
-      localStorage.setItem('media', JSON.stringify(mediaArray));
-    }
-
-    function displayPreview(fileURL, type) {
+    function displayPreview(imageData) {
       const mediaItem = document.createElement('div');
       mediaItem.classList.add('media-item');
-      const element = type === 'video' ? document.createElement('video') : document.createElement('img');
-      element.src = fileURL;
-      element.controls = type === 'video';
-      mediaItem.appendChild(element);
+      const img = document.createElement('img');
+      img.src = imageData;
+      mediaItem.appendChild(img);
       const deleteButton = document.createElement('button');
       deleteButton.textContent = 'Delete';
       deleteButton.onclick = () => mediaItem.remove();
@@ -172,19 +136,8 @@
       preview.appendChild(mediaItem);
     }
 
-    function loadMediaFromLocalStorage() {
-      const mediaArray = JSON.parse(localStorage.getItem('media')) || [];
-      mediaArray.forEach(item => {
-        displayPreview(item.url, item.type);
-      });
-    }
-
-    recordVideoButton.addEventListener('click', initCamera);
-    startRecordingButton.addEventListener('click', startRecording);
-    stopRecordingButton.addEventListener('click', stopRecording);
+    startCameraButton.addEventListener('click', initCamera);
     takePictureButton.addEventListener('click', takePicture);
-
-    window.onload = loadMediaFromLocalStorage;
   </script>
 </body>
 </html>
