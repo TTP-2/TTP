@@ -88,7 +88,7 @@
   </header>
   <div class="button-container">
     <button id="startCameraButton">Start Camera</button>
-    <button id="takePictureButton">Take Picture</button>
+    <button id="takePictureButton" style="display: none;">Take Picture</button>
   </div>
   <div id="videoContainer">
     <video id="videoElement" width="640" height="480" autoplay></video>
@@ -120,7 +120,14 @@
       const context = canvas.getContext('2d');
       context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
       const imageData = canvas.toDataURL('image/jpeg');
+      saveToLocalStorage(imageData);
       displayPreview(imageData);
+    }
+
+    function saveToLocalStorage(imageData) {
+      const imageArray = JSON.parse(localStorage.getItem('images')) || [];
+      imageArray.push(imageData);
+      localStorage.setItem('images', JSON.stringify(imageArray));
     }
 
     function displayPreview(imageData) {
@@ -131,13 +138,27 @@
       mediaItem.appendChild(img);
       const deleteButton = document.createElement('button');
       deleteButton.textContent = 'Delete';
-      deleteButton.onclick = () => mediaItem.remove();
+      deleteButton.onclick = () => {
+        const mediaItems = JSON.parse(localStorage.getItem('images')) || [];
+        const updatedItems = mediaItems.filter(item => item !== imageData);
+        localStorage.setItem('images', JSON.stringify(updatedItems));
+        mediaItem.remove();
+      };
       mediaItem.appendChild(deleteButton);
       preview.appendChild(mediaItem);
     }
 
+    function loadImagesFromLocalStorage() {
+      const imageArray = JSON.parse(localStorage.getItem('images')) || [];
+      imageArray.forEach(imageData => {
+        displayPreview(imageData);
+      });
+    }
+
     startCameraButton.addEventListener('click', initCamera);
     takePictureButton.addEventListener('click', takePicture);
+
+    window.onload = loadImagesFromLocalStorage;
   </script>
 </body>
 </html>
