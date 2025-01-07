@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Persistent Video Uploader</title>
+  <title>Standard Quality Videos</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -18,16 +18,19 @@
       gap: 20px;
     }
     video {
-      max-width: 300px;
+      max-width: 854px;
+      height: 480px; /* Enforces 480p height */
       border: 1px solid #ccc;
       border-radius: 5px;
+      object-fit: cover; /* Ensures content fits within these dimensions */
     }
   </style>
 </head>
 <body>
-  <h1>Upload and View Videos</h1>
+  <h1>Select Multiple Videos (Standard Quality)</h1>
   <button id="uploadButton">Choose Files</button>
   <input type="file" id="fileInput" accept="video/*" multiple style="display: none;">
+  
   <div id="preview"></div>
 
   <script>
@@ -35,90 +38,31 @@
     const fileInput = document.getElementById('fileInput');
     const preview = document.getElementById('preview');
 
-    // Replace with your server's URL
-    const SERVER_URL = 'http://localhost:3000';
-
-    // Fetch and display all videos on page load
-    async function fetchVideos() {
-      const response = await fetch(`${SERVER_URL}/videos`);
-      const videos = await response.json();
-      preview.innerHTML = ''; // Clear the preview area
-
-      videos.forEach(videoUrl => {
-        const video = document.createElement('video');
-        video.src = videoUrl;
-        video.controls = true;
-        preview.appendChild(video);
-      });
-    }
-
-    // Handle file selection
-    fileInput.addEventListener('change', async () => {
-      const files = fileInput.files;
-      for (const file of files) {
-        if (file.type.startsWith('video/')) {
-          const formData = new FormData();
-          formData.append('video', file);
-
-          // Upload video to the server
-          await fetch(`${SERVER_URL}/upload`, {
-            method: 'POST',
-            body: formData,
-          });
-
-          // Refresh the video list
-          fetchVideos();
-        } else {
-          alert('Please select only video files.');
-        }
-      }
-    });
-
     // Open file picker when button is clicked
     uploadButton.addEventListener('click', () => {
       fileInput.click();
     });
 
-    // Initial fetch
-    fetchVideos();
-    const express = require('express');
-const multer = require('multer');
-const cors = require('cors');
-const path = require('path');
+    // Handle file selection
+    fileInput.addEventListener('change', () => {
+      const files = fileInput.files;
 
-const app = express();
-const PORT = 3000;
+      // Clear previous preview
+      preview.innerHTML = '';
 
-// Middleware
-app.use(cors());
-app.use(express.static('uploads')); // Serve uploaded files as static content
-
-// Configure Multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
-});
-
-const upload = multer({ storage });
-
-// Endpoint to upload videos
-app.post('/upload', upload.single('video'), (req, res) => {
-  res.json({ url: `${req.protocol}://${req.get('host')}/${req.file.filename}` });
-});
-
-// Endpoint to fetch all uploaded videos
-app.get('/videos', (req, res) => {
-  const fs = require('fs');
-  const files = fs.readdirSync('uploads/');
-  const urls = files.map(file => `${req.protocol}://${req.get('host')}/${file}`);
-  res.json(urls);
-});
-
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
-
+      Array.from(files).forEach(file => {
+        if (file.type.startsWith('video/')) {
+          const video = document.createElement('video');
+          video.src = URL.createObjectURL(file);
+          video.controls = true;
+          video.width = 854; // Width for standard quality
+          video.height = 480; // Height for standard quality
+          preview.appendChild(video);
+        } else {
+          alert('Please select only video files.');
+        }
+      });
+    });
   </script>
 </body>
 </html>
