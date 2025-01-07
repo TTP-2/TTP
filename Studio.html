@@ -172,6 +172,7 @@
     }
 
     function loadImagesFromLocalStorage() {
+      // Only load images after the first page load to prevent preloading of data
       const imageArray = JSON.parse(localStorage.getItem('images')) || [];
       imageArray.forEach(item => {
         displayPreview(item.imageData, item.name);
