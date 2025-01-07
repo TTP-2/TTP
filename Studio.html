@@ -1,60 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TTP messages</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
-        #messages { margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; max-height: 200px; overflow-y: auto; }
-        .message { margin: 5px 0; padding: 5px; border-bottom: 1px solid #eee; }
-        input { padding: 10px; width: 80%; font-size: 16px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TTP studio</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    #preview {
+      margin-top: 20px;
+      max-width: 90%;
+    }
+    video {
+      max-width: 100%;
+    }
+  </style>
 </head>
 <body>
-    <h1>TTP <sup>messages</sup></h1>
-    <div id="messages"></div>
-    <input type="text" id="messageInput" placeholder="Write a message..." />
+  <h1>Select an Image or Video</h1>
+  <button id="uploadButton">Choose File</button>
+  <input type="file" id="fileInput" accept="image/*,video/*" style="display: none;">
+  
+  <div id="preview"></div>
 
-    <script>
-        const messagesDiv = document.getElementById('messages');
-        const messageInput = document.getElementById('messageInput');
+  <script>
+    const uploadButton = document.getElementById('uploadButton');
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('preview');
 
-        // Function to load saved messages from localStorage
-        function loadMessages() {
-            const messages = JSON.parse(localStorage.getItem('messages')) || [];
-            messagesDiv.innerHTML = messages.map(msg => `<div class="message">${msg}</div>`).join('');
-        }
+    // Load previously saved file from localStorage
+    const savedData = localStorage.getItem('fileData');
+    const savedType = localStorage.getItem('fileType');
 
-        // Function to save a new message to localStorage
-        function saveMessage(message) {
-            const messages = JSON.parse(localStorage.getItem('messages')) || [];
-            messages.push(message); // Add the new message to the array
-            localStorage.setItem('messages', JSON.stringify(messages)); // Save the updated array to localStorage
-        }
+    if (savedData && savedType) {
+      displayMedia(savedType, savedData);
+    }
 
-        // Event listener for pressing Enter key
-        messageInput.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') {
-                const message = messageInput.value.trim(); // Get and trim the input
-                if (message) {
-                    // Display the message
-                    const newMessage = document.createElement('div');
-                    newMessage.classList.add('message');
-                    newMessage.textContent = message;
-                    messagesDiv.appendChild(newMessage);
+    // Open file picker when button is clicked
+    uploadButton.addEventListener('click', () => {
+      fileInput.click();
+    });
 
-                    // Save the message to localStorage
-                    saveMessage(message);
+    // Handle file selection
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (file) {
+        const fileType = file.type;
 
-                    // Clear the input field after submission
-                    messageInput.value = '';
-                }
-            }
-        });
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const fileData = event.target.result;
 
-        // Load messages when the page is loaded
-        loadMessages();
-    </script>
+          // Save file data and type to localStorage
+          localStorage.setItem('fileData', fileData);
+          localStorage.setItem('fileType', fileType);
+
+          // Display the selected file
+          displayMedia(fileType, fileData);
+        };
+
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Function to display media
+    function displayMedia(type, data) {
+      // Clear previous preview
+      preview.innerHTML = '';
+
+      if (type.startsWith('image/')) {
+        // Display image
+        const img = document.createElement('img');
+        img.src = data;
+        img.alt = "Selected Image";
+        img.style.maxWidth = '100%';
+        preview.appendChild(img);
+      } else if (type.startsWith('video/')) {
+        // Display video
+        const video = document.createElement('video');
+        video.src = data;
+        video.controls = true;
+        preview.appendChild(video);
+      } else {
+        alert('Unsupported file type.');
+      }
+    }
+  </script>
 </body>
 </html>
