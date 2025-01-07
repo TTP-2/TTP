@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TTP Studios</title>
+  <title>TTP Studios - Take Pictures</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -40,7 +40,7 @@
     .button-container button:hover {
       background-color: #45a049;
     }
-    #videoContainer, #recordContainer {
+    #videoContainer {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -58,7 +58,7 @@
       text-align: center;
       width: 300px;
     }
-    video, img {
+    img {
       width: 300px;
       height: auto;
       border-radius: 8px;
@@ -75,14 +75,11 @@
       border-radius: 5px;
       border: 1px solid #ddd;
     }
-    #imagePreview, #videoPreview {
+    #imagePreview {
       display: flex;
       justify-content: center;
       gap: 20px;
       margin-top: 20px;
-    }
-    #videoPreview video {
-      width: 300px;
     }
   </style>
 </head>
@@ -99,26 +96,13 @@
     <video id="videoElement" width="640" height="480" autoplay></video>
   </div>
 
-  <div id="recordContainer" style="display:none;">
-    <button id="startRecordButton">Start Recording</button>
-    <button id="stopRecordButton" style="display:none;">Stop Recording</button>
-  </div>
-
   <!-- Input Box for Name -->
   <input type="text" id="nameInput" class="name-input" placeholder="Enter Name">
 
-  <!-- Image and Video Previews -->
+  <!-- Image Previews -->
   <div id="imagePreview">
     <h2>Images</h2>
-    <br>
-    <br>
     <div id="previewImages"></div>
-  </div>
-  <div id="videoPreview">
-    <h2>Videos</h2>
-    <br>
-    <br>
-    <div id="previewVideos"></div>
   </div>
 
   <script>
@@ -126,48 +110,18 @@
     const takePictureButton = document.getElementById('takePictureButton');
     const videoElement = document.getElementById('videoElement');
     const previewImages = document.getElementById('previewImages');
-    const previewVideos = document.getElementById('previewVideos');
     const nameInput = document.getElementById('nameInput');
-    const startRecordButton = document.getElementById('startRecordButton');
-    const stopRecordButton = document.getElementById('stopRecordButton');
-    const recordContainer = document.getElementById('recordContainer');
     let currentStream;
-    let mediaRecorder;
-    let recordedChunks = [];
 
     async function initCamera() {
       try {
-        currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        currentStream = await navigator.mediaDevices.getUserMedia({ video: true });
         videoElement.srcObject = currentStream;
         startCameraButton.style.display = 'none';
         takePictureButton.style.display = 'inline-block';
-        recordContainer.style.display = 'block';
       } catch (error) {
         console.error('Error accessing camera:', error);
       }
-    }
-
-    function startRecording() {
-      recordedChunks = [];
-      mediaRecorder = new MediaRecorder(currentStream);
-      mediaRecorder.ondataavailable = function (event) {
-        recordedChunks.push(event.data);
-      };
-      mediaRecorder.onstop = function () {
-        const videoBlob = new Blob(recordedChunks, { type: 'video/mp4' });
-        const videoUrl = URL.createObjectURL(videoBlob);
-        saveToLocalStorage(videoUrl, 'video');
-        displayPreview(videoUrl, 'video');
-      };
-      mediaRecorder.start();
-      startRecordButton.style.display = 'none';
-      stopRecordButton.style.display = 'inline-block';
-    }
-
-    function stopRecording() {
-      mediaRecorder.stop();
-      startRecordButton.style.display = 'inline-block';
-      stopRecordButton.style.display = 'none';
     }
 
     function takePicture() {
@@ -177,34 +131,26 @@
       const context = canvas.getContext('2d');
       context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
       const imageData = canvas.toDataURL('image/jpeg');
-      saveToLocalStorage(imageData, 'image');
-      displayPreview(imageData, 'image');
+      saveToLocalStorage(imageData);
+      displayPreview(imageData);
     }
 
-    function saveToLocalStorage(data, type) {
-      const mediaArray = JSON.parse(localStorage.getItem(type)) || [];
+    function saveToLocalStorage(imageData) {
+      const imageArray = JSON.parse(localStorage.getItem('image')) || [];
       const name = nameInput.value || 'Anonymous';  // Use entered name, or default to 'Anonymous'
-      mediaArray.push({ data, name });
-      localStorage.setItem(type, JSON.stringify(mediaArray));
+      imageArray.push({ data: imageData, name });
+      localStorage.setItem('image', JSON.stringify(imageArray));
     }
 
-    function displayPreview(data, type) {
+    function displayPreview(imageData) {
       const mediaItem = document.createElement('div');
       mediaItem.classList.add('media-item');
-      if (type === 'image') {
-        const img = document.createElement('img');
-        img.src = data;
-        mediaItem.appendChild(img);
-        previewImages.appendChild(mediaItem);
-      } else if (type === 'video') {
-        const video = document.createElement('video');
-        video.src = data;
-        video.controls = true;
-        mediaItem.appendChild(video);
-        previewVideos.appendChild(mediaItem);
-      }
+      const img = document.createElement('img');
+      img.src = imageData;
+      mediaItem.appendChild(img);
+      previewImages.appendChild(mediaItem);
 
-      // Display name under the media
+      // Display name under the image
       const nameDisplay = document.createElement('p');
       const name = nameInput.value || 'Anonymous';
       nameDisplay.textContent = name;
@@ -213,31 +159,25 @@
       const deleteButton = document.createElement('button');
       deleteButton.textContent = 'Delete';
       deleteButton.onclick = () => {
-        const mediaItems = JSON.parse(localStorage.getItem(type)) || [];
-        const updatedItems = mediaItems.filter(item => item.data !== data);
-        localStorage.setItem(type, JSON.stringify(updatedItems));
+        const imageItems = JSON.parse(localStorage.getItem('image')) || [];
+        const updatedItems = imageItems.filter(item => item.data !== imageData);
+        localStorage.setItem('image', JSON.stringify(updatedItems));
         mediaItem.remove();
       };
       mediaItem.appendChild(deleteButton);
     }
 
-    function loadMediaFromLocalStorage() {
+    function loadImagesFromLocalStorage() {
       const imageArray = JSON.parse(localStorage.getItem('image')) || [];
-      const videoArray = JSON.parse(localStorage.getItem('video')) || [];
       imageArray.forEach(item => {
-        displayPreview(item.data, 'image');
-      });
-      videoArray.forEach(item => {
-        displayPreview(item.data, 'video');
+        displayPreview(item.data);
       });
     }
 
     startCameraButton.addEventListener('click', initCamera);
     takePictureButton.addEventListener('click', takePicture);
-    startRecordButton.addEventListener('click', startRecording);
-    stopRecordButton.addEventListener('click', stopRecording);
 
-    window.onload = loadMediaFromLocalStorage;
+    window.onload = loadImagesFromLocalStorage;
   </script>
 </body>
 </html>
