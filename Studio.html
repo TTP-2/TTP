@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Standard Quality Videos</title>
+  <title>TTP studios</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -17,19 +17,26 @@
       justify-content: center;
       gap: 20px;
     }
-    video {
+    video, img {
       max-width: 854px;
-      height: 480px; /* Enforces 480p height */
+      height: auto;
       border: 1px solid #ccc;
       border-radius: 5px;
-      object-fit: cover; /* Ensures content fits within these dimensions */
+    }
+    video {
+      height: 480px; /* For standard video size */
+      object-fit: cover;
+    }
+    img {
+      max-height: 480px; /* Limit height for images */
+      object-fit: contain;
     }
   </style>
 </head>
 <body>
-  <h1>Select Multiple Videos (Standard Quality)</h1>
+  <h1>Upload Videos and Photos</h1>
   <button id="uploadButton">Choose Files</button>
-  <input type="file" id="fileInput" accept="video/*" multiple style="display: none;">
+  <input type="file" id="fileInput" accept="video/*,image/*" multiple style="display: none;">
   
   <div id="preview"></div>
 
@@ -52,14 +59,20 @@
 
       Array.from(files).forEach(file => {
         if (file.type.startsWith('video/')) {
+          // Display video
           const video = document.createElement('video');
           video.src = URL.createObjectURL(file);
           video.controls = true;
-          video.width = 854; // Width for standard quality
-          video.height = 480; // Height for standard quality
+          video.width = 854;
+          video.height = 480;
           preview.appendChild(video);
+        } else if (file.type.startsWith('image/')) {
+          // Display image
+          const img = document.createElement('img');
+          img.src = URL.createObjectURL(file);
+          preview.appendChild(img);
         } else {
-          alert('Please select only video files.');
+          alert('Please select only videos or images.');
         }
       });
     });
