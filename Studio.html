@@ -40,7 +40,7 @@
     .button-container button:hover {
       background-color: #45a049;
     }
-    #videoContainer {
+    #videoContainer, #recordContainer {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -90,20 +90,35 @@
       border-radius: 5px;
       border: 1px solid #ddd;
     }
+    #recordContainer {
+      margin-top: 20px;
+    }
+    #videoPreview {
+      width: 640px;
+      height: 360px;
+      background-color: #333;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>TTP Studios - Echo-Link</h1>
+    <h1>TTP Studios - Camera Preview</h1>
   </header>
   <div class="button-container">
     <button id="startCameraButton">Start Camera</button>
     <button id="takePictureButton" style="display: none;">Take Picture</button>
   </div>
+
   <div id="videoContainer">
     <video id="videoElement" width="640" height="480" autoplay></video>
   </div>
-  
+
+  <div id="recordContainer" style="display:none;">
+    <button id="startRecordButton">Start Recording</button>
+    <button id="stopRecordButton" style="display:none;">Stop Recording</button>
+    <video id="videoPreview" controls></video>
+  </div>
+
   <!-- Input Box for Name -->
   <input type="text" id="nameInput" class="name-input" placeholder="Enter Name">
 
@@ -115,17 +130,47 @@
     const videoElement = document.getElementById('videoElement');
     const preview = document.getElementById('preview');
     const nameInput = document.getElementById('nameInput');
+    const startRecordButton = document.getElementById('startRecordButton');
+    const stopRecordButton = document.getElementById('stopRecordButton');
+    const videoPreview = document.getElementById('videoPreview');
+    const recordContainer = document.getElementById('recordContainer');
     let currentStream;
+    let mediaRecorder;
+    let recordedChunks = [];
 
     async function initCamera() {
       try {
-        currentStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         videoElement.srcObject = currentStream;
         startCameraButton.style.display = 'none';
         takePictureButton.style.display = 'inline-block';
+        recordContainer.style.display = 'block';
       } catch (error) {
         console.error('Error accessing camera:', error);
       }
+    }
+
+    function startRecording() {
+      recordedChunks = [];
+      mediaRecorder = new MediaRecorder(currentStream);
+      mediaRecorder.ondataavailable = function (event) {
+        recordedChunks.push(event.data);
+      };
+      mediaRecorder.onstop = function () {
+        const videoBlob = new Blob(recordedChunks, { type: 'video/mp4' });
+        const videoUrl = URL.createObjectURL(videoBlob);
+        saveToLocalStorage(videoUrl, 'video');
+        videoPreview.src = videoUrl;
+      };
+      mediaRecorder.start();
+      startRecordButton.style.display = 'none';
+      stopRecordButton.style.display = 'inline-block';
+    }
+
+    function stopRecording() {
+      mediaRecorder.stop();
+      startRecordButton.style.display = 'inline-block';
+      stopRecordButton.style.display = 'none';
     }
 
     function takePicture() {
@@ -135,25 +180,32 @@
       const context = canvas.getContext('2d');
       context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
       const imageData = canvas.toDataURL('image/jpeg');
-      saveToLocalStorage(imageData);
-      displayPreview(imageData);
+      saveToLocalStorage(imageData, 'image');
+      displayPreview(imageData, 'image');
     }
 
-    function saveToLocalStorage(imageData) {
-      const imageArray = JSON.parse(localStorage.getItem('images')) || [];
+    function saveToLocalStorage(data, type) {
+      const mediaArray = JSON.parse(localStorage.getItem(type)) || [];
       const name = nameInput.value || 'Anonymous';  // Use entered name, or default to 'Anonymous'
-      imageArray.push({ imageData, name });
-      localStorage.setItem('images', JSON.stringify(imageArray));
+      mediaArray.push({ data, name });
+      localStorage.setItem(type, JSON.stringify(mediaArray));
     }
 
-    function displayPreview(imageData) {
+    function displayPreview(data, type) {
       const mediaItem = document.createElement('div');
       mediaItem.classList.add('media-item');
-      const img = document.createElement('img');
-      img.src = imageData;
-      mediaItem.appendChild(img);
+      if (type === 'image') {
+        const img = document.createElement('img');
+        img.src = data;
+        mediaItem.appendChild(img);
+      } else if (type === 'video') {
+        const video = document.createElement('video');
+        video.src = data;
+        video.controls = true;
+        mediaItem.appendChild(video);
+      }
 
-      // Display name under the image
+      // Display name under the media
       const nameDisplay = document.createElement('p');
       const name = nameInput.value || 'Anonymous';
       nameDisplay.textContent = name;
@@ -162,27 +214,32 @@
       const deleteButton = document.createElement('button');
       deleteButton.textContent = 'Delete';
       deleteButton.onclick = () => {
-        const mediaItems = JSON.parse(localStorage.getItem('images')) || [];
-        const updatedItems = mediaItems.filter(item => item.imageData !== imageData);
-        localStorage.setItem('images', JSON.stringify(updatedItems));
+        const mediaItems = JSON.parse(localStorage.getItem(type)) || [];
+        const updatedItems = mediaItems.filter(item => item.data !== data);
+        localStorage.setItem(type, JSON.stringify(updatedItems));
         mediaItem.remove();
       };
       mediaItem.appendChild(deleteButton);
       preview.appendChild(mediaItem);
     }
 
-    function loadImagesFromLocalStorage() {
-      // Only load images after the first page load to prevent preloading of data
-      const imageArray = JSON.parse(localStorage.getItem('images')) || [];
+    function loadMediaFromLocalStorage() {
+      const imageArray = JSON.parse(localStorage.getItem('image')) || [];
+      const videoArray = JSON.parse(localStorage.getItem('video')) || [];
       imageArray.forEach(item => {
-        displayPreview(item.imageData, item.name);
+        displayPreview(item.data, 'image');
+      });
+      videoArray.forEach(item => {
+        displayPreview(item.data, 'video');
       });
     }
 
     startCameraButton.addEventListener('click', initCamera);
     takePictureButton.addEventListener('click', takePicture);
+    startRecordButton.addEventListener('click', startRecording);
+    stopRecordButton.addEventListener('click', stopRecording);
 
-    window.onload = loadImagesFromLocalStorage;
+    window.onload = loadMediaFromLocalStorage;
   </script>
 </body>
 </html>
