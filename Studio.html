@@ -8,34 +8,100 @@
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      margin-top: 50px;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 0;
     }
-    #preview {
+
+    header {
+      background-color: #333;
+      color: white;
+      padding: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2.5rem;
+    }
+
+    .button-container {
       margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .button-container button {
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .button-container button:hover {
+      background-color: #45a049;
+    }
+
+    #videoContainer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 30px;
+    }
+
+    #preview {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 20px;
+      margin-top: 30px;
     }
+
     video, img {
-      max-width: 300px;
+      width: 300px;
       height: auto;
-      border: 1px solid #ccc;
+      border-radius: 8px;
+      border: 2px solid #ddd;
+      margin-bottom: 20px;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .media-item {
+      position: relative;
+    }
+
+    .media-item button {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      padding: 10px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      border: none;
       border-radius: 5px;
-      object-fit: contain;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
     }
-    video {
-      height: 200px;
-    }
-    img {
-      max-height: 200px;
+
+    .media-item button:hover {
+      background-color: #333;
     }
   </style>
 </head>
 <body>
-  <h1>TTP Studios - Record Video & Take Picture</h1>
-  <button id="recordVideoButton">Record Video</button>
-  <button id="takePictureButton">Take Picture</button>
+  <header>
+    <h1>TTP Studios - Record Video & Take Picture</h1>
+  </header>
+
+  <div class="button-container">
+    <button id="recordVideoButton">Record Video</button>
+    <button id="takePictureButton">Take Picture</button>
+  </div>
 
   <div id="videoContainer">
     <video id="videoElement" width="640" height="480" autoplay></video>
@@ -126,12 +192,34 @@
 
     // Display preview of uploaded video or image
     function displayPreview(fileURL, type) {
-      const previewElement = type === 'video' ? document.createElement('video') : document.createElement('img');
-      previewElement.src = fileURL;
-      if (type === 'video') {
-        previewElement.controls = true;
+      const mediaItem = document.createElement('div');
+      mediaItem.classList.add('media-item');
+      
+      const element = type === 'video' ? document.createElement('video') : document.createElement('img');
+      element.src = fileURL;
+      element.controls = type === 'video';
+      mediaItem.appendChild(element);
+
+      // Optionally, you can add a delete button or other functionality here
+      const deleteButton = document.createElement('button');
+      deleteButton.textContent = 'Delete';
+      deleteButton.onclick = () => mediaItem.remove();
+      mediaItem.appendChild(deleteButton);
+
+      preview.appendChild(mediaItem);
+    }
+
+    // Fetch previously saved media from server on page load
+    async function fetchSavedMedia() {
+      try {
+        const response = await fetch('http://localhost:3000/files');
+        const files = await response.json();
+        files.forEach(file => {
+          displayPreview(file.url, file.type);
+        });
+      } catch (error) {
+        console.error('Error fetching media:', error);
       }
-      preview.appendChild(previewElement);
     }
 
     // Event listeners
@@ -139,6 +227,9 @@
     startRecordingButton.addEventListener('click', startRecording);
     stopRecordingButton.addEventListener('click', stopRecording);
     takePictureButton.addEventListener('click', takePicture);
+
+    // Fetch saved media on page load
+    window.onload = fetchSavedMedia;
     const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
