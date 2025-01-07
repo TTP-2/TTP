@@ -30,48 +30,19 @@
     <div id="output" class="output"></div>
     <input id="textInput" type="text" placeholder="Type something and press Enter..." />
 
-    <!-- Firebase Scripts -->
-    <script src="https://www.gstatic.com/firebasejs/9.4.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.4.0/firebase-firestore.js"></script>
     <script>
-        // Your Firebase configuration
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID",
-            measurementId: "YOUR_MEASUREMENT_ID"
-        };
-
-        // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
-        // Function to save the text to Firestore
-        function saveText(text) {
-            // Save text to Firestore collection
-            db.collection("texts").add({
-                text: text,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            })
-            .then(() => {
-                displayText(); // After saving, update the displayed text
-            })
-            .catch((error) => {
-                console.error("Error adding document: ", error);
-            });
+        // Load saved text from localStorage
+        function loadText() {
+            const savedText = localStorage.getItem('storedText');
+            if (savedText) {
+                document.getElementById('output').innerHTML = savedText;
+            }
         }
 
-        // Function to display the text
-        function displayText() {
-            const outputDiv = document.getElementById('output');
-            db.collection("texts").orderBy("timestamp", "desc").limit(1).get().then((querySnapshot) => {
-                querySnapshot.forEach((doc) => {
-                    outputDiv.innerHTML = doc.data().text;
-                });
-            });
+        // Save text to localStorage
+        function saveText(text) {
+            localStorage.setItem('storedText', text);
+            document.getElementById('output').innerHTML = text;
         }
 
         // Listen for "Enter" keypress to save the text
@@ -85,8 +56,8 @@
             }
         });
 
-        // Load the latest saved text when the page loads
-        window.onload = displayText;
+        // Load the text when the page loads
+        window.onload = loadText;
     </script>
 </body>
 </html>
