@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TTP studio</title>
+  <title>TTP studios</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -12,17 +12,24 @@
     }
     #preview {
       margin-top: 20px;
-      max-width: 90%;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
     }
     video {
-      max-width: 100%;
+      max-width: 854px;
+      height: 480px; /* Enforces 480p height */
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      object-fit: cover; /* Ensures content fits within these dimensions */
     }
   </style>
 </head>
 <body>
-  <h1>Select an Image or Video</h1>
-  <button id="uploadButton">Choose File</button>
-  <input type="file" id="fileInput" accept="image/*,video/*" style="display: none;">
+  <h1>Select Multiple Videos (Standard Quality)</h1>
+  <button id="uploadButton">Choose Files</button>
+  <input type="file" id="fileInput" accept="video/*" multiple style="display: none;">
   
   <div id="preview"></div>
 
@@ -31,14 +38,6 @@
     const fileInput = document.getElementById('fileInput');
     const preview = document.getElementById('preview');
 
-    // Load previously saved file from localStorage
-    const savedData = localStorage.getItem('fileData');
-    const savedType = localStorage.getItem('fileType');
-
-    if (savedData && savedType) {
-      displayMedia(savedType, savedData);
-    }
-
     // Open file picker when button is clicked
     uploadButton.addEventListener('click', () => {
       fileInput.click();
@@ -46,48 +45,24 @@
 
     // Handle file selection
     fileInput.addEventListener('change', () => {
-      const file = fileInput.files[0];
-      if (file) {
-        const fileType = file.type;
+      const files = fileInput.files;
 
-        const reader = new FileReader();
-        reader.onload = function(event) {
-          const fileData = event.target.result;
-
-          // Save file data and type to localStorage
-          localStorage.setItem('fileData', fileData);
-          localStorage.setItem('fileType', fileType);
-
-          // Display the selected file
-          displayMedia(fileType, fileData);
-        };
-
-        reader.readAsDataURL(file);
-      }
-    });
-
-    // Function to display media
-    function displayMedia(type, data) {
       // Clear previous preview
       preview.innerHTML = '';
 
-      if (type.startsWith('image/')) {
-        // Display image
-        const img = document.createElement('img');
-        img.src = data;
-        img.alt = "Selected Image";
-        img.style.maxWidth = '100%';
-        preview.appendChild(img);
-      } else if (type.startsWith('video/')) {
-        // Display video
-        const video = document.createElement('video');
-        video.src = data;
-        video.controls = true;
-        preview.appendChild(video);
-      } else {
-        alert('Unsupported file type.');
-      }
-    }
+      Array.from(files).forEach(file => {
+        if (file.type.startsWith('video/')) {
+          const video = document.createElement('video');
+          video.src = URL.createObjectURL(file);
+          video.controls = true;
+          video.width = 854; // Width for standard quality
+          video.height = 480; // Height for standard quality
+          preview.appendChild(video);
+        } else {
+          alert('Please select only video files.');
+        }
+      });
+    });
   </script>
 </body>
 </html>
