@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-    <title>Micro(AI of TTP)</title>
+    <title>Micro (AI of TTP)</title>
     <style>
         input {
             margin-top: 30px;
@@ -14,20 +13,16 @@
             position: absolute;
             margin-top: 6px;
             margin-left: 21px;
-
         }
-
         button {
             width: 306px;
             height: 30px;
             border: 2px solid teal;
             cursor: pointer;
         }
-
         button:hover {
             background-color: teal;
         }
-
         div {
             border: solid 1px teal;
             width: 350px;
@@ -42,34 +37,39 @@
         }
     </style>
 </head>
-
 <body>
-<div>
-    <h4>Note:</h4>
-    <p>You can only ask Micro specific things</p>
-    <h4>Things to Ask or Say:</h4>
-    <p>hi</p>
-    <p>can you write a story</p>
-    <input id="input" type="text" placeholder="Message Micro" onkeypress="checkEnter(event)">
-    <br>
-    <br>
-    <p id="Message"></p>
-</div>
+    <div>
+        <h4>Note:</h4>
+        <p>You can either ask Micro something or search for a website.</p>
+        <input id="input" type="text" placeholder="Ask Micro or enter a URL" onkeypress="checkEnter(event)">
+        <br>
+        <br>
+        <p id="Message"></p>
+    </div>
     <script>
         function checkEnter(event) {
-            if (event.key === "Enter" && input.value === "hi") {
-                document.getElementById('Message').innerText = "Hello there, How can I assist you today!";
-                input.value = "";
-            }
-            else if (event.key === "Enter" && input.value === "can you write a story") {
-                document.getElementById('Message').innerText = "Once upon a time, in a small village nestled between misty mountains, there lived a peculiar cat named Orion. He wasn’t an ordinary cat. Orion had fur as black as the night sky and eyes that shimmered like twin galaxies. But what truly set him apart was his uncanny ability to predict the future by gazing at the stars. Every evening, Orion would sit on the tallest rooftop in the village, staring up at the heavens. The villagers, at first, thought it was just a strange habit. But soon, they realized something extraordinary: whenever Orion meowed three times, something significant would happen. One cold winter night, Orion meowed three times while looking toward the eastern sky. The next morning, the villagers discovered an avalanche had blocked the mountain pass. Thanks to Orion’s warning, no one had ventured out that way, and lives were saved. News of the “Stargazing Cat” spread far and wide. People came from distant lands to witness Orion’s gift. Some sought guidance for their harvest, others for love, and a few just to see if the legends were true. Orion, of course, didn’t speak. He simply sat, observed the stars, and occasionally meowed his cryptic warnings. One evening, a young girl named Lila approached Orion. She wasn’t there for a prediction but out of pure curiosity. “Do the stars ever tell you happy things?” she asked, sitting beside him on the rooftop. Orion turned to her, his galaxy-like eyes reflecting the moonlight, and purred softly. That night, something unusual happened. Instead of meowing, Orion pawed at the sky, tracing invisible patterns with his claws. The stars above seemed to shimmer brighter, aligning in strange shapes. The villagers watched in awe as a glowing constellation formed—a cat, much like Orion himself. The next morning, a miracle occurred. The snow that had blanketed the village for weeks began to melt. Rivers flowed again, crops sprang to life, and the long, harsh winter finally ended. The villagers believed it was Orion’s doing, a gift from the stars for their kindness to the strange cat. Orion stayed in the village for many years, continuing to watch the stars and offer his silent wisdom. Lila became his closest companion, and together, they spent countless nights under the vast sky, wondering about the mysteries of the universe. And so, the cat who knew the stars became a legend, his story whispered through generations. Some say, on clear nights, if you look up at the heavens, you can still see Orion’s constellation shining bright, a reminder that even the smallest beings can leave a mark as vast as the cosmos.";
-                input.value = "";
-            }
-            else if (event.key === "Enter" && input.value === "can you make that shorter") {
-                document.getElementById('Message').innerText = "Sure here is a shortended version In a small village surrounded by mountains, lived a cat named Orion with black fur and starry eyes. He had the unique ability to predict the future by gazing at the stars. Every evening, he sat on a rooftop and meowed three times when something important was about to happen. One night, after meowing three times, an avalanche blocked the mountain pass, saving lives.\n\nWord spread about the 'Stargazing Cat,' and people traveled to see him. One evening, a curious girl named Lila asked if the stars ever told him happy things. That night, Orion pawed at the sky, and a glowing cat-shaped constellation appeared. The next day, the harsh winter ended, and the village thrived again.\n\nOrion stayed in the village, offering silent wisdom. His story became a legend, and some say you can still see his constellation in the sky, a reminder that even the smallest beings can make a lasting impact.";
-                input.value = "";
+            const input = document.getElementById("input");
+            const message = document.getElementById("Message");
+
+            if (event.key === "Enter") {
+                if (input.value === "hi") {
+                    message.innerText = "Hello there, How can I assist you today!";
+                    input.value = "";
+                } else if (input.value === "can you write a story") {
+                    message.innerText = "Once upon a time...";
+                    input.value = "";
+                } else if (input.value === "can you make that shorter") {
+                    message.innerText = "Sure, here's a shortened version...";
+                    input.value = "";
+                } else {
+                    // Treat input as a URL and navigate to the page
+                    const url = input.value.startsWith("http://") || input.value.startsWith("https://")
+                        ? input.value
+                        : `https://${input.value}`;
+                    window.location.href = `viewer.html?url=${encodeURIComponent(url)}`;
+                }
             }
         }
-</script>
+    </script>
 </body>
 </html>
