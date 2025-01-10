@@ -3,36 +3,48 @@
 <head>
     <title>Micro (AI of TTP)</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            background-color: #f9f9f9;
+        }
+        div {
+            border: 1px solid teal;
+            width: 350px;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
         input {
-            margin-top: 30px;
-            width: 300px;
+            margin-top: 15px;
+            width: 100%;
             height: 30px;
             font-size: 15px;
             text-align: center;
             border: 1px solid teal;
-            position: absolute;
-            margin-top: 6px;
-            margin-left: 21px;
+            border-radius: 5px;
         }
         button {
-            width: 306px;
+            width: 100%;
             height: 30px;
             border: 2px solid teal;
+            margin-top: 10px;
             cursor: pointer;
         }
         button:hover {
             background-color: teal;
+            color: white;
         }
-        div {
-            border: solid 1px teal;
-            width: 350px;
-            margin: auto;
-        }
-        p {
+        p, h4 {
             text-align: center;
+            margin: 10px 0;
         }
         h4 {
-            text-align: center;
             color: red;
         }
     </style>
@@ -40,12 +52,14 @@
 <body>
     <div>
         <h4>Note:</h4>
-        <p>You can either ask Micro something or search for a website.</p>
-        <input id="input" type="text" placeholder="Ask Micro or enter a URL" onkeypress="checkEnter(event)">
-        <br>
-        <br>
+        <p>You can only ask Micro specific things</p>
+        <h4>Things to Ask or Say:</h4>
+        <p>hi</p>
+        <p>can you write a story</p>
+        <input id="input" type="text" placeholder="Message Micro" onkeypress="checkEnter(event)">
         <p id="Message"></p>
     </div>
+
     <script>
         function checkEnter(event) {
             const input = document.getElementById("input");
@@ -55,18 +69,18 @@
                 if (input.value === "hi") {
                     message.innerText = "Hello there, How can I assist you today!";
                     input.value = "";
-                } else if (input.value === "can you write a story") {
-                    message.innerText = "Once upon a time...";
+                } 
+                else if (input.value === "can you write a story") {
+                    message.innerText = "Once upon a time, in a small village nestled between misty mountains, there lived a peculiar cat named Orion...";
                     input.value = "";
-                } else if (input.value === "can you make that shorter") {
-                    message.innerText = "Sure, here's a shortened version...";
+                } 
+                else if (input.value === "can you make that shorter") {
+                    message.innerText = "In a village surrounded by mountains, a cat named Orion predicted the future by gazing at stars...";
                     input.value = "";
-                } else {
-                    // Treat input as a URL and navigate to the page
-                    const url = input.value.startsWith("http://") || input.value.startsWith("https://")
-                        ? input.value
-                        : `https://${input.value}`;
-                    window.location.href = `viewer.html?url=${encodeURIComponent(url)}`;
+                } 
+                else {
+                    message.innerText = "I'm sorry, I don't understand that request.";
+                    input.value = "";
                 }
             }
         }
