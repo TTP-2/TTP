@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HTML Editor</title>
+  <title>HTML Editor with Auto-Complete</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -73,8 +73,33 @@
       previewDoc.close();
     }
 
-    // Update preview on input
-    codeInput.addEventListener('input', updatePreview);
+    // Add event listener to textarea
+    codeInput.addEventListener('input', (event) => {
+      updatePreview();
+    });
+
+    // Auto-complete tags
+    codeInput.addEventListener('keydown', (event) => {
+      const cursorPosition = codeInput.selectionStart;
+      const textBeforeCursor = codeInput.value.slice(0, cursorPosition);
+      const textAfterCursor = codeInput.value.slice(cursorPosition);
+
+      if (event.key === '>') {
+        // Check if we need to autocomplete a tag
+        const match = textBeforeCursor.match(/<(\w+)[^>]*$/);
+        if (match) {
+          const tagName = match[1];
+          const autoComplete = `</${tagName}>`;
+          const newValue = textBeforeCursor + '>' + autoComplete + textAfterCursor;
+
+          event.preventDefault();
+          codeInput.value = newValue;
+
+          // Set the cursor position between the tags
+          codeInput.selectionStart = codeInput.selectionEnd = cursorPosition + 1;
+        }
+      }
+    });
 
     // Initial preview
     updatePreview();
