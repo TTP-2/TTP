@@ -1,3 +1,0 @@
-function TTP() {
-  alert('hi')
-}
