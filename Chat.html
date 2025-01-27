@@ -4,115 +4,73 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Messaging Website</title>
-  <script src="script.js" defer></script>
   <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
       display: flex;
       justify-content: center;
       align-items: center;
-      background-color: #f0f2f5;
-      font-family: Arial, sans-serif;
+      height: 100vh;
+      margin: 0;
     }
-
-    .chat-container {
+    .container {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       width: 400px;
-      height: 600px;
-      background-color: white;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
-
-    /* Chat Header */
-    .chat-header {
-      padding: 15px;
-      background-color: #007bff;
-      color: white;
-      text-align: center;
-      font-size: 18px;
-      font-weight: bold;
-      border-top-left-radius: 10px;
-      border-top-right-radius: 10px;
-    }
-
-    /* Chat Messages Area */
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
+    .message-box {
+      width: 100%;
+      margin-bottom: 10px;
       padding: 10px;
-      background-color: #f9f9f9;
+      font-size: 14px;
     }
-
-    .message {
-      margin: 10px 0;
-      padding: 10px 15px;
-      border-radius: 15px;
-      max-width: 70%;
-      word-wrap: break-word;
-    }
-
-    .message.sent {
-      background-color: #007bff;
-      color: white;
-      align-self: flex-end;
-    }
-
-    .message.received {
-      background-color: #e4e6eb;
-      align-self: flex-start;
-    }
-
-    /* Input Area */
-    .chat-input {
-      display: flex;
+    .button {
+      width: 100%;
       padding: 10px;
-      background-color: #f0f0f0;
-      border-bottom-left-radius: 10px;
-      border-bottom-right-radius: 10px;
-    }
-
-    .chat-input input {
-      flex: 1;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      outline: none;
-      font-size: 16px;
-    }
-
-    .chat-input button {
-      margin-left: 10px;
-      padding: 10px 20px;
-      background-color: #007bff;
+      background-color: #4CAF50;
       color: white;
       border: none;
-      border-radius: 5px;
-      font-size: 16px;
       cursor: pointer;
-    }
-
-    .chat-input button:hover {
-      background-color: #0056b3;
     }
   </style>
 </head>
 <body>
-  <div class="chat-container">
-    <div class="chat-header">Chat Room</div>
-    <div class="chat-messages" id="chatMessages">
-      <!-- Messages will appear here -->
-    </div>
-    <div class="chat-input">
-      <input type="text" id="messageInput" placeholder="Type a message...">
-      <button id="sendButton">Send</button>
-    </div>
+
+  <div class="container">
+    <h2>Send a Message</h2>
+    <input id="toEmail" class="message-box" type="email" placeholder="Recipient's email" required><br>
+    <input id="subject" class="message-box" type="text" placeholder="Subject" required><br>
+    <textarea id="message" class="message-box" rows="4" placeholder="Type your message here" required></textarea><br>
+    <button class="button" id="sendMessageButton">Send Message</button>
   </div>
 
-  <script src="script.js"></script>
+  <script>
+    const sendMessageButton = document.getElementById('sendMessageButton');
+
+    sendMessageButton.addEventListener('click', function() {
+      const toEmail = document.getElementById('toEmail').value;
+      const subject = document.getElementById('subject').value;
+      const message = document.getElementById('message').value;
+
+      if (toEmail && subject && message) {
+        fetch('/send-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ toEmail, subject, message })
+        })
+        .then(response => response.json())
+        .then(data => alert('Message sent successfully!'))
+        .catch(error => alert('Error sending message.'));
+      } else {
+        alert('Please fill all fields');
+      }
+    });
+  </script>
+
 </body>
 </html>
