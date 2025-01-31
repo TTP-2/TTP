@@ -1,93 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wi-Fi Scanner</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-        }
-        button {
-            padding: 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .wifi-list {
-            margin-top: 20px;
-        }
-        .wifi-item {
-            margin: 10px 0;
-        }
-    </style>
+<title>Online HTML Editor</title>
+<style>
+    .redcircle {
+        width: 100px;
+        height: 100px;
+        border-radius: 50px;
+        background-color: red;
+        margin-left: 80px;
+        margin-bottom: -40px;
+    }
+    .greensquare {
+        width: 100px;
+        height: 100px;
+        border-radius: 5px;
+        background-color: green;
+        margin-bottom: 30px;
+        margin-top: 5px;
+        margin-left: 30px;
+    }
+    .bluecircle {
+        width: 100px;
+        height: 100px;
+        border-radius: 50px;
+        background-color: blue;
+        margin-left: 85px;
+        margin-top: -60px;
+    }
+    img {
+        width: 100px;
+        height: 100px;
+        border-radius: 5px;
+        background-color: green;
+        margin-bottom: 30px;
+        margin-top: 5px;
+        margin-left: 30px;
+    }
+    .img {
+        margin-top: -160px;
+        margin-left: 10px;
+    }
+</style>
 </head>
 <body>
-    <h1>Wi-Fi Network Scanner</h1>
-    <button onclick="scanNetworks()">Scan for Networks</button>
-
-    <div id="wifiList" class="wifi-list"></div>
-
-    <div id="connectForm" style="display: none;">
-        <h3>Enter Password</h3>
-        <input type="password" id="password" placeholder="Password">
-        <button onclick="connectToNetwork()">Connect</button>
-    </div>
-
-    <script>
-        let selectedSsid = '';
-
-        // Function to scan for available networks
-        function scanNetworks() {
-            fetch('http://localhost:3000/scan')
-                .then(response => response.json())
-                .then(networks => {
-                    const wifiList = document.getElementById('wifiList');
-                    wifiList.innerHTML = '';
-                    networks.forEach(network => {
-                        const listItem = document.createElement('div');
-                        listItem.className = 'wifi-item';
-                        listItem.innerText = network.ssid;
-                        listItem.onclick = () => {
-                            selectedSsid = network.ssid;
-                            document.getElementById('connectForm').style.display = 'block';
-                        };
-                        wifiList.appendChild(listItem);
-                    });
-                })
-                .catch(err => {
-                    alert('Error scanning networks');
-                });
-        }
-
-        // Function to connect to the selected network
-        function connectToNetwork() {
-            const password = document.getElementById('password').value;
-
-            if (password && selectedSsid) {
-                fetch('http://localhost:3000/connect', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ ssid: selectedSsid, password })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message);
-                })
-                .catch(err => {
-                    alert('Failed to connect');
-                });
-            } else {
-                alert('Please enter a password');
-            }
-        }
-    </script>
+<div class="redcircle"></div>
+<div class="greensquare"></div>
+<div class="bluecircle"></div>
+<div class="img"><img src="Finn.png"></div>
 </body>
 </html>
