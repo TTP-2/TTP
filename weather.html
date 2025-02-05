@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Checker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f0f8ff;
+      color: #333;
+    }
+    .weather-container {
+      max-width: 400px;
+      margin: 50px auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    input[type="text"] {
+      padding: 10px;
+      width: 80%;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .weather-result {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="weather-container">
+    <h1>Weather Checker</h1>
+    <p>Select a city from the dropdown to see the weather:</p>
+    <select id="city-select">
+      <option value="">Select a city</option>
+      <option value="sunny">Sunnyville</option>
+      <option value="rainy">Rainytown</option>
+      <option value="cloudy">Cloud City</option>
+    </select>
+    <button onclick="showWeather()">Check Weather</button>
+    <div id="weather-result" class="weather-result"></div>
+  </div>
+
+  <script>
+    function showWeather() {
+      const city = document.getElementById('city-select').value;
+      const weatherData = {
+        sunny: {
+          temperature: 30,
+          condition: 'Sunny'
+        },
+        rainy: {
+          temperature: 18,
+          condition: 'Rainy'
+        },
+        cloudy: {
+          temperature: 22,
+          condition: 'Cloudy'
+        }
+      };
+
+      if (!city) {
+        alert('Please select a city.');
+        return;
+      }
+
+      const weather = weatherData[city];
+      document.getElementById('weather-result').innerHTML = `
+        <strong>${city.charAt(0).toUpperCase() + city.slice(1)}</strong><br>
+        Temperature: ${weather.temperature}&deg;C<br>
+        Condition: ${weather.condition}
+      `;
+    }
+  </script>
+</body>
+</html>
