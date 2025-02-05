@@ -45,45 +45,44 @@
 <body>
   <div class="weather-container">
     <h1>Weather Checker</h1>
-    <p>Select a city from the dropdown to see the weather:</p>
-    <select id="city-select">
-      <option value="">Select a city</option>
-      <option value="sunny">Sunnyville</option>
-      <option value="rainy">Rainytown</option>
-      <option value="cloudy">Cloud City</option>
-    </select>
-    <button onclick="showWeather()">Check Weather</button>
+    <p>Enter a city name to get the current weather:</p>
+    <input type="text" id="city-input" placeholder="City name...">
+    <button onclick="getWeather()">Check Weather</button>
     <div id="weather-result" class="weather-result"></div>
   </div>
 
   <script>
-    function showWeather() {
-      const city = document.getElementById('city-select').value;
-      const weatherData = {
-        sunny: {
-          temperature: 30,
-          condition: 'Sunny'
-        },
-        rainy: {
-          temperature: 18,
-          condition: 'Rainy'
-        },
-        cloudy: {
-          temperature: 22,
-          condition: 'Cloudy'
-        }
-      };
-
+    async function getWeather() {
+      const city = document.getElementById('city-input').value;
       if (!city) {
-        alert('Please select a city.');
+        alert('Please enter a city name.');
         return;
       }
 
-      const weather = weatherData[city];
+      const apiKey = 'your_api_key_here'; // Replace with a real API key from OpenWeather
+      const apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+
+      try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error('City not found');
+        }
+        const data = await response.json();
+        displayWeather(data);
+      } catch (error) {
+        document.getElementById('weather-result').textContent = error.message;
+      }
+    }
+
+    function displayWeather(data) {
+      const temperature = data.main.temp;
+      const weatherDescription = data.weather[0].description;
+      const cityName = data.name;
+
       document.getElementById('weather-result').innerHTML = `
-        <strong>${city.charAt(0).toUpperCase() + city.slice(1)}</strong><br>
-        Temperature: ${weather.temperature}&deg;C<br>
-        Condition: ${weather.condition}
+        <strong>${cityName}</strong><br>
+        Temperature: ${temperature}&deg;C<br>
+        Condition: ${weatherDescription.charAt(0).toUpperCase() + weatherDescription.slice(1)}
       `;
     }
   </script>
