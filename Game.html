@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catch the Ball Game</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f8ff;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      border: 2px solid #333;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Game variables
+    const paddleWidth = 80;
+    const paddleHeight = 10;
+    const ballRadius = 8;
+    let paddleX = (canvas.width - paddleWidth) / 2;
+    let ballX = Math.random() * (canvas.width - ballRadius * 2) + ballRadius;
+    let ballY = 0;
+    let ballSpeedY = 3;
+    let score = 0;
+
+    // Paddle movement
+    let isLeftPressed = false;
+    let isRightPressed = false;
+
+    // Handle key events
+    document.addEventListener("keydown", keyDownHandler);
+    document.addEventListener("keyup", keyUpHandler);
+
+    function keyDownHandler(e) {
+      if (e.key === "ArrowLeft") {
+        isLeftPressed = true;
+      } else if (e.key === "ArrowRight") {
+        isRightPressed = true;
+      }
+    }
+
+    function keyUpHandler(e) {
+      if (e.key === "ArrowLeft") {
+        isLeftPressed = false;
+      } else if (e.key === "ArrowRight") {
+        isRightPressed = false;
+      }
+    }
+
+    function drawPaddle() {
+      ctx.fillStyle = "#0095DD";
+      ctx.fillRect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
+    }
+
+    function drawBall() {
+      ctx.beginPath();
+      ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+      ctx.fillStyle = "red";
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function drawScore() {
+      ctx.font = "16px Arial";
+      ctx.fillStyle = "#333";
+      ctx.fillText("Score: " + score, 8, 20);
+    }
+
+    function updateGame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Move paddle
+      if (isLeftPressed && paddleX > 0) {
+        paddleX -= 5;
+      }
+      if (isRightPressed && paddleX < canvas.width - paddleWidth) {
+        paddleX += 5;
+      }
+
+      // Move ball
+      ballY += ballSpeedY;
+
+      // Check for catch
+      if (
+        ballY + ballRadius >= canvas.height - paddleHeight &&
+        ballX >= paddleX &&
+        ballX <= paddleX + paddleWidth
+      ) {
+        score++;
+        ballY = 0;
+        ballX = Math.random() * (canvas.width - ballRadius * 2) + ballRadius;
+      }
+
+      // Reset ball if missed
+      if (ballY > canvas.height) {
+        alert("Game Over! Your score: " + score);
+        document.location.reload();
+      }
+
+      // Draw everything
+      drawPaddle();
+      drawBall();
+      drawScore();
+
+      requestAnimationFrame(updateGame);
+    }
+
+    updateGame();
+  </script>
+</body>
+</html>
