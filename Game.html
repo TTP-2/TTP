@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Voxel World (Minecraft-like Game)</title>
+  <title>Fortnite-like Game Prototype</title>
   <style>
     * {
       margin: 0;
@@ -27,42 +27,36 @@
 
     // Camera setup
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 10, 20);
+    camera.position.set(0, 10, 30);
 
     // Renderer setup
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Block size
-    const BLOCK_SIZE = 1;
-
-    // Function to create a block
-    function createBlock(x, y, z, color = 0x8B4513) {
-      const geometry = new THREE.BoxGeometry(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-      const material = new THREE.MeshStandardMaterial({ color: color });
-      const block = new THREE.Mesh(geometry, material);
-      block.position.set(x, y, z);
-      scene.add(block);
-      return block;
-    }
-
-    // Generate a simple flat terrain
-    for (let x = -5; x <= 5; x++) {
-      for (let z = -5; z <= 5; z++) {
-        createBlock(x, 0, z, 0x228B22); // Grass-colored blocks
-      }
-    }
-
-    // Add ambient light and directional light
+    // Lighting setup
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight.position.set(10, 20, 10);
     scene.add(directionalLight);
 
-    // Player controls
+    // Ground setup
+    const groundGeometry = new THREE.PlaneGeometry(200, 200);
+    const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    scene.add(ground);
+
+    // Player setup
+    const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
+    const playerMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
+    const player = new THREE.Mesh(playerGeometry, playerMaterial);
+    player.position.set(0, 1, 0);
+    scene.add(player);
+
+    // Controls
     let moveForward = false;
     let moveBackward = false;
     let moveLeft = false;
@@ -102,33 +96,53 @@
       }
     });
 
-    // Player object (just the camera for now)
-    const playerSpeed = 0.1;
+    const playerSpeed = 0.2;
 
+    // Simple shooting mechanic
+    const bullets = [];
+    document.addEventListener("click", () => {
+      const bulletGeometry = new THREE.SphereGeometry(0.2, 16, 16);
+      const bulletMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+      const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
+      bullet.position.set(player.position.x, player.position.y + 0.5, player.position.z);
+      scene.add(bullet);
+
+      // Set bullet velocity
+      bullet.userData.velocity = new THREE.Vector3(0, 0, -0.5);
+      bullets.push(bullet);
+    });
+
+    function updateBullets() {
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const bullet = bullets[i];
+        bullet.position.add(bullet.userData.velocity);
+
+        // Remove bullets that are too far
+        if (bullet.position.length() > 100) {
+          scene.remove(bullet);
+          bullets.splice(i, 1);
+        }
+      }
+    }
+
+    // Animation loop
     function animate() {
       requestAnimationFrame(animate);
 
       // Player movement
-      if (moveForward) camera.position.z -= playerSpeed;
-      if (moveBackward) camera.position.z += playerSpeed;
-      if (moveLeft) camera.position.x -= playerSpeed;
-      if (moveRight) camera.position.x += playerSpeed;
+      if (moveForward) player.position.z -= playerSpeed;
+      if (moveBackward) player.position.z += playerSpeed;
+      if (moveLeft) player.position.x -= playerSpeed;
+      if (moveRight) player.position.x += playerSpeed;
 
-      camera.lookAt(new THREE.Vector3(camera.position.x, 0, camera.position.z - 1));
+      camera.position.set(player.position.x, player.position.y + 5, player.position.z + 10);
+      camera.lookAt(player.position);
+
+      updateBullets();
       renderer.render(scene, camera);
     }
 
     animate();
   </script>
-
-  <footer>
-    <p style="text-align: center; margin-top: 20px;">To run this project on GitHub Pages:</p>
-    <ol>
-      <li>Create a new repository on GitHub.</li>
-      <li>Upload this HTML file and any additional assets (if needed).</li>
-      <li>Go to the repository settings and enable GitHub Pages by selecting the branch and folder (typically <code>main</code> and <code>root</code>).</li>
-      <li>Access the project using the provided GitHub Pages URL.</li>
-    </ol>
-  </footer>
 </body>
 </html>
