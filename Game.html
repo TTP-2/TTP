@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fortnite</title>
+  <title>Fortnite-like Game Prototype</title>
   <style>
     * {
       margin: 0;
@@ -68,11 +68,19 @@
     player.position.set(0, 1, 0);
     scene.add(player);
 
+    // Gun setup
+    const gunGeometry = new THREE.BoxGeometry(0.5, 0.2, 1);
+    const gunMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+    const gun = new THREE.Mesh(gunGeometry, gunMaterial);
+    gun.position.set(0.5, 1, 0.5);
+    player.add(gun);
+
     // Controls
     let moveForward = false;
     let moveBackward = false;
     let moveLeft = false;
     let moveRight = false;
+    let firstPersonView = false;
 
     document.addEventListener("keydown", (event) => {
       switch (event.key) {
@@ -87,6 +95,9 @@
           break;
         case "d":
           moveRight = true;
+          break;
+        case "v":
+          firstPersonView = !firstPersonView; // Toggle view
           break;
       }
     });
@@ -116,7 +127,7 @@
       const bulletGeometry = new THREE.SphereGeometry(0.2, 16, 16);
       const bulletMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
       const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
-      bullet.position.set(player.position.x, player.position.y + 0.5, player.position.z);
+      bullet.position.set(player.position.x + gun.position.x, player.position.y + gun.position.y, player.position.z);
       scene.add(bullet);
 
       // Set bullet velocity
@@ -147,8 +158,14 @@
       if (moveLeft) player.position.x -= playerSpeed;
       if (moveRight) player.position.x += playerSpeed;
 
-      camera.position.set(player.position.x, player.position.y + 5, player.position.z + 10);
-      camera.lookAt(player.position);
+      // Camera view switching
+      if (firstPersonView) {
+        camera.position.set(player.position.x, player.position.y + 1.5, player.position.z);
+        camera.lookAt(player.position.x, player.position.y + 1.5, player.position.z - 1);
+      } else {
+        camera.position.set(player.position.x, player.position.y + 5, player.position.z + 10);
+        camera.lookAt(player.position);
+      }
 
       updateBullets();
       renderer.render(scene, camera);
