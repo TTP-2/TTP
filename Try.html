@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Platform with Buildings and Object Spawning</title>
+  <title>Platform with Buildings and Doors</title>
   <style>
     * {
       margin: 0;
@@ -43,7 +43,7 @@
     directionalLight.position.set(10, 20, 10);
     scene.add(directionalLight);
 
-    // Create platform (flat ground)
+    // Create green platform (flat ground)
     const groundGeometry = new THREE.PlaneGeometry(500, 500);
     const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
