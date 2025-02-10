@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Platformer</title>
+  <title>3D Platformer with Mountains</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
@@ -17,6 +17,7 @@
     let keys = { w: false, a: false, s: false, d: false };
     let rotationSpeed = 0.05; // Speed of rotation with the arrow keys
     let rotationY = 0; // To track the rotation for the camera view
+    let terrain;
 
     // Set up scene, camera, and renderer
     scene = new THREE.Scene();
@@ -32,6 +33,27 @@
     );
     scene.add(player);
     player.position.y = 1;
+
+    // Create the mountains using a series of box geometries (a simple representation)
+    function createMountain(x, y, z) {
+      let mountain = new THREE.Mesh(
+        new THREE.ConeGeometry(5, 20, 4),  // Cone shape for mountains
+        new THREE.MeshBasicMaterial({ color: 0x8B4513 })
+      );
+      mountain.rotation.y = Math.random() * Math.PI;
+      mountain.position.set(x, y, z);
+      scene.add(mountain);
+      return mountain;
+    }
+
+    // Generate a few mountains in the background
+    let mountains = [];
+    for (let i = 0; i < 5; i++) {
+      let x = Math.random() * 200 - 100;  // Random x position
+      let z = Math.random() * 200 - 100;  // Random z position
+      let y = 0; // Base ground level
+      mountains.push(createMountain(x, y, z));
+    }
 
     // Set up the ground (a simple plane)
     let ground = new THREE.Mesh(
@@ -79,6 +101,14 @@
       // Move player based on the current rotation of the camera
       player.translateOnAxis(new THREE.Vector3(0, 0, 1), movementDirection.z);
       player.translateOnAxis(new THREE.Vector3(1, 0, 0), movementDirection.x);
+
+      // Check if player is on top of a mountain and adjust height (simple collision detection)
+      mountains.forEach(mountain => {
+        let dist = player.position.distanceTo(mountain.position);
+        if (dist < 10) {
+          player.position.y = Math.max(1, mountain.position.y + 5); // Make the player move up
+        }
+      });
 
       // Update the camera position to follow the player
       camera.position.set(player.position.x, player.position.y + 5, player.position.z + 10);
