@@ -3,109 +3,49 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Platformer Game</title>
+  <title>3D Platformer</title>
   <style>
     body { margin: 0; overflow: hidden; }
-    canvas { display: block; background: #87CEEB; }
+    canvas { display: block; }
   </style>
 </head>
 <body>
-  <canvas id="gameCanvas"></canvas>
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    let player = {
-      x: 100,
-      y: canvas.height - 150,
-      width: 50,
-      height: 70,
-      speed: 5,
-      dx: 0,
-      dy: 0
-    };
-
+    let scene, camera, renderer;
+    let player, playerSpeed = 0.1;
     let keys = { w: false, a: false, s: false, d: false };
+    let rotationSpeed = 0.02;
+    let movementDirection = new THREE.Vector3();
 
-    let houses = [
-      { x: 500, y: canvas.height - 150, width: 100, height: 150, doorX: 530, doorY: canvas.height - 120, doorWidth: 40, doorHeight: 60, inside: false },
-      { x: 900, y: canvas.height - 150, width: 100, height: 150, doorX: 930, doorY: canvas.height - 120, doorWidth: 40, doorHeight: 60, inside: false }
-    ];
+    // Set up scene, camera, and renderer
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-    function drawPlayer() {
-      ctx.fillStyle = "red";
-      ctx.fillRect(player.x, player.y, player.width, player.height);
-    }
+    // Set up the player (simple cube)
+    player = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 2, 1),
+      new THREE.MeshBasicMaterial({ color: 0xff0000 })
+    );
+    scene.add(player);
+    player.position.y = 1;
 
-    function movePlayer() {
-      if (keys.w) player.dy = -player.speed;
-      if (keys.s) player.dy = player.speed;
-      if (keys.a) player.dx = -player.speed;
-      if (keys.d) player.dx = player.speed;
+    // Set up the ground (a simple plane)
+    let ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(1000, 1000),
+      new THREE.MeshBasicMaterial({ color: 0x228B22, side: THREE.DoubleSide })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -1;
+    scene.add(ground);
 
-      player.x += player.dx;
-      player.y += player.dy;
+    // Set the camera position
+    camera.position.z = 5;
 
-      // Prevent player from moving out of bounds
-      if (player.y > canvas.height - player.height) player.y = canvas.height - player.height;
-      if (player.x < 0) player.x = 0;
-      if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
-
-      player.dx = 0;
-      player.dy = 0;
-    }
-
-    function drawHouses() {
-      houses.forEach(house => {
-        ctx.fillStyle = "brown";
-        ctx.fillRect(house.x, house.y, house.width, house.height);
-
-        // Draw door
-        ctx.fillStyle = "yellow";
-        ctx.fillRect(house.doorX, house.doorY, house.doorWidth, house.doorHeight);
-      });
-    }
-
-    function checkDoorCollision() {
-      houses.forEach(house => {
-        if (player.x + player.width > house.doorX && player.x < house.doorX + house.doorWidth &&
-            player.y + player.height > house.doorY && player.y < house.doorY + house.doorHeight) {
-          house.inside = true;
-          openHouse(house);
-        }
-      });
-    }
-
-    function openHouse(house) {
-      if (house.inside) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "lightgreen";
-        ctx.fillRect(0, canvas.height - 100, canvas.width, 100); // Road
-        ctx.fillStyle = "gray";
-        ctx.fillRect(50, canvas.height - 80, 200, 30); // Road lines
-        ctx.fillStyle = "green";
-        ctx.beginPath();
-        ctx.moveTo(300, canvas.height - 200);
-        ctx.lineTo(500, canvas.height - 400);
-        ctx.lineTo(700, canvas.height - 200);
-        ctx.fill(); // Mountains
-        ctx.fillStyle = "brown";
-        ctx.fillRect(50, canvas.height - 200, 50, 50); // Bed
-      }
-    }
-
-    function update() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawPlayer();
-      drawHouses();
-      checkDoorCollision();
-      movePlayer();
-      requestAnimationFrame(update);
-    }
-
+    // Event listeners for keypresses
     document.addEventListener("keydown", (e) => {
       if (e.key === "w") keys.w = true;
       if (e.key === "a") keys.a = true;
@@ -120,7 +60,44 @@
       if (e.key === "d") keys.d = false;
     });
 
-    update();
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft") player.rotation.y += rotationSpeed;
+      if (e.key === "ArrowRight") player.rotation.y -= rotationSpeed;
+    });
+
+    // Movement Logic
+    function movePlayer() {
+      movementDirection.set(0, 0, 0);
+
+      if (keys.w) movementDirection.z -= playerSpeed;
+      if (keys.s) movementDirection.z += playerSpeed;
+      if (keys.a) movementDirection.x -= playerSpeed;
+      if (keys.d) movementDirection.x += playerSpeed;
+
+      // Move player based on current rotation
+      player.translateOnAxis(new THREE.Vector3(0, 0, 1), movementDirection.z);
+      player.translateOnAxis(new THREE.Vector3(1, 0, 0), movementDirection.x);
+    }
+
+    // Rendering and updating the scene
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Update player position
+      movePlayer();
+
+      // Render the scene from the camera's perspective
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    // Adjust canvas size when window is resized
+    window.addEventListener("resize", () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
   </script>
 </body>
 </html>
