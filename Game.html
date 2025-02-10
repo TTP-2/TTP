@@ -3,162 +3,177 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Platformer with Houses and Hills</title>
+  <title>Simple 3D Game - Minecraft Style</title>
   <style>
-    body { margin: 0; overflow: hidden; }
-    canvas { display: block; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      display: block;
+    }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
-    let scene, camera, renderer;
-    let player, playerSpeed = 0.1;
-    let keys = { w: false, a: false, s: false, d: false };
-    let rotationSpeed = 0.05; // Speed of rotation with the arrow keys
-    let rotationY = 0; // To track the rotation for the camera view
-    let houses = [];
-    let hills = [];
+    // Scene setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-    // Set up scene, camera, and renderer
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    renderer = new THREE.WebGLRenderer();
+    const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Set up the player (simple cube)
-    player = new THREE.Mesh(
-      new THREE.BoxGeometry(1, 2, 1),
-      new THREE.MeshBasicMaterial({ color: 0xff0000 })
-    );
-    scene.add(player);
-    player.position.y = 1;
+    // Add a simple ground
+    const geometry = new THREE.PlaneGeometry(100, 100);
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
+    const plane = new THREE.Mesh(geometry, material);
+    plane.rotation.x = Math.PI / 2;
+    scene.add(plane);
 
-    // Create a house (simple box)
+    // Player position
+    camera.position.set(0, 2, 5);
+
+    // Movement variables
+    const movementSpeed = 0.1;
+    let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+
+    // Rotation variables
+    let cameraRotationY = 0;
+
+    // Event listeners for key controls
+    document.addEventListener('keydown', (event) => {
+      switch (event.code) {
+        case 'KeyW':
+          moveForward = true;
+          break;
+        case 'KeyS':
+          moveBackward = true;
+          break;
+        case 'KeyA':
+          moveLeft = true;
+          break;
+        case 'KeyD':
+          moveRight = true;
+          break;
+        case 'ArrowLeft':
+          cameraRotationY = 0.05;
+          break;
+        case 'ArrowRight':
+          cameraRotationY = -0.05;
+          break;
+      }
+    });
+
+    document.addEventListener('keyup', (event) => {
+      switch (event.code) {
+        case 'KeyW':
+          moveForward = false;
+          break;
+        case 'KeyS':
+          moveBackward = false;
+          break;
+        case 'KeyA':
+          moveLeft = false;
+          break;
+        case 'KeyD':
+          moveRight = false;
+          break;
+        case 'ArrowLeft':
+        case 'ArrowRight':
+          cameraRotationY = 0;
+          break;
+      }
+    });
+
+    // Create a simple 3D house
     function createHouse(x, z) {
-      let house = new THREE.Mesh(
-        new THREE.BoxGeometry(6, 6, 6),  // House size
-        new THREE.MeshBasicMaterial({ color: 0x8B0000 }) // Red house color
-      );
-      house.position.set(x, 3, z);
-      scene.add(house);
+      const houseGroup = new THREE.Group();
 
-      // Create a door on the front of the house
-      let door = new THREE.Mesh(
-        new THREE.BoxGeometry(2, 4, 0.1),
-        new THREE.MeshBasicMaterial({ color: 0x654321 }) // Brown door color
-      );
-      door.position.set(x, 1, z + 3);  // Position the door in front of the house
-      scene.add(door);
+      // Create the walls
+      const wallGeometry = new THREE.BoxGeometry(4, 3, 4);
+      const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
+      const walls = new THREE.Mesh(wallGeometry, wallMaterial);
+      walls.position.y = 1.5;
+      houseGroup.add(walls);
 
-      return house;
+      // Create the roof
+      const roofGeometry = new THREE.ConeGeometry(3, 2, 4);
+      const roofMaterial = new THREE.MeshBasicMaterial({ color: 0xA52A2A });
+      const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+      roof.position.y = 4;
+      roof.rotation.y = Math.PI / 4;
+      houseGroup.add(roof);
+
+      // Create the door
+      const doorGeometry = new THREE.BoxGeometry(1, 2, 0.1);
+      const doorMaterial = new THREE.MeshBasicMaterial({ color: 0x654321 });
+      const door = new THREE.Mesh(doorGeometry, doorMaterial);
+      door.position.set(0, 1, 2.05);
+      houseGroup.add(door);
+
+      houseGroup.position.set(x, 0, z);
+      scene.add(houseGroup);
     }
 
-    // Create a hill (using a cylinder for simplicity)
-    function createHill(x, z) {
-      let hill = new THREE.Mesh(
-        new THREE.CylinderGeometry(10, 20, 5, 32),  // Cylinder shape
-        new THREE.MeshBasicMaterial({ color: 0x228B22 }) // Green hill color
-      );
-      hill.rotation.x = Math.PI / 2;
-      hill.position.set(x, 0, z);
-      scene.add(hill);
-      hills.push(hill);
+    // Create multiple houses
+    createHouse(-10, -10);
+    createHouse(10, -10);
+    createHouse(-10, 10);
+    createHouse(10, 10);
+
+    // Create a simple road
+    function createRoad() {
+      const roadGeometry = new THREE.PlaneGeometry(2, 50);
+      const roadMaterial = new THREE.MeshBasicMaterial({ color: 0x333333, side: THREE.DoubleSide });
+      const road = new THREE.Mesh(roadGeometry, roadMaterial);
+      road.rotation.x = Math.PI / 2;
+      road.position.set(0, 0.01, 0);
+      scene.add(road);
     }
 
-    // Generate a few houses on the terrain
-    houses.push(createHouse(20, 30));
-    houses.push(createHouse(-30, -40));
-    houses.push(createHouse(50, -70));
-    houses.push(createHouse(-100, 100));  // Added more houses
-    houses.push(createHouse(80, 150));   // Added more houses
+    createRoad();
 
-    // Create some hills near the houses
-    createHill(30, 40);
-    createHill(-40, -50);
-    createHill(60, -60);
-    createHill(-110, 110);
-    createHill(90, 160);
-
-    // Create the ground (a simple plane)
-    let ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(1000, 1000),
-      new THREE.MeshBasicMaterial({ color: 0x228B22, side: THREE.DoubleSide })
-    );
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -1;
-    scene.add(ground);
-
-    // Set the camera position
-    camera.position.set(0, 5, 10);
-    camera.lookAt(0, 1, 0);
-
-    // Event listeners for keypresses
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "w") keys.w = true;
-      if (e.key === "a") keys.a = true;
-      if (e.key === "s") keys.s = true;
-      if (e.key === "d") keys.d = true;
-    });
-
-    document.addEventListener("keyup", (e) => {
-      if (e.key === "w") keys.w = false;
-      if (e.key === "a") keys.a = false;
-      if (e.key === "s") keys.s = false;
-      if (e.key === "d") keys.d = false;
-    });
-
-    // Arrow keys for rotation of the view (no vertical movement)
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowLeft") rotationY += rotationSpeed;  // Rotate left
-      if (e.key === "ArrowRight") rotationY -= rotationSpeed; // Rotate right
-    });
-
-    // Movement Logic for the player
-    function movePlayer() {
-      let movementDirection = new THREE.Vector3(0, 0, 0);
-
-      if (keys.w) movementDirection.z -= playerSpeed;
-      if (keys.s) movementDirection.z += playerSpeed;
-      if (keys.a) movementDirection.x -= playerSpeed;
-      if (keys.d) movementDirection.x += playerSpeed;
-
-      // Move player based on the current rotation of the camera
-      player.translateOnAxis(new THREE.Vector3(0, 0, 1), movementDirection.z);
-      player.translateOnAxis(new THREE.Vector3(1, 0, 0), movementDirection.x);
-
-      // Update the camera position to follow the player
-      camera.position.set(player.position.x, player.position.y + 5, player.position.z + 10);
+    // Calculate the forward vector for movement
+    function getForwardVector() {
+      const direction = new THREE.Vector3();
+      camera.getWorldDirection(direction);
+      direction.y = 0; // Keep the movement on the horizontal plane
+      direction.normalize();
+      return direction;
     }
 
-    // Update camera orientation to rotate the view (360 degrees)
-    function updateCameraOrientation() {
-      camera.rotation.y = rotationY; // Apply the Y-axis rotation based on arrow key presses
+    // Calculate the right vector for strafing
+    function getRightVector() {
+      const direction = new THREE.Vector3();
+      camera.getWorldDirection(direction);
+      direction.y = 0;
+      direction.cross(new THREE.Vector3(0, 1, 0)).normalize();
+      return direction;
     }
 
-    // Rendering and updating the scene
+    // Animation loop
     function animate() {
       requestAnimationFrame(animate);
 
-      // Update player position
-      movePlayer();
+      const forwardVector = getForwardVector();
+      const rightVector = getRightVector();
 
-      // Update the camera orientation based on the arrow key inputs
-      updateCameraOrientation();
+      // Update player position based on direction
+      if (moveForward) camera.position.addScaledVector(forwardVector, movementSpeed);
+      if (moveBackward) camera.position.addScaledVector(forwardVector, -movementSpeed);
+      if (moveLeft) camera.position.addScaledVector(rightVector, -movementSpeed);
+      if (moveRight) camera.position.addScaledVector(rightVector, movementSpeed);
 
-      // Render the scene from the camera's perspective
+      // Update camera rotation
+      camera.rotation.y += cameraRotationY;
+
       renderer.render(scene, camera);
     }
 
     animate();
-
-    // Adjust canvas size when window is resized
-    window.addEventListener("resize", () => {
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-    });
   </script>
 </body>
 </html>
