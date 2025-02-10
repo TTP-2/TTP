@@ -15,8 +15,8 @@
     let scene, camera, renderer;
     let player, playerSpeed = 0.1;
     let keys = { w: false, a: false, s: false, d: false };
-    let movementDirection = new THREE.Vector3();
-    let rotationSpeed = 0.02;
+    let rotationSpeed = 0.05; // Speed of rotation with the arrow keys
+    let rotationY = 0; // To track the rotation for the camera view
 
     // Set up scene, camera, and renderer
     scene = new THREE.Scene();
@@ -61,31 +61,32 @@
       if (e.key === "d") keys.d = false;
     });
 
-    // Movement Logic
+    // Arrow keys for rotation of the view
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft") rotationY += rotationSpeed;  // Rotate left
+      if (e.key === "ArrowRight") rotationY -= rotationSpeed; // Rotate right
+    });
+
+    // Movement Logic for the player
     function movePlayer() {
-      movementDirection.set(0, 0, 0);
+      let movementDirection = new THREE.Vector3(0, 0, 0);
 
       if (keys.w) movementDirection.z -= playerSpeed;
       if (keys.s) movementDirection.z += playerSpeed;
       if (keys.a) movementDirection.x -= playerSpeed;
       if (keys.d) movementDirection.x += playerSpeed;
 
-      // Move player based on current rotation
+      // Move player based on the current rotation of the camera
       player.translateOnAxis(new THREE.Vector3(0, 0, 1), movementDirection.z);
       player.translateOnAxis(new THREE.Vector3(1, 0, 0), movementDirection.x);
 
-      // Update the camera to follow the player (without rotating)
+      // Update the camera position to follow the player
       camera.position.set(player.position.x, player.position.y + 5, player.position.z + 10);
     }
 
-    // Update camera's rotation for A/D keys
+    // Update camera orientation to rotate the view (360 degrees)
     function updateCameraOrientation() {
-      if (keys.a) {
-        camera.rotation.y += rotationSpeed; // Rotate left
-      }
-      if (keys.d) {
-        camera.rotation.y -= rotationSpeed; // Rotate right
-      }
+      camera.rotation.y = rotationY; // Apply the Y-axis rotation based on arrow key presses
     }
 
     // Rendering and updating the scene
@@ -95,7 +96,7 @@
       // Update player position
       movePlayer();
 
-      // Update camera orientation
+      // Update the camera orientation based on the arrow key inputs
       updateCameraOrientation();
 
       // Render the scene from the camera's perspective
