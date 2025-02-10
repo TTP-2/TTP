@@ -15,9 +15,7 @@
     let scene, camera, renderer;
     let player, playerSpeed = 0.1;
     let keys = { w: false, a: false, s: false, d: false };
-    let rotationSpeed = 0.02;
     let movementDirection = new THREE.Vector3();
-    let lookDirection = new THREE.Vector2();
 
     // Set up scene, camera, and renderer
     scene = new THREE.Scene();
@@ -43,9 +41,9 @@
     ground.position.y = -1;
     scene.add(ground);
 
-    // Set the camera position and orientation
-    camera.position.set(0, 1, 5);
-    camera.lookAt(player.position);
+    // Set the camera position
+    camera.position.set(0, 5, 10);
+    camera.lookAt(0, 1, 0);
 
     // Event listeners for keypresses
     document.addEventListener("keydown", (e) => {
@@ -62,11 +60,6 @@
       if (e.key === "d") keys.d = false;
     });
 
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowLeft") lookDirection.x -= rotationSpeed;
-      if (e.key === "ArrowRight") lookDirection.x += rotationSpeed;
-    });
-
     // Movement Logic
     function movePlayer() {
       movementDirection.set(0, 0, 0);
@@ -76,27 +69,17 @@
       if (keys.a) movementDirection.x -= playerSpeed;
       if (keys.d) movementDirection.x += playerSpeed;
 
-      // Move player based on current rotation
+      // Move player based on current rotation (no camera movement)
       player.translateOnAxis(new THREE.Vector3(0, 0, 1), movementDirection.z);
       player.translateOnAxis(new THREE.Vector3(1, 0, 0), movementDirection.x);
-
-      // Update camera to follow player
-      camera.position.set(player.position.x, player.position.y + 1, player.position.z + 5);
-      camera.lookAt(player.position);
-    }
-
-    // Look around with the camera
-    function updateCameraOrientation() {
-      camera.rotation.y = lookDirection.x;
     }
 
     // Rendering and updating the scene
     function animate() {
       requestAnimationFrame(animate);
 
-      // Update player position and camera rotation
+      // Update player position
       movePlayer();
-      updateCameraOrientation();
 
       // Render the scene from the camera's perspective
       renderer.render(scene, camera);
