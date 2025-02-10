@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Platformer with Houses and Mountains</title>
+  <title>3D Platformer with Houses and Road</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
@@ -18,7 +18,7 @@
     let rotationSpeed = 0.05; // Speed of rotation with the arrow keys
     let rotationY = 0; // To track the rotation for the camera view
     let houses = [];
-    let mountains = [];
+    let road;
 
     // Set up scene, camera, and renderer
     scene = new THREE.Scene();
@@ -35,27 +35,7 @@
     scene.add(player);
     player.position.y = 1;
 
-    // Create the mountains using cone geometry (simple representation)
-    function createMountain(x, y, z) {
-      let mountain = new THREE.Mesh(
-        new THREE.ConeGeometry(5, 20, 4),  // Cone shape for mountains
-        new THREE.MeshBasicMaterial({ color: 0x8B4513 })
-      );
-      mountain.rotation.y = Math.random() * Math.PI;
-      mountain.position.set(x, y, z);
-      scene.add(mountain);
-      return mountain;
-    }
-
-    // Generate a few mountains in the background
-    for (let i = 0; i < 5; i++) {
-      let x = Math.random() * 200 - 100;  // Random x position
-      let z = Math.random() * 200 - 100;  // Random z position
-      let y = 0; // Base ground level
-      mountains.push(createMountain(x, y, z));
-    }
-
-    // Create a simple house (cube for now)
+    // Create a house (simple box)
     function createHouse(x, z) {
       let house = new THREE.Mesh(
         new THREE.BoxGeometry(6, 6, 6),  // House size
@@ -71,17 +51,39 @@
       );
       door.position.set(x, 1, z + 3);  // Position the door in front of the house
       scene.add(door);
-      
-      // Return the house with door for interaction
+
       return house;
     }
 
-    // Create a few houses on the terrain
+    // Create a road (simple plane with yellow lines)
+    function createRoad() {
+      let roadGeometry = new THREE.PlaneGeometry(1000, 50);
+      let roadMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 });
+      road = new THREE.Mesh(roadGeometry, roadMaterial);
+      road.rotation.x = -Math.PI / 2;
+      road.position.y = 0;
+      scene.add(road);
+
+      // Add yellow lines to the road
+      let lineMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
+      for (let i = -500; i < 500; i += 10) {
+        let line = new THREE.Mesh(
+          new THREE.PlaneGeometry(2, 1),
+          lineMaterial
+        );
+        line.position.set(i, 0.1, 0);
+        scene.add(line);
+      }
+    }
+
+    // Generate a few houses on the terrain
     houses.push(createHouse(20, 30));
     houses.push(createHouse(-30, -40));
     houses.push(createHouse(50, -70));
+    houses.push(createHouse(-100, 100));  // Added more houses
+    houses.push(createHouse(80, 150));   // Added more houses
 
-    // Set up the ground (a simple plane)
+    // Create the ground (a simple plane)
     let ground = new THREE.Mesh(
       new THREE.PlaneGeometry(1000, 1000),
       new THREE.MeshBasicMaterial({ color: 0x228B22, side: THREE.DoubleSide })
@@ -109,7 +111,7 @@
       if (e.key === "d") keys.d = false;
     });
 
-    // Arrow keys for rotation of the view
+    // Arrow keys for rotation of the view (no vertical movement)
     document.addEventListener("keydown", (e) => {
       if (e.key === "ArrowLeft") rotationY += rotationSpeed;  // Rotate left
       if (e.key === "ArrowRight") rotationY -= rotationSpeed; // Rotate right
@@ -127,22 +129,6 @@
       // Move player based on the current rotation of the camera
       player.translateOnAxis(new THREE.Vector3(0, 0, 1), movementDirection.z);
       player.translateOnAxis(new THREE.Vector3(1, 0, 0), movementDirection.x);
-
-      // Check if player is on top of a mountain and adjust height (simple collision detection)
-      mountains.forEach(mountain => {
-        let dist = player.position.distanceTo(mountain.position);
-        if (dist < 10) {
-          player.position.y = Math.max(1, mountain.position.y + 5); // Make the player move up
-        }
-      });
-
-      // Check if the player is near a house (simple interaction detection)
-      houses.forEach(house => {
-        let dist = player.position.distanceTo(house.position);
-        if (dist < 5) {
-          alert("You are near a house! Press 'Enter' to interact.");
-        }
-      });
 
       // Update the camera position to follow the player
       camera.position.set(player.position.x, player.position.y + 5, player.position.z + 10);
@@ -175,6 +161,9 @@
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
     });
+
+    // Create the road when the scene is loaded
+    createRoad();
   </script>
 </body>
 </html>
