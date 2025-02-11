@@ -21,26 +21,26 @@
     // Scene setup
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  
+
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
-  
+
     // Infinite plane for the ground
     const groundGeometry = new THREE.PlaneGeometry(5000, 5000);
     const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
     ground.rotation.x = Math.PI / 2;
     scene.add(ground);
-  
+
     // Add a long road
     const roadGeometry = new THREE.PlaneGeometry(200, 5000);
-    const roadMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 });
+    const roadMaterial = new THREE.MeshBasicMaterial({ color: 0x333333 });
     const road = new THREE.Mesh(roadGeometry, roadMaterial);
     road.rotation.x = Math.PI / 2;
     road.position.set(0, 0.01, 0); // Slightly above the ground to avoid z-fighting
     scene.add(road);
-  
+
     // Hills in the background
     function createHill(x, z) {
       const hillGeometry = new THREE.SphereGeometry(30, 32, 32);
@@ -49,22 +49,21 @@
       hill.position.set(x, -15, z);
       scene.add(hill);
     }
-  
+
     createHill(100, -200);
     createHill(-150, -300);
     createHill(250, 400);
-  
+
     // Player position
     camera.position.set(0, 2, 5);
-  
+
     // Movement variables
     const movementSpeed = 0.1;
     let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-  
+
     // Rotation variables
     let cameraRotationY = 0;
-    let cameraRotationX = 0;  // For vertical look
-  
+
     // Event listeners for key controls
     document.addEventListener('keydown', (event) => {
       switch (event.code) {
@@ -86,15 +85,9 @@
         case 'ArrowRight':
           cameraRotationY = -0.05;
           break;
-        case 'ArrowUp':
-          cameraRotationX = 0.05;  // Look up
-          break;
-        case 'ArrowDown':
-          cameraRotationX = -0.05; // Look down
-          break;
       }
     });
-  
+
     document.addEventListener('keyup', (event) => {
       switch (event.code) {
         case 'KeyW':
@@ -113,42 +106,132 @@
         case 'ArrowRight':
           cameraRotationY = 0;
           break;
-        case 'ArrowUp':
-        case 'ArrowDown':
-          cameraRotationX = 0; // Reset vertical look
-          break;
       }
     });
-  
-    // Create old-style houses with interactive doors (code omitted for brevity)
-  
+
+    // Create old-style houses with interactive doors
+    function createHouse(x, z) {
+      const houseGroup = new THREE.Group();
+
+      // House base
+      const baseGeometry = new THREE.BoxGeometry(4, 3, 4);
+      const baseMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
+      const base = new THREE.Mesh(baseGeometry, baseMaterial);
+      base.position.y = 1.5;
+      houseGroup.add(base);
+
+      // Roof
+      const roofGeometry = new THREE.ConeGeometry(3, 2, 4);
+      const roofMaterial = new THREE.MeshBasicMaterial({ color: 0xFF6347 });
+      const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+      roof.position.y = 4;
+      roof.rotation.y = Math.PI / 4;
+      houseGroup.add(roof);
+
+      // Door
+      const doorGeometry = new THREE.BoxGeometry(1, 2, 0.1);
+      const doorMaterial = new THREE.MeshBasicMaterial({ color: 0x654321 });
+      const door = new THREE.Mesh(doorGeometry, doorMaterial);
+      door.position.set(0, 1, 2.05);
+      houseGroup.add(door);
+
+      let doorOpen = false;
+      
+      // Function to open door and reveal interior
+      function openDoor() {
+        if (!doorOpen) {
+          door.position.z += 1;
+          doorOpen = true;
+
+          // Interior (bed and table)
+          const bedGeometry = new THREE.BoxGeometry(1.5, 0.5, 1);
+          const bedMaterial = new THREE.MeshBasicMaterial({ color: 0xFF69B4 });
+          const bed = new THREE.Mesh(bedGeometry, bedMaterial);
+          bed.position.set(-1, 0.25, 0);
+          houseGroup.add(bed);
+
+          const tableGeometry = new THREE.BoxGeometry(1, 0.1, 1);
+          const tableMaterial = new THREE.MeshBasicMaterial({ color: 0x8B0000 });
+          const table = new THREE.Mesh(tableGeometry, tableMaterial);
+          table.position.set(1, 0.55, 0);
+          houseGroup.add(table);
+        }
+      }
+
+      houseGroup.position.set(x, 0, z);
+      scene.add(houseGroup);
+
+      // Check for player proximity and interaction
+      function checkPlayerProximity() {
+        const playerPosition = camera.position;
+        const doorPosition = door.position.clone().add(houseGroup.position);
+        const distance = playerPosition.distanceTo(doorPosition);
+
+        if (distance < 3) {
+          document.addEventListener('keydown', handleDoorInteraction);
+        } else {
+          document.removeEventListener('keydown', handleDoorInteraction);
+        }
+      }
+
+      function handleDoorInteraction(event) {
+        if (event.code === 'KeyY') {
+          openDoor();
+          document.removeEventListener('keydown', handleDoorInteraction);
+        }
+      }
+
+      return checkPlayerProximity;
+    }
+
+    const checkHouse1Proximity = createHouse(-10, -5); // House 1
+    const checkHouse2Proximity = createHouse(8, 10); // House 2
+    const checkHouse3Proximity = createHouse(-15, 5); // House 3
+
+    // Calculate the forward vector for movement
+    function getForwardVector() {
+      const direction = new THREE.Vector3();
+      camera.getWorldDirection(direction);
+      direction.y = 0; // Keep the movement on the horizontal plane
+      direction.normalize();
+      return direction;
+    }
+
+    // Calculate the right vector for strafing
+    function getRightVector() {
+      const direction = new THREE.Vector3();
+      camera.getWorldDirection(direction);
+      direction.y = 0;
+      direction.cross(new THREE.Vector3(0, 1, 0)).normalize();
+      return direction;
+    }
+
     // Animation loop
     function animate() {
       requestAnimationFrame(animate);
-  
+
       const forwardVector = getForwardVector();
       const rightVector = getRightVector();
-  
+
       // Update player position based on direction
       if (moveForward) camera.position.addScaledVector(forwardVector, movementSpeed);
       if (moveBackward) camera.position.addScaledVector(forwardVector, -movementSpeed);
       if (moveLeft) camera.position.addScaledVector(rightVector, -movementSpeed);
       if (moveRight) camera.position.addScaledVector(rightVector, movementSpeed);
-  
+
       // Rotate camera based on arrow key input
       camera.rotation.y += cameraRotationY;
-      camera.rotation.x += cameraRotationX; // Adjust for vertical rotation
 
-      // Clamp vertical rotation to prevent flipping
-      camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
-  
-      // Check proximity for house interactions (code omitted for brevity)
-  
+      // Check proximity for house interactions
+      checkHouse1Proximity();
+      checkHouse2Proximity();
+      checkHouse3Proximity();
+
       renderer.render(scene, camera);
     }
-  
+
     animate();
-  
+
   </script>
 </body>
 </html>
