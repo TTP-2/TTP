@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Game with Buildings and Roads</title>
+  <title>Simple 3D Game - Minecraft Style</title>
   <style>
     body {
       margin: 0;
@@ -13,56 +13,51 @@
     canvas {
       display: block;
     }
+    #interactionMessage {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: white;
+      font-size: 20px;
+      display: none;
+    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
+  <div id="interactionMessage">Press Y to interact with the car</div>
+
   <script>
     // Scene setup
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Infinite plane for the ground
-    const groundGeometry = new THREE.PlaneGeometry(5000, 5000);
-    const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = Math.PI / 2;
-    scene.add(ground);
-
-    // Add a long road
-    const roadGeometry = new THREE.PlaneGeometry(200, 5000);
-    const roadMaterial = new THREE.MeshBasicMaterial({ color: 0x333333 });
-    const road = new THREE.Mesh(roadGeometry, roadMaterial);
-    road.rotation.x = Math.PI / 2;
-    road.position.set(0, 0.01, 0); // Slightly above the ground to avoid z-fighting
-    scene.add(road);
-
-    // Hills in the background
-    function createHill(x, z) {
-      const hillGeometry = new THREE.SphereGeometry(30, 32, 32);
-      const hillMaterial = new THREE.MeshBasicMaterial({ color: 0x228B22 });
-      const hill = new THREE.Mesh(hillGeometry, hillMaterial);
-      hill.position.set(x, -15, z);
-      scene.add(hill);
-    }
-
-    createHill(100, -200);
-    createHill(-150, -300);
-    createHill(250, 400);
+    // Add a simple ground
+    const planeGeometry = new THREE.PlaneGeometry(100, 100);
+    const planeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
+    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+    plane.rotation.x = Math.PI / 2;
+    scene.add(plane);
 
     // Player position
     camera.position.set(0, 2, 5);
 
+    // Car setup
+    const carGeometry = new THREE.BoxGeometry(2, 1, 4);
+    const carMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const car = new THREE.Mesh(carGeometry, carMaterial);
+    car.position.y = 0.5;
+    scene.add(car);
+
+    const interactionMessage = document.getElementById('interactionMessage');
+    
     // Movement variables
     const movementSpeed = 0.1;
     let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-
-    // Rotation variables
-    let cameraRotationY = 0;
+    let isCarActive = false;
 
     // Event listeners for key controls
     document.addEventListener('keydown', (event) => {
@@ -79,11 +74,10 @@
         case 'KeyD':
           moveRight = true;
           break;
-        case 'ArrowLeft':
-          cameraRotationY = 0.05;
-          break;
-        case 'ArrowRight':
-          cameraRotationY = -0.05;
+        case 'KeyY':
+          if (isNearbyCar) {
+            toggleCar();
+          }
           break;
       }
     });
@@ -102,136 +96,65 @@
         case 'KeyD':
           moveRight = false;
           break;
-        case 'ArrowLeft':
-        case 'ArrowRight':
-          cameraRotationY = 0;
-          break;
       }
     });
 
-    // Create old-style houses with interactive doors
-    function createHouse(x, z) {
-      const houseGroup = new THREE.Group();
+    let isNearbyCar = false;
 
-      // House base
-      const baseGeometry = new THREE.BoxGeometry(4, 3, 4);
-      const baseMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
-      const base = new THREE.Mesh(baseGeometry, baseMaterial);
-      base.position.y = 1.5;
-      houseGroup.add(base);
-
-      // Roof
-      const roofGeometry = new THREE.ConeGeometry(3, 2, 4);
-      const roofMaterial = new THREE.MeshBasicMaterial({ color: 0xFF6347 });
-      const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-      roof.position.y = 4;
-      roof.rotation.y = Math.PI / 4;
-      houseGroup.add(roof);
-
-      // Door
-      const doorGeometry = new THREE.BoxGeometry(1, 2, 0.1);
-      const doorMaterial = new THREE.MeshBasicMaterial({ color: 0x654321 });
-      const door = new THREE.Mesh(doorGeometry, doorMaterial);
-      door.position.set(0, 1, 2.05);
-      houseGroup.add(door);
-
-      let doorOpen = false;
-      
-      // Function to open door and reveal interior
-      function openDoor() {
-        if (!doorOpen) {
-          door.position.z += 1;
-          doorOpen = true;
-
-          // Interior (bed and table)
-          const bedGeometry = new THREE.BoxGeometry(1.5, 0.5, 1);
-          const bedMaterial = new THREE.MeshBasicMaterial({ color: 0xFF69B4 });
-          const bed = new THREE.Mesh(bedGeometry, bedMaterial);
-          bed.position.set(-1, 0.25, 0);
-          houseGroup.add(bed);
-
-          const tableGeometry = new THREE.BoxGeometry(1, 0.1, 1);
-          const tableMaterial = new THREE.MeshBasicMaterial({ color: 0x8B0000 });
-          const table = new THREE.Mesh(tableGeometry, tableMaterial);
-          table.position.set(1, 0.55, 0);
-          houseGroup.add(table);
-        }
+    // Check proximity to car
+    function checkCarProximity() {
+      const distance = camera.position.distanceTo(car.position);
+      if (distance < 5) {
+        isNearbyCar = true;
+        interactionMessage.style.display = 'block';
+      } else {
+        isNearbyCar = false;
+        interactionMessage.style.display = 'none';
       }
-
-      houseGroup.position.set(x, 0, z);
-      scene.add(houseGroup);
-
-      // Check for player proximity and interaction
-      function checkPlayerProximity() {
-        const playerPosition = camera.position;
-        const doorPosition = door.position.clone().add(houseGroup.position);
-        const distance = playerPosition.distanceTo(doorPosition);
-
-        if (distance < 3) {
-          document.addEventListener('keydown', handleDoorInteraction);
-        } else {
-          document.removeEventListener('keydown', handleDoorInteraction);
-        }
-      }
-
-      function handleDoorInteraction(event) {
-        if (event.code === 'KeyY') {
-          openDoor();
-          document.removeEventListener('keydown', handleDoorInteraction);
-        }
-      }
-
-      return checkPlayerProximity;
     }
 
-    const checkHouse1Proximity = createHouse(-10, -5); // House 1
-    const checkHouse2Proximity = createHouse(8, 10); // House 2
-    const checkHouse3Proximity = createHouse(-15, 5); // House 3
-
-    // Calculate the forward vector for movement
-    function getForwardVector() {
-      const direction = new THREE.Vector3();
-      camera.getWorldDirection(direction);
-      direction.y = 0; // Keep the movement on the horizontal plane
-      direction.normalize();
-      return direction;
-    }
-
-    // Calculate the right vector for strafing
-    function getRightVector() {
-      const direction = new THREE.Vector3();
-      camera.getWorldDirection(direction);
-      direction.y = 0;
-      direction.cross(new THREE.Vector3(0, 1, 0)).normalize();
-      return direction;
+    function toggleCar() {
+      isCarActive = !isCarActive;
+      if (isCarActive) {
+        camera.position.set(car.position.x, car.position.y + 2, car.position.z + 5); // Move camera above car
+      } else {
+        camera.position.set(0, 2, 5); // Reset camera to player position
+      }
     }
 
     // Animation loop
     function animate() {
       requestAnimationFrame(animate);
 
-      const forwardVector = getForwardVector();
-      const rightVector = getRightVector();
+      checkCarProximity();
 
-      // Update player position based on direction
+      // Update camera position if driving
+      if (isCarActive) {
+        const forwardVector = new THREE.Vector3(0, 0, -1).applyMatrix4(car.matrixWorld);
+        if (moveForward) car.position.addScaledVector(forwardVector, movementSpeed);
+        if (moveBackward) car.position.addScaledVector(forwardVector, -movementSpeed);
+        return; // Skip camera movement
+      }
+
+      // Update player position based on direction (not in car)
+      const forwardVector = new THREE.Vector3();
+      camera.getWorldDirection(forwardVector);
+      forwardVector.y = 0;
+      forwardVector.normalize();
+
+      const rightVector = new THREE.Vector3();
+      camera.getWorldDirection(rightVector);
+      rightVector.cross(new THREE.Vector3(0, 1, 0)).normalize();
+
       if (moveForward) camera.position.addScaledVector(forwardVector, movementSpeed);
       if (moveBackward) camera.position.addScaledVector(forwardVector, -movementSpeed);
       if (moveLeft) camera.position.addScaledVector(rightVector, -movementSpeed);
       if (moveRight) camera.position.addScaledVector(rightVector, movementSpeed);
 
-      // Rotate camera based on arrow key input
-      camera.rotation.y += cameraRotationY;
-
-      // Check proximity for house interactions
-      checkHouse1Proximity();
-      checkHouse2Proximity();
-      checkHouse3Proximity();
-
       renderer.render(scene, camera);
     }
 
     animate();
-
   </script>
 </body>
 </html>
