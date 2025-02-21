@@ -3,47 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flight Radar</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <title>Human Detector</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <style>
-        #map { height: 100vh; }
+        body { text-align: center; font-family: Arial, sans-serif; }
+        video { border: 2px solid black; }
+        canvas { position: absolute; top: 0; left: 0; }
     </style>
 </head>
 <body>
-    <div id="map"></div>
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <h1>Real-Time Human Detector</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <canvas id="canvas" width="640" height="480"></canvas>
+    
     <script>
-        var map = L.map('map').setView([20, 0], 2);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
         
-        async function fetchFlights() {
-            const url = 'https://opensky-network.org/api/states/all';
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
-                updateMap(data.states);
-            } catch (error) {
-                console.error("Error fetching flight data:", error);
-            }
+        async function setupCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            return new Promise(resolve => video.onloadedmetadata = resolve);
         }
         
-        function updateMap(flights) {
-            map.eachLayer(layer => {
-                if (layer instanceof L.Marker) map.removeLayer(layer);
-            });
-            
-            flights.forEach(flight => {
-                if (flight[5] !== null && flight[6] !== null) {
-                    L.marker([flight[6], flight[5]]).addTo(map)
-                     .bindPopup(`Flight: ${flight[1] || 'Unknown'}`);
-                }
-            });
+        async function detectHumans() {
+            const model = await cocoSsd.load();
+            setInterval(async () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const predictions = await model.detect(video);
+                predictions.forEach(prediction => {
+                    if (prediction.class === 'person') {
+                        ctx.strokeStyle = 'red';
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(
+                            prediction.bbox[0], prediction.bbox[1],
+                            prediction.bbox[2], prediction.bbox[3]
+                        );
+                        ctx.fillStyle = 'red';
+                        ctx.fillText('Person', prediction.bbox[0], prediction.bbox[1] - 5);
+                    }
+                });
+            }, 500);
         }
         
-        fetchFlights();
-        setInterval(fetchFlights, 10000);
+        async function startDetection() {
+            await setupCamera();
+            detectHumans();
+        }
+        
+        startDetection();
     </script>
 </body>
 </html>
