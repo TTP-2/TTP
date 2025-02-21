@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motion Detector</title>
+    <title>Air Drawing with Motion</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose"></script>
     <style>
         body { text-align: center; font-family: Arial, sans-serif; }
-        video, canvas { border: 2px solid black; margin-top: 10px; }
+        video { border: 2px solid black; margin-top: 10px; }
         canvas { position: absolute; top: 0; left: 0; }
     </style>
 </head>
 <body>
-    <h1>Real-Time Motion Detector</h1>
+    <h1>Draw in the Air with Your Hand</h1>
     <video id="video" width="640" height="480" autoplay></video>
     <canvas id="canvas" width="640" height="480"></canvas>
     
@@ -21,7 +21,7 @@
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        let previousFrame = null;
+        let model, prevX = null, prevY = null;
 
         async function setupCamera() {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -29,37 +29,34 @@
             return new Promise(resolve => video.onloadedmetadata = resolve);
         }
 
-        function detectMotion() {
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            let frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            if (previousFrame) {
-                let motionDetected = false;
-                for (let i = 0; i < frame.data.length; i += 4) {
-                    let diff = Math.abs(frame.data[i] - previousFrame.data[i]) +
-                               Math.abs(frame.data[i + 1] - previousFrame.data[i + 1]) +
-                               Math.abs(frame.data[i + 2] - previousFrame.data[i + 2]);
-                    if (diff > 50) {  
-                        motionDetected = true;
-                        frame.data[i] = 255;  
-                        frame.data[i + 1] = 0;
-                        frame.data[i + 2] = 0;
+        async function detectHands() {
+            model = await handpose.load();
+            setInterval(async () => {
+                const predictions = await model.estimateHands(video);
+                if (predictions.length > 0) {
+                    const x = predictions[0].landmarks[8][0]; // Index finger tip X
+                    const y = predictions[0].landmarks[8][1]; // Index finger tip Y
+                    ctx.fillStyle = 'red';
+                    if (prevX !== null && prevY !== null) {
+                        ctx.strokeStyle = 'red';
+                        ctx.lineWidth = 4;
+                        ctx.beginPath();
+                        ctx.moveTo(prevX, prevY);
+                        ctx.lineTo(x, y);
+                        ctx.stroke();
                     }
+                    prevX = x;
+                    prevY = y;
                 }
-                if (motionDetected) {
-                    console.log("Motion detected!");
-                }
-            }
-            previousFrame = frame;
-            ctx.putImageData(frame, 0, 0);
-            requestAnimationFrame(detectMotion);
+            }, 100);
         }
 
-        async function startDetection() {
+        async function startDrawing() {
             await setupCamera();
-            detectMotion();
+            detectHands();
         }
         
-        startDetection();
+        startDrawing();
     </script>
 </body>
 </html>
