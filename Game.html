@@ -15,173 +15,153 @@
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
 </head>
 <body>
   <script>
-    // Scene setup
+    const socket = io();
+    
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
+    
+    let isDay = true;
+    const sun = new THREE.DirectionalLight(0xffffff, 1);
+    sun.position.set(50, 100, 50);
+    scene.add(sun);
 
-    // Add a simple ground
-    const geometry = new THREE.PlaneGeometry(100, 100);
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
-    const plane = new THREE.Mesh(geometry, material);
-    plane.rotation.x = Math.PI / 2;
-    scene.add(plane);
+    const moon = new THREE.PointLight(0xaaaaaa, 1, 200);
+    moon.position.set(-50, 100, -50);
+    moon.visible = false;
+    scene.add(moon);
 
-    // Player position
+    function updateSky() {
+      if (isDay) {
+        scene.background = new THREE.Color(0x87CEEB);
+        sun.visible = true;
+        moon.visible = false;
+      } else {
+        scene.background = new THREE.Color(0x000000);
+        sun.visible = false;
+        moon.visible = true;
+      }
+    }
+
+    function toggleDayNight() {
+      isDay = !isDay;
+      updateSky();
+      setTimeout(toggleDayNight, 300000);
+    }
+
+    updateSky();
+    setTimeout(toggleDayNight, 300000);
+
+    function createGround(x, z, color) {
+      const geometry = new THREE.PlaneGeometry(100, 100);
+      const material = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
+      const plane = new THREE.Mesh(geometry, material);
+      plane.rotation.x = -Math.PI / 2;
+      plane.position.set(x, 0, z);
+      scene.add(plane);
+    }
+
+    for (let i = -2; i <= 2; i++) {
+      for (let j = -2; j <= 2; j++) {
+        const isWater = j > 1;
+        const isSand = j === 1;
+        createGround(i * 100, j * 100, isWater ? 0x0000ff : isSand ? 0xFFD700 : 0x00ff00);
+      }
+    }
+
+    function createShell(x, z) {
+      const geometry = new THREE.SphereGeometry(1, 6, 6);
+      const material = new THREE.MeshBasicMaterial({ color: 0xFFAA88 });
+      const shell = new THREE.Mesh(geometry, material);
+      shell.position.set(x, 0.5, z);
+      scene.add(shell);
+    }
+
+    for (let i = 0; i < 10; i++) {
+      createShell((Math.random() - 0.5) * 200, 100);
+    }
+
     camera.position.set(0, 2, 5);
-
-    // Movement variables
-    const movementSpeed = 0.1;
     let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-
-    // Rotation variables
     let cameraRotationY = 0;
 
-    // Event listeners for key controls
     document.addEventListener('keydown', (event) => {
       switch (event.code) {
-        case 'KeyW':
-          moveForward = true;
-          break;
-        case 'KeyS':
-          moveBackward = true;
-          break;
-        case 'KeyA':
-          moveLeft = true;
-          break;
-        case 'KeyD':
-          moveRight = true;
-          break;
-        case 'ArrowLeft':
-          cameraRotationY = 0.05;
-          break;
-        case 'ArrowRight':
-          cameraRotationY = -0.05;
-          break;
+        case 'KeyW': moveForward = true; break;
+        case 'KeyS': moveBackward = true; break;
+        case 'KeyA': moveLeft = true; break;
+        case 'KeyD': moveRight = true; break;
+        case 'ArrowLeft': cameraRotationY = 0.05; break;
+        case 'ArrowRight': cameraRotationY = -0.05; break;
       }
     });
 
     document.addEventListener('keyup', (event) => {
       switch (event.code) {
-        case 'KeyW':
-          moveForward = false;
-          break;
-        case 'KeyS':
-          moveBackward = false;
-          break;
-        case 'KeyA':
-          moveLeft = false;
-          break;
-        case 'KeyD':
-          moveRight = false;
-          break;
+        case 'KeyW': moveForward = false; break;
+        case 'KeyS': moveBackward = false; break;
+        case 'KeyA': moveLeft = false; break;
+        case 'KeyD': moveRight = false; break;
         case 'ArrowLeft':
-        case 'ArrowRight':
-          cameraRotationY = 0;
-          break;
+        case 'ArrowRight': cameraRotationY = 0; break;
       }
     });
 
-    // Create a simple 3D house
-    function createHouse(x, z) {
-      const houseGroup = new THREE.Group();
+    const players = {};
 
-      // Create the walls
-      const wallGeometry = new THREE.BoxGeometry(4, 3, 4);
-      const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
-      const walls = new THREE.Mesh(wallGeometry, wallMaterial);
-      walls.position.y = 1.5;
-      houseGroup.add(walls);
+    socket.on('updatePlayers', (serverPlayers) => {
+      for (let id in serverPlayers) {
+        if (!players[id]) {
+          const cube = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 1, 1),
+            new THREE.MeshBasicMaterial({ color: 0xff0000 })
+          );
+          scene.add(cube);
+          players[id] = cube;
+        }
+        players[id].position.set(
+          serverPlayers[id].x,
+          serverPlayers[id].y,
+          serverPlayers[id].z
+        );
+      }
+    });
 
-      // Create the roof
-      const roofGeometry = new THREE.ConeGeometry(3, 2, 4);
-      const roofMaterial = new THREE.MeshBasicMaterial({ color: 0xA52A2A });
-      const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-      roof.position.y = 4;
-      roof.rotation.y = Math.PI / 4;
-      houseGroup.add(roof);
-
-      // Create the door
-      const doorGeometry = new THREE.BoxGeometry(1, 2, 0.1);
-      const doorMaterial = new THREE.MeshBasicMaterial({ color: 0x654321 });
-      const door = new THREE.Mesh(doorGeometry, doorMaterial);
-      door.position.set(0, 1, 2.05);
-      houseGroup.add(door);
-
-      houseGroup.position.set(x, 0, z);
-      scene.add(houseGroup);
-    }
-
-    // Create multiple houses
-    createHouse(-10, -10);
-    createHouse(10, -10);
-    createHouse(-10, 10);
-    createHouse(10, 10);
-
-    // Create a simple road
-    function createRoad() {
-      const roadGeometry = new THREE.PlaneGeometry(2, 50);
-      const roadMaterial = new THREE.MeshBasicMaterial({ color: 0x333333, side: THREE.DoubleSide });
-      const road = new THREE.Mesh(roadGeometry, roadMaterial);
-      road.rotation.x = Math.PI / 2;
-      road.position.set(0, 0.01, 0);
-      scene.add(road);
-    }
-
-    createRoad();
-
-    // Calculate the forward vector for movement
-    function getForwardVector() {
-      const direction = new THREE.Vector3();
-      camera.getWorldDirection(direction);
-      direction.y = 0; // Keep the movement on the horizontal plane
-      direction.normalize();
-      return direction;
-    }
-
-    // Calculate the right vector for strafing
-    function getRightVector() {
-      const direction = new THREE.Vector3();
-      camera.getWorldDirection(direction);
-      direction.y = 0;
-      direction.cross(new THREE.Vector3(0, 1, 0)).normalize();
-      return direction;
-    }
-
-    // Animation loop
     function animate() {
       requestAnimationFrame(animate);
 
-      const forwardVector = getForwardVector();
-      const rightVector = getRightVector();
+      const direction = new THREE.Vector3();
+      camera.getWorldDirection(direction);
+      direction.y = 0;
+      direction.normalize();
 
-      // Update player position based on direction
-      if (moveForward) camera.position.addScaledVector(forwardVector, movementSpeed);
-      if (moveBackward) camera.position.addScaledVector(forwardVector, -movementSpeed);
-      if (moveLeft) camera.position.addScaledVector(rightVector, -movementSpeed);
-      if (moveRight) camera.position.addScaledVector(rightVector, movementSpeed);
+      const rightVector = new THREE.Vector3();
+      camera.getWorldDirection(rightVector);
+      rightVector.y = 0;
+      rightVector.cross(new THREE.Vector3(0, 1, 0)).normalize();
 
-      // Update camera rotation
+      if (moveForward) camera.position.addScaledVector(direction, 0.1);
+      if (moveBackward) camera.position.addScaledVector(direction, -0.1);
+      if (moveLeft) camera.position.addScaledVector(rightVector, -0.1);
+      if (moveRight) camera.position.addScaledVector(rightVector, 0.1);
+
       camera.rotation.y += cameraRotationY;
+      
+      socket.emit('move', {
+        x: camera.position.x,
+        y: camera.position.y,
+        z: camera.position.z
+      });
 
       renderer.render(scene, camera);
     }
-function createCube(x, y, z) {
-  const geometry = new THREE.BoxGeometry(1, 1, 1); // Cube size: 1x1x1
-  const material = new THREE.MeshBasicMaterial({ color: 0xf0f0 }); // Green color
-  const cube = new THREE.Mesh(geometry, material);
 
-  cube.position.set(x, y, z); // Move cube to the given x, y, z position
-  scene.add(cube); // Add cube to the scene
-}
-
-createCube(5, 1, -3); // Place cube at (5, 1, -3)
     animate();
   </script>
 </body>
