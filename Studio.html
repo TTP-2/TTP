@@ -1,158 +1,132 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TTP</title>
-    <link rel="icon" href="IMG.png" type="image/png">
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
-    <style>
-        body { text-align: center; font-family: Arial, sans-serif; background-color: black; color: white; }
-        canvas { background-color: black; display: block; margin: auto; }
-        video { display: none; }
-        h1, h3, h4, p { text-align: center; }
-        .movie, .game {
-            border: 1px solid black;
-            width: 360px;
-            height: 100px;
-            margin: auto;
-            transition: background-color 3.0s, color 3.0s;
-        }
-        .movie:hover, .game:hover {
-            background-color: black;
-            color: white;
-            cursor: pointer;
-        }
-        input, button {
-            border: 1px solid black;
-            border-radius: 50px;
-            width: 300px;
-            height: 30px;
-            text-align: center;
-        }
-        button:hover { background-color: teal; cursor: pointer; transition: background-color 1.0s; }
-        img {
-            width: 100px;
-            height: 100px;
-            border-radius: 50px;
-            border: 1px black solid;
-            filter: blur(5px);
-        }
-        .Div { width: 100px; height: 10px; border-radius: 50px; margin: auto; }
-    </style>
+<title>TTP</title
+<link rel="icon" href="IMG.png" type="image/png">
+<style>
+    h1 {
+        text-align: center;
+    }
+    h3 {
+        text-align: center;
+    }
+    p {
+        text-align: center;
+    }
+    h4 {
+        text-align: center;
+    }
+    .movie {
+        border: 1px solid black;
+        width: 360px;
+        height: 100px;
+        margin: auto;
+        transition: background-color 3.0s, color 3.0s;
+    }
+    .game {
+        border: 1px solid black;
+        width: 360px;
+        height: 100px;
+        margin: auto;
+        transition: background-color 3.0s, color 3.0s;
+    }
+    .movie:hover {
+        background-color: black;
+        color: white;
+        cursor: pointer;
+    }
+    .game:hover {
+        background-color: black;
+        color: white;
+        cursor: pointer;
+    }
+    input {
+        border: 1px solid black;
+        border-radius: 50px;
+        width: 300px;
+        height: 30px;
+        text-align: center;
+    }
+    div {
+        width: 300px;
+        margin: auto
+    }
+    button {
+        border: 1px solid black;
+        border-radius: 50px;
+        width: 300px;
+        height: 30px;
+        text-align: center;
+        transition: background-color 1.0s;
+    }
+    button:hover {
+        background-color: teal;
+        cursor: pointer;
+    }
+    img {
+        width: 100px;
+        height: 100px;
+        border-radius: 50px;
+        border: 1px black solid;
+        filter: blur(5px);
+    }
+    .Div {
+        width: 100px;
+        height: 10px;
+        border-radius: 50px;
+        margin: auto;
+    }
+</style>
 </head>
 <body>
-    <h1>TTP studios</h1>
-    <hr>
-    <div class="movie">
-        <h3>Movies</h3>
-        <p>TTP makes movies, episodes and stop-motion</p>
-    </div>
-    <br>
-    <div class="game">
-        <h3>Games</h3>
-        <p>TTP also makes games 3D and 2D!</p>
-    </div>
-    <hr>
-    <div class="Div">
-        <img src="Finn.png">
-    </div>
-    <br><br><br><br>
-    <h4>Finn/Boss</h4>
-    <p>f1******@gmail.com</p>
-    <div class="Div">
-        <img src="Abhiman.png">
-    </div>
-    <br><br><br><br>
-    <h4>Abhiman/Helper and Movie editor</h4>
-    <p>Ab******@gmail.com</p>
-    <div class="Div">
-        <img src="Jack.png">
-    </div>
-    <br><br><br><br>
-    <h4>Jack/Manager</h4>
-    <p>Ja*******@gmail.com</p>
-    <div class="Div">
-        <img src="Harry.html">
-    </div>
-    <br><br><br><br>
-    <h4>Harry/Actor</h4>
-    <p>Ha******@gmail.com</p>
-    <hr>
-    <h2>Human Radar</h2>
-    <video id="video" width="500" height="500" autoplay></video>
-    <canvas id="radarCanvas" width="500" height="500"></canvas>
-    
-    <script>
-        const canvas = document.getElementById('radarCanvas');
-        const ctx = canvas.getContext('2d');
-        const video = document.getElementById('video');
-        let model, detections = [];
-        let angle = 0;
-
-        async function setupCamera() {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            video.srcObject = stream;
-            return new Promise(resolve => video.onloadedmetadata = resolve);
-        }
-
-        async function loadModel() {
-            model = await cocoSsd.load();
-        }
-
-        async function detectHumans() {
-            const predictions = await model.detect(video);
-            detections = predictions.filter(prediction => prediction.class === 'person');
-            requestAnimationFrame(detectHumans);
-        }
-
-        function drawRadar() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Draw radar circle
-            ctx.strokeStyle = 'green';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(250, 250, 200, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // Draw sweeping line
-            let x = 250 + 200 * Math.cos(angle);
-            let y = 250 + 200 * Math.sin(angle);
-            ctx.strokeStyle = 'lime';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(250, 250);
-            ctx.lineTo(x, y);
-            ctx.stroke();
-
-            // Draw detected humans mapped to radar
-            detections.forEach(det => {
-                const centerX = det.bbox[0] + det.bbox[2] / 2;
-                const centerY = det.bbox[1] + det.bbox[3] / 2;
-                const px = 250 + ((centerX / video.width) * 400) - 200;
-                const py = 250 + ((centerY / video.height) * 400) - 200;
-                ctx.fillStyle = 'red';
-                ctx.beginPath();
-                ctx.arc(px, py, 10, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            angle += 0.05;
-            requestAnimationFrame(drawRadar);
-        }
-
-        async function startRadar() {
-            await setupCamera();
-            await loadModel();
-            detectHumans();
-            drawRadar();
-        }
-        
-        startRadar();
-    </script>
+<h1>TTP studios</h1>
+<hr>
+<div class="movie">
+    <h3>Movies</h3>
+    <p>TTP makes movies, episodes and stop-motion</p>
+</div>
+<br>
+<div class="game">
+    <h3>Games</h3>
+    <p>TTP also makes games 3D and 2D!</p>
+</div>
+<hr>
+<div class="Div">
+    <img src="Finn.png">
+</div>
+<br>
+<br>
+<br>
+<br>
+<h4>Finn/Boss</h4>
+<p>f1******@gmail.com</p>
+<div class="Div">
+    <img src="Abhiman.png">
+</div>
+<br>
+<br>
+<br>
+<br>
+<h4>Abhiman/Helper and Movie editor</h4>
+<p>Ab******@gmail.com</p>
+<div class="Div">
+    <img src="">
+</div>
+<br>
+<br>
+<br>
+<br>
+<h4>Jack/Manager</h4>
+<p>Ja*******@gmail.com</p>
+<div class="Div">
+    <img src="">
+</div>
+<br>
+<br>
+<br>
+<br>
+<h4>Harry/actor</h4>
+<p>Ha******@gmail.com</p>
+<hr>
 </body>
 </html>
