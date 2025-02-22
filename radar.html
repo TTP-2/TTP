@@ -6,14 +6,55 @@
     <title>Radar Human Detector</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <link rel="icon" href="IMG.png" type="image/png">
     <style>
         body { text-align: center; font-family: Arial, sans-serif; background-color: black; color: white; }
         canvas { background-color: black; display: block; margin: auto; }
         video { display: none; }
+        h1, h3, h4, p { text-align: center; }
+        .movie, .game {
+            border: 1px solid black;
+            width: 360px;
+            height: 100px;
+            margin: auto;
+            transition: background-color 3.0s, color 3.0s;
+        }
+        .movie:hover, .game:hover {
+            background-color: black;
+            color: white;
+            cursor: pointer;
+        }
+        input, button {
+            border: 1px solid black;
+            border-radius: 50px;
+            width: 300px;
+            height: 30px;
+            text-align: center;
+        }
+        button:hover { background-color: teal; cursor: pointer; }
+        img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50px;
+            border: 1px black solid;
+            filter: blur(5px);
+        }
+        .Div { width: 100px; height: 10px; border-radius: 50px; margin: auto; }
     </style>
 </head>
 <body>
-    <h1>Radar Human Detector</h1>
+    <h1>TTP Studios - Radar Human Detector</h1>
+    <hr>
+    <div class="movie">
+        <h3>Movies</h3>
+        <p>TTP makes movies, episodes, and stop-motion</p>
+    </div>
+    <br>
+    <div class="game">
+        <h3>Games</h3>
+        <p>TTP also makes games 3D and 2D!</p>
+    </div>
+    <hr>
     <video id="video" width="500" height="500" autoplay></video>
     <canvas id="radarCanvas" width="500" height="500"></canvas>
     
@@ -74,7 +115,7 @@
                 ctx.fill();
             });
 
-            angle += 0.1; // Adjust speed of rotation
+            angle += 0.1;
             requestAnimationFrame(drawRadar);
         }
 
@@ -87,5 +128,14 @@
         
         startRadar();
     </script>
+    <hr>
+    <h4>Finn/Boss</h4>
+    <p>f1******@gmail.com</p>
+    <h4>Abhiman/Helper and Movie Editor</h4>
+    <p>Ab******@gmail.com</p>
+    <h4>Jack/Manager</h4>
+    <p>Ja*******@gmail.com</p>
+    <h4>Harry/Actor</h4>
+    <p>Ha******@gmail.com</p>
 </body>
 </html>
