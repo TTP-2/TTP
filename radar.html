@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radar Detector</title>
+    <title>Human Detection Radar</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
-    <link rel="icon" href="IMG.png" type="image/png">
     <style>
         body { text-align: center; font-family: Arial, sans-serif; background-color: black; color: white; }
         canvas { background-color: black; display: block; margin: auto; }
@@ -14,12 +13,14 @@
     </style>
 </head>
 <body>
+    <h1>Human Detection Radar</h1>
     <canvas id="radarCanvas" width="500" height="500"></canvas>
+    <video id="video" width="500" height="500" autoplay></video>
     
     <script>
         const canvas = document.getElementById('radarCanvas');
         const ctx = canvas.getContext('2d');
-        const video = document.createElement('video');
+        const video = document.getElementById('video');
         let model, detections = [];
         let angle = 0;
 
@@ -44,14 +45,12 @@
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw radar circle
             ctx.strokeStyle = 'green';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.arc(250, 250, 200, 0, Math.PI * 2);
             ctx.stroke();
 
-            // Draw sweeping line
             let x = 250 + 200 * Math.cos(angle);
             let y = 250 + 200 * Math.sin(angle);
             ctx.strokeStyle = 'lime';
@@ -61,7 +60,6 @@
             ctx.lineTo(x, y);
             ctx.stroke();
 
-            // Draw detected humans mapped to radar
             detections.forEach(det => {
                 const centerX = det.bbox[0] + det.bbox[2] / 2;
                 const centerY = det.bbox[1] + det.bbox[3] / 2;
