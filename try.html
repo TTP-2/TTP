@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Massive Mall - 3D World</title>
+  <title>Massive Mall with Grass and Entrance</title>
   <style>
     body {
       margin: 0;
@@ -27,9 +27,21 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Create a massive mall structure
+    // Create grass around the mall (green floor)
+    function createGrass(x, z) {
+      const geometry = new THREE.PlaneGeometry(200, 200);
+      const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
+      const plane = new THREE.Mesh(geometry, material);
+      plane.rotation.x = -Math.PI / 2;
+      plane.position.set(x, 0, z);
+      scene.add(plane);
+    }
+
+    createGrass(0, 0);  // Create the grassy area surrounding the mall
+
+    // Create the mall structure
     function createMall(x, z) {
-      // Create the floor of the mall (grass or carpet color)
+      // Create the floor of the mall (gray)
       const floorGeometry = new THREE.PlaneGeometry(100, 100);
       const floorMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, side: THREE.DoubleSide });
       const floor = new THREE.Mesh(floorGeometry, floorMaterial);
@@ -37,10 +49,10 @@
       floor.position.set(x, 0, z);
       scene.add(floor);
 
-      // Create the walls of the mall (gray for simplicity)
+      // Create the walls of the mall (gray color)
       const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 });
       
-      // Front wall (with an entrance)
+      // Front wall (with an entrance space)
       const frontWallGeometry = new THREE.BoxGeometry(100, 20, 1);
       const frontWall = new THREE.Mesh(frontWallGeometry, wallMaterial);
       frontWall.position.set(x, 10, z - 50);
@@ -71,30 +83,10 @@
       roof.rotation.x = Math.PI / 2;
       roof.position.set(x, 20, z);
       scene.add(roof);
-
-      // Make the entrance wide open by cutting out the front wall area (optional)
     }
 
-    // Create the mall
+    // Create the mall structure at (0, 0)
     createMall(0, 0);
-
-    // Function to create NPCs with random movements inside the mall
-    function createNPC(x, z) {
-      const geometry = new THREE.BoxGeometry(2, 4, 2); // NPC as a small box
-      const material = new THREE.MeshBasicMaterial({ color: 0x0000ff });
-      const npc = new THREE.Mesh(geometry, material);
-      npc.position.set(x, 2, z);
-      scene.add(npc);
-      return npc;
-    }
-
-    // Create some NPCs moving randomly inside the mall
-    const npcs = [];
-    for (let i = -20; i <= 20; i += 10) {
-      for (let j = -20; j <= 20; j += 10) {
-        npcs.push(createNPC(i, j));
-      }
-    }
 
     // Camera movement setup
     camera.position.set(0, 2, 10);
@@ -162,12 +154,6 @@
       if (moveRight) camera.position.addScaledVector(rightVector, 0.1);
 
       camera.rotation.y += cameraRotationY;
-
-      // NPC behavior (random movement within the mall)
-      npcs.forEach(npc => {
-        npc.position.x += (Math.random() - 0.5) * 0.5; // Random movement in X
-        npc.position.z += (Math.random() - 0.5) * 0.5; // Random movement in Z
-      });
 
       socket.emit('move', {
         x: camera.position.x,
