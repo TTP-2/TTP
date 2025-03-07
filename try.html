@@ -76,42 +76,39 @@
       }
     }
 
-    // Function to create a tall gray building
-    function createBuilding(x, z) {
-      const buildingHeight = Math.random() * 40 + 30; // Random height between 30 and 70
-      const geometry = new THREE.BoxGeometry(10, buildingHeight, 10);
-      const material = new THREE.MeshBasicMaterial({ color: 0x808080 }); // Gray color
-      const building = new THREE.Mesh(geometry, material);
-      building.position.set(x, buildingHeight / 2, z);
-      scene.add(building);
+    // Create water plane
+    const waterGeometry = new THREE.PlaneGeometry(100, 100);
+    const waterMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff, transparent: true, opacity: 0.5 });
+    const water = new THREE.Mesh(waterGeometry, waterMaterial);
+    water.rotation.x = -Math.PI / 2;
+    water.position.set(0, 0.1, 100); // Slightly above ground
+    scene.add(water);
+
+    // Function to create a fish model (represented by spheres for simplicity)
+    function createFish(x, y, z) {
+      const geometry = new THREE.SphereGeometry(1, 6, 6);
+      const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+      const fish = new THREE.Mesh(geometry, material);
+      fish.position.set(x, y, z);
+      scene.add(fish);
+      return fish;
     }
 
-    // Create tall buildings at random positions on the grass
-    for (let i = -2; i <= 2; i++) {
-      for (let j = -2; j <= 2; j++) {
-        if (j === 0) { // Place buildings only on the grass
-          createBuilding(i * 100, j * 100);
-        }
+    // Create fish under the water
+    const fishGroup = [];
+    for (let i = 0; i < 5; i++) {
+      const fish = createFish(Math.random() * 50 - 25, -2, Math.random() * 50 - 25); // Random positions under water
+      fishGroup.push(fish);
+    }
+
+    // Function to simulate the water depth effect
+    function updateWaterDepth() {
+      // Check if the camera is underwater
+      if (camera.position.y < 0) {
+        // Make the camera appear deeper in the water
+        camera.position.y = Math.max(camera.position.y, -5); // Limit max depth
       }
     }
-
-    // Function to create a winding road with yellow connected lines
-    function createRoad() {
-      const roadMaterial = new THREE.LineBasicMaterial({ color: 0xFFFF00, linewidth: 2 }); // Yellow road lines
-
-      const roadPath = [];
-      for (let i = 0; i < 200; i++) {
-        const x = i * 10;
-        const z = Math.sin(i / 20) * 50; // Create a winding path using sine
-        roadPath.push(new THREE.Vector3(x, 0.1, z));
-      }
-
-      const geometry = new THREE.BufferGeometry().setFromPoints(roadPath);
-      const road = new THREE.Line(geometry, roadMaterial);
-      scene.add(road);
-    }
-
-    createRoad(); // Call the function to create the winding road
 
     // Camera setup
     camera.position.set(0, 2, 5);
@@ -176,20 +173,4 @@
       if (moveForward) camera.position.addScaledVector(direction, 0.1);
       if (moveBackward) camera.position.addScaledVector(direction, -0.1);
       if (moveLeft) camera.position.addScaledVector(rightVector, -0.1);
-      if (moveRight) camera.position.addScaledVector(rightVector, 0.1);
-
-      camera.rotation.y += cameraRotationY;
-      
-      socket.emit('move', {
-        x: camera.position.x,
-        y: camera.position.y,
-        z: camera.position.z
-      });
-
-      renderer.render(scene, camera);
-    }
-
-    animate();
-  </script>
-</body>
-</html>
+      if (moveRight) camera.position.a
