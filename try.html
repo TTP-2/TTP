@@ -20,13 +20,13 @@
 <body>
   <script>
     const socket = io();
-    
+
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
-    
+
     let isDay = true;
     const sun = new THREE.DirectionalLight(0xffffff, 1);
     sun.position.set(50, 100, 50);
@@ -58,6 +58,7 @@
     updateSky();
     setTimeout(toggleDayNight, 300000);
 
+    // Function to create ground
     function createGround(x, z, color) {
       const geometry = new THREE.PlaneGeometry(100, 100);
       const material = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
@@ -67,7 +68,7 @@
       scene.add(plane);
     }
 
-    // Creating grass, sand, and water areas
+    // Create ground, water, and grass
     for (let i = -2; i <= 2; i++) {
       for (let j = -2; j <= 2; j++) {
         const isWater = j > 1;
@@ -76,41 +77,73 @@
       }
     }
 
-    // Create water plane
-    const waterGeometry = new THREE.PlaneGeometry(100, 100);
-    const waterMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff, transparent: true, opacity: 0.5 });
-    const water = new THREE.Mesh(waterGeometry, waterMaterial);
-    water.rotation.x = -Math.PI / 2;
-    water.position.set(0, 0.1, 100); // Slightly above ground
-    scene.add(water);
+    // Function to create a tall gray building
+    function createBuilding(x, z) {
+      const buildingHeight = Math.random() * 40 + 30; // Random height between 30 and 70
+      const geometry = new THREE.BoxGeometry(10, buildingHeight, 10);
+      const material = new THREE.MeshBasicMaterial({ color: 0x808080 }); // Gray color
+      const building = new THREE.Mesh(geometry, material);
+      building.position.set(x, buildingHeight / 2, z);
+      scene.add(building);
+    }
 
-    // Function to create a fish model (represented by spheres for simplicity)
+    // Create buildings
+    for (let i = -2; i <= 2; i++) {
+      for (let j = -2; j <= 2; j++) {
+        if (j === 0) { // Place buildings only on the grass
+          createBuilding(i * 100, j * 100);
+        }
+      }
+    }
+
+    // Function to create a fish
     function createFish(x, y, z) {
-      const geometry = new THREE.SphereGeometry(1, 6, 6);
+      const geometry = new THREE.ConeGeometry(1, 3, 8);
       const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
       const fish = new THREE.Mesh(geometry, material);
       fish.position.set(x, y, z);
+      fish.rotation.z = Math.random() * Math.PI;
       scene.add(fish);
       return fish;
     }
 
-    // Create fish under the water
-    const fishGroup = [];
-    for (let i = 0; i < 5; i++) {
-      const fish = createFish(Math.random() * 50 - 25, -2, Math.random() * 50 - 25); // Random positions under water
-      fishGroup.push(fish);
-    }
+    // Create an array to store fish
+    const fishArray = [];
 
-    // Function to simulate the water depth effect
-    function updateWaterDepth() {
-      // Check if the camera is underwater
-      if (camera.position.y < 0) {
-        // Make the camera appear deeper in the water
-        camera.position.y = Math.max(camera.position.y, -5); // Limit max depth
+    // Function to show or hide fish depending on depth
+    function toggleFishVisibility(isUnderwater) {
+      if (isUnderwater) {
+        if (fishArray.length === 0) {
+          for (let i = 0; i < 10; i++) {
+            const x = Math.random() * 200 - 100;
+            const y = Math.random() * -5; // Below the surface of the water
+            const z = Math.random() * 200 - 100;
+            fishArray.push(createFish(x, y, z));
+          }
+        }
+      } else {
+        fishArray.forEach(fish => fish.visible = false);
       }
     }
 
-    // Camera setup
+    // Create the winding road
+    function createRoad() {
+      const roadMaterial = new THREE.LineBasicMaterial({ color: 0xFFFF00, linewidth: 2 });
+
+      const roadPath = [];
+      for (let i = 0; i < 200; i++) {
+        const x = i * 10;
+        const z = Math.sin(i / 20) * 50;
+        roadPath.push(new THREE.Vector3(x, 0.1, z));
+      }
+
+      const geometry = new THREE.BufferGeometry().setFromPoints(roadPath);
+      const road = new THREE.Line(geometry, roadMaterial);
+      scene.add(road);
+    }
+
+    createRoad(); // Create the road
+
     camera.position.set(0, 2, 5);
     let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
     let cameraRotationY = 0;
@@ -173,4 +206,32 @@
       if (moveForward) camera.position.addScaledVector(direction, 0.1);
       if (moveBackward) camera.position.addScaledVector(direction, -0.1);
       if (moveLeft) camera.position.addScaledVector(rightVector, -0.1);
-      if (moveRight) camera.position.a
+      if (moveRight) camera.position.addScaledVector(rightVector, 0.1);
+
+      camera.rotation.y += cameraRotationY;
+
+      // Check if the camera is underwater
+      const isUnderwater = camera.position.y < 0;
+
+      // Change the water depth
+      if (isUnderwater) {
+        camera.position.y = Math.max(camera.position.y, -10); // Deeper water when submerged
+      } else {
+        camera.position.y = Math.max(camera.position.y, 2); // Return to surface
+      }
+
+      toggleFishVisibility(isUnderwater); // Toggle fish visibility based on camera depth
+
+      socket.emit('move', {
+        x: camera.position.x,
+        y: camera.position.y,
+        z: camera.position.z
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
