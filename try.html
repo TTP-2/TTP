@@ -78,21 +78,56 @@
       }
     }
 
-    // Function to create a tall gray building
-    function createBuilding(x, z) {
-      const buildingHeight = Math.random() * 40 + 30; // Random height between 30 and 70
-      const geometry = new THREE.BoxGeometry(10, buildingHeight, 10);
-      const material = new THREE.MeshBasicMaterial({ color: 0x808080 }); // Gray color
-      const building = new THREE.Mesh(geometry, material);
-      building.position.set(x, buildingHeight / 2, z);
+    // Function to create a McDonald's building
+    function createMcdonaldsBuilding(x, z) {
+      // Main building body (red color)
+      const buildingGeometry = new THREE.BoxGeometry(30, 15, 20);
+      const buildingMaterial = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
+      const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+      building.position.set(x, 7.5, z);
       scene.add(building);
+
+      // Roof (yellow color)
+      const roofGeometry = new THREE.CylinderGeometry(10, 10, 5, 32);
+      const roofMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
+      const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+      roof.rotation.x = Math.PI / 2;
+      roof.position.set(x, 15, z);
+      scene.add(roof);
+
+      // Golden Arches (arches on the roof)
+      const archGeometry = new THREE.TorusGeometry(5, 1, 16, 100);
+      const archMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
+      const arch1 = new THREE.Mesh(archGeometry, archMaterial);
+      arch1.rotation.x = Math.PI / 2;
+      arch1.position.set(x - 8, 15, z + 5);
+      scene.add(arch1);
+
+      const arch2 = new THREE.Mesh(archGeometry, archMaterial);
+      arch2.rotation.x = Math.PI / 2;
+      arch2.position.set(x + 8, 15, z + 5);
+      scene.add(arch2);
     }
 
-    // Create buildings
+    // Create McDonald's building
+    createMcdonaldsBuilding(0, 0);
+
+    // Create NPCs (as cubes)
+    function createNPC(x, z) {
+      const geometry = new THREE.BoxGeometry(5, 10, 5); // NPC is a cube
+      const material = new THREE.MeshBasicMaterial({ color: 0x0000ff }); // Blue color
+      const npc = new THREE.Mesh(geometry, material);
+      npc.position.set(x, 5, z);
+      scene.add(npc);
+      return npc;
+    }
+
+    // Create some NPCs in the world
+    const npcs = [];
     for (let i = -2; i <= 2; i++) {
       for (let j = -2; j <= 2; j++) {
-        if (j === 0) { // Place buildings only on the grass
-          createBuilding(i * 100, j * 100);
+        if (Math.random() < 0.5) { // Randomly place NPCs
+          npcs.push(createNPC(i * 100, j * 100));
         }
       }
     }
@@ -100,12 +135,6 @@
     camera.position.set(0, 2, 5);
     let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
     let cameraRotationY = 0;
-    let cameraRotationX = 0; // For looking up and down
-    const maxLookUp = -Math.PI / 2; // Look 90 degrees up
-    const maxLookDown = Math.PI / 2; // Look 90 degrees down
-
-    let lookingUp = false;
-    let lookingDown = false;
 
     document.addEventListener('keydown', (event) => {
       switch (event.code) {
@@ -115,12 +144,6 @@
         case 'KeyD': moveRight = true; break;
         case 'ArrowLeft': cameraRotationY = 0.05; break;
         case 'ArrowRight': cameraRotationY = -0.05; break;
-        case 'ArrowUp': 
-          lookingUp = true; // Start looking up
-          break; 
-        case 'ArrowDown': 
-          lookingDown = true; // Start looking down
-          break; 
       }
     });
 
@@ -132,12 +155,6 @@
         case 'KeyD': moveRight = false; break;
         case 'ArrowLeft':
         case 'ArrowRight': cameraRotationY = 0; break;
-        case 'ArrowUp': 
-          lookingUp = false; // Stop looking up
-          break; 
-        case 'ArrowDown': 
-          lookingDown = false; // Stop looking down
-          break; 
       }
     });
 
@@ -181,15 +198,11 @@
 
       camera.rotation.y += cameraRotationY;
 
-      // Smoothly rotate the camera up when ArrowUp is pressed
-      if (lookingUp && camera.rotation.x > maxLookUp) {
-        camera.rotation.x -= 0.01;  // Slowly look up
-      }
-
-      // Smoothly rotate the camera down when ArrowDown is pressed
-      if (lookingDown && camera.rotation.x < maxLookDown) {
-        camera.rotation.x += 0.01;  // Slowly look down
-      }
+      // NPC behavior (simple random movement)
+      npcs.forEach(npc => {
+        npc.position.x += (Math.random() - 0.5) * 0.5; // Random movement in X
+        npc.position.z += (Math.random() - 0.5) * 0.5; // Random movement in Z
+      });
 
       socket.emit('move', {
         x: camera.position.x,
