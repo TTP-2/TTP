@@ -27,6 +27,24 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
+    // Create the blue sky with a square hole (window)
+    function createSky() {
+      const skyGeometry = new THREE.SphereGeometry(100, 32, 32);
+      const skyMaterial = new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide });
+      const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+      scene.add(sky);
+
+      // Create the square hole (a transparent window in the sky)
+      const holeGeometry = new THREE.PlaneGeometry(50, 50);
+      const holeMaterial = new THREE.MeshBasicMaterial({ color: 0x87CEEB, transparent: true, opacity: 0 });
+      const hole = new THREE.Mesh(holeGeometry, holeMaterial);
+      hole.position.set(0, 50, 0);
+      hole.rotation.x = Math.PI / 2;
+      scene.add(hole);
+    }
+
+    createSky();  // Add the sky with the hole
+
     // Create grass around the mall (green floor)
     function createGrass(x, z) {
       const geometry = new THREE.PlaneGeometry(200, 200);
@@ -38,6 +56,18 @@
     }
 
     createGrass(0, 0);  // Create the grassy area surrounding the mall
+
+    // Create the gray ground inside the mall
+    function createMallGround(x, z) {
+      const groundGeometry = new THREE.PlaneGeometry(100, 100);
+      const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x808080, side: THREE.DoubleSide });
+      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.set(x, 0, z);
+      scene.add(ground);
+    }
+
+    createMallGround(0, 0);  // Create the gray ground inside the mall
 
     // Create the mall structure
     function createMall(x, z) {
