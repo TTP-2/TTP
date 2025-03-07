@@ -68,12 +68,10 @@
       scene.add(plane);
     }
 
-    // Create ground, water, and grass
+    // Create ground and grass
     for (let i = -2; i <= 2; i++) {
       for (let j = -2; j <= 2; j++) {
-        const isWater = j > 1;
-        const isSand = j === 1;
-        createGround(i * 100, j * 100, isWater ? 0x0000ff : isSand ? 0xFFD700 : 0x00ff00);
+        createGround(i * 100, j * 100, 0x00ff00); // Grass color
       }
     }
 
@@ -126,27 +124,10 @@
       }
     }
 
-    // Create the winding road
-    function createRoad() {
-      const roadMaterial = new THREE.LineBasicMaterial({ color: 0xFFFF00, linewidth: 2 });
-
-      const roadPath = [];
-      for (let i = 0; i < 200; i++) {
-        const x = i * 10;
-        const z = Math.sin(i / 20) * 50;
-        roadPath.push(new THREE.Vector3(x, 0.1, z));
-      }
-
-      const geometry = new THREE.BufferGeometry().setFromPoints(roadPath);
-      const road = new THREE.Line(geometry, roadMaterial);
-      scene.add(road);
-    }
-
-    createRoad(); // Create the road
-
     camera.position.set(0, 2, 5);
     let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
     let cameraRotationY = 0;
+    let cameraRotationX = 0; // For looking up and down
 
     document.addEventListener('keydown', (event) => {
       switch (event.code) {
@@ -156,6 +137,8 @@
         case 'KeyD': moveRight = true; break;
         case 'ArrowLeft': cameraRotationY = 0.05; break;
         case 'ArrowRight': cameraRotationY = -0.05; break;
+        case 'ArrowUp': cameraRotationX = 0.05; break;  // Look up
+        case 'ArrowDown': cameraRotationX = -0.05; break; // Look down
       }
     });
 
@@ -167,6 +150,8 @@
         case 'KeyD': moveRight = false; break;
         case 'ArrowLeft':
         case 'ArrowRight': cameraRotationY = 0; break;
+        case 'ArrowUp':
+        case 'ArrowDown': cameraRotationX = 0; break;
       }
     });
 
@@ -209,6 +194,7 @@
       if (moveRight) camera.position.addScaledVector(rightVector, 0.1);
 
       camera.rotation.y += cameraRotationY;
+      camera.rotation.x += cameraRotationX;  // Apply pitch (up/down)
 
       // Check if the camera is underwater
       const isUnderwater = camera.position.y < 0;
