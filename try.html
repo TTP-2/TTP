@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Massive Mall with Grass and Entrance</title>
+  <title>Massive Mall with Entrance Hole</title>
   <style>
     body {
       margin: 0;
@@ -33,17 +33,9 @@
       const skyMaterial = new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide });
       const sky = new THREE.Mesh(skyGeometry, skyMaterial);
       scene.add(sky);
-
-      // Create the square hole (a transparent window in the sky)
-      const holeGeometry = new THREE.PlaneGeometry(50, 50);
-      const holeMaterial = new THREE.MeshBasicMaterial({ color: 0x87CEEB, transparent: true, opacity: 0 });
-      const hole = new THREE.Mesh(holeGeometry, holeMaterial);
-      hole.position.set(0, 50, 0);
-      hole.rotation.x = Math.PI / 2;
-      scene.add(hole);
     }
 
-    createSky();  // Add the sky with the hole
+    createSky();  // Add the sky
 
     // Create grass around the mall (green floor)
     function createGrass(x, z) {
@@ -57,22 +49,127 @@
 
     createGrass(0, 0);  // Create the grassy area surrounding the mall
 
-    // Create the gray ground inside the mall
-    function createMallGround(x, z) {
-      const groundGeometry = new THREE.PlaneGeometry(100, 100);
-      const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x808080, side: THREE.DoubleSide });
-      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-      ground.rotation.x = -Math.PI / 2;
-      ground.position.set(x, 0, z);
-      scene.add(ground);
-    }
-
-    createMallGround(0, 0);  // Create the gray ground inside the mall
-
-    // Create the mall structure
+    // Create the mall structure with a hole in the front wall
     function createMall(x, z) {
       // Create the floor of the mall (gray)
       const floorGeometry = new THREE.PlaneGeometry(100, 100);
       const floorMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, side: THREE.DoubleSide });
       const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-      floor.rotation.x 
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.set(x, 0, z);
+      scene.add(floor);
+
+      // Create the walls of the mall (gray color)
+      const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 });
+
+      // Front wall with a hole
+      const frontWallGeometry = new THREE.BoxGeometry(100, 20, 1);
+      const frontWall = new THREE.Mesh(frontWallGeometry, wallMaterial);
+      frontWall.position.set(x, 10, z - 50);
+      scene.add(frontWall);
+
+      // Create a hole in the front wall (transparent area)
+      const entranceGeometry = new THREE.PlaneGeometry(40, 20);
+      const entranceMaterial = new THREE.MeshBasicMaterial({ color: 0x808080, transparent: true, opacity: 0 });
+      const entrance = new THREE.Mesh(entranceGeometry, entranceMaterial);
+      entrance.position.set(x, 10, z - 50);
+      entrance.rotation.x = Math.PI / 2;
+      scene.add(entrance);
+
+      // Other walls
+      const backWallGeometry = new THREE.BoxGeometry(100, 20, 1);
+      const backWall = new THREE.Mesh(backWallGeometry, wallMaterial);
+      backWall.position.set(x, 10, z + 50);
+      scene.add(backWall);
+
+      const leftWallGeometry = new THREE.BoxGeometry(1, 20, 100);
+      const leftWall = new THREE.Mesh(leftWallGeometry, wallMaterial);
+      leftWall.position.set(x - 50, 10, z);
+      scene.add(leftWall);
+
+      const rightWallGeometry = new THREE.BoxGeometry(1, 20, 100);
+      const rightWall = new THREE.Mesh(rightWallGeometry, wallMaterial);
+      rightWall.position.set(x + 50, 10, z);
+      scene.add(rightWall);
+
+      // Roof of the mall
+      const roofGeometry = new THREE.PlaneGeometry(100, 100);
+      const roofMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 });
+      const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+      roof.rotation.x = Math.PI / 2;
+      roof.position.set(x, 20, z);
+      scene.add(roof);
+    }
+
+    // Create the mall at the center (0, 0)
+    createMall(0, 0);
+
+    // Camera setup
+    camera.position.set(0, 2, 10);
+    let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+    let cameraRotationY = 0;
+
+    document.addEventListener('keydown', (event) => {
+      switch (event.code) {
+        case 'KeyW': moveForward = true; break;
+        case 'KeyS': moveBackward = true; break;
+        case 'KeyA': moveLeft = true; break;
+        case 'KeyD': moveRight = true; break;
+        case 'ArrowLeft': cameraRotationY = 0.05; break;
+        case 'ArrowRight': cameraRotationY = -0.05; break;
+      }
+    });
+
+    document.addEventListener('keyup', (event) => {
+      switch (event.code) {
+        case 'KeyW': moveForward = false; break;
+        case 'KeyS': moveBackward = false; break;
+        case 'KeyA': moveLeft = false; break;
+        case 'KeyD': moveRight = false; break;
+        case 'ArrowLeft':
+        case 'ArrowRight': cameraRotationY = 0; break;
+      }
+    });
+
+    // Function to prevent walking through walls
+    function checkCollisionWithWalls() {
+      const playerPos = camera.position;
+      // Check if the player is inside the hole and allow movement
+      if (playerPos.z < -40 && playerPos.z > -60) {
+        return false;  // Player can walk through the hole
+      }
+      // Prevent the player from going through other walls
+      if (Math.abs(playerPos.x) > 50 || Math.abs(playerPos.z) > 50) {
+        return true;  // Block movement through walls
+      }
+      return false;
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const direction = new THREE.Vector3();
+      camera.getWorldDirection(direction);
+      direction.y = 0;
+      direction.normalize();
+
+      const rightVector = new THREE.Vector3();
+      camera.getWorldDirection(rightVector);
+      rightVector.y = 0;
+      rightVector.cross(new THREE.Vector3(0, 1, 0)).normalize();
+
+      // Move the player based on keypress
+      if (moveForward && !checkCollisionWithWalls()) camera.position.addScaledVector(direction, 0.1);
+      if (moveBackward && !checkCollisionWithWalls()) camera.position.addScaledVector(direction, -0.1);
+      if (moveLeft && !checkCollisionWithWalls()) camera.position.addScaledVector(rightVector, -0.1);
+      if (moveRight && !checkCollisionWithWalls()) camera.position.addScaledVector(rightVector, 0.1);
+
+      camera.rotation.y += cameraRotationY;
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
