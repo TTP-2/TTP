@@ -38,10 +38,35 @@
     button:hover {
       background-color: #45a049;
     }
+
+    .input-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .input-section input {
+      padding: 10px;
+      margin: 5px;
+      font-size: 16px;
+    }
+
+    .code-input {
+      display: none;
+    }
   </style>
 </head>
 <body>
   <div class="container">
+    <div class="input-section">
+      <h2>Create or Join a Video Call</h2>
+      <button id="createCallBtn">Create a Call</button>
+      <div class="code-input">
+        <input id="codeInput" type="text" placeholder="Enter code to join">
+        <button id="joinCallBtn">Join Call</button>
+      </div>
+    </div>
+
     <video id="localVideo" autoplay muted></video>
     <video id="remoteVideo" autoplay></video>
     <button id="startCall">Start Call</button>
@@ -53,9 +78,14 @@
     const remoteVideo = document.getElementById('remoteVideo');
     const startCallButton = document.getElementById('startCall');
     const endCallButton = document.getElementById('endCall');
+    const createCallBtn = document.getElementById('createCallBtn');
+    const codeInput = document.getElementById('codeInput');
+    const joinCallBtn = document.getElementById('joinCallBtn');
+    const codeInputSection = document.querySelector('.code-input');
     let localStream;
     let peerConnection;
     let remoteStream;
+    let callCode;
 
     // Set up local video stream
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
@@ -66,12 +96,36 @@
         console.error('Error accessing media devices.', error);
       });
 
+    // Show code input for joining a call
+    createCallBtn.onclick = () => {
+      callCode = generateCode();
+      alert(`Call code is: ${callCode}`);
+      localStorage.setItem('callCode', callCode); // Store the code for the current session
+      codeInputSection.style.display = 'block';
+    };
+
+    // Join the call with a code
+    joinCallBtn.onclick = () => {
+      const enteredCode = codeInput.value;
+      const storedCode = localStorage.getItem('callCode');
+      
+      if (enteredCode === storedCode) {
+        alert("Joined the call successfully!");
+        startCallButton.style.display = 'inline-block'; // Show start button for call
+      } else {
+        alert("Invalid code. Please try again.");
+      }
+    };
+
     // Start Call Button
     startCallButton.onclick = () => {
-      // Example: Initialize peer connection and start WebRTC
+      if (!callCode) {
+        alert('You must create or join a call first!');
+        return;
+      }
+
+      // Initialize peer connection and start WebRTC
       peerConnection = new RTCPeerConnection();
-      
-      // Add local stream to peer connection
       localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
       
       peerConnection.ontrack = (event) => {
@@ -102,24 +156,9 @@
       }
     };
 
-    // Simulate receiving an offer and responding with an answer
-    // This would normally come from the server via WebSocket or similar
-    function simulateAnswer(offer) {
-      peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-      peerConnection.createAnswer()
-        .then(answer => {
-          peerConnection.setLocalDescription(answer);
-          console.log("Answer created: ", answer);
-        })
-        .catch(error => {
-          console.error('Error creating answer:', error);
-        });
-    }
-
-    // Simulate receiving an answer and handling ICE candidates
-    // This would normally come from the server as well
-    function simulateAnswerReceived(answer) {
-      peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+    // Generate a random code (could be a UUID or any unique string)
+    function generateCode() {
+      return Math.random().toString(36).substr(2, 6); // Generate a random 6-character code
     }
   </script>
 </body>
