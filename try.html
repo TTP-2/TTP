@@ -78,7 +78,7 @@
       }
     }
 
-    // Function to create a McDonald's building
+    // Function to create a McDonald's building with logo and see-through windows
     function createMcdonaldsBuilding(x, z) {
       // Main building body (red color)
       const buildingGeometry = new THREE.BoxGeometry(30, 15, 20);
@@ -107,27 +107,53 @@
       arch2.rotation.x = Math.PI / 2;
       arch2.position.set(x + 8, 15, z + 5);
       scene.add(arch2);
+
+      // McDonald's logo as a billboard on the building's facade
+      const logoGeometry = new THREE.PlaneGeometry(12, 6);
+      const logoTexture = new THREE.TextureLoader().load('https://upload.wikimedia.org/wikipedia/commons/4/4b/McDonald%27s_Golden_Arches.svg'); // McDonald's logo
+      const logoMaterial = new THREE.MeshBasicMaterial({ map: logoTexture, transparent: true });
+      const logo = new THREE.Mesh(logoGeometry, logoMaterial);
+      logo.position.set(x, 10, z - 10); // Position logo on the facade
+      scene.add(logo);
+
+      // Windows (transparent)
+      const windowMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff, transparent: true, opacity: 0.5 });
+      const windowGeometry = new THREE.PlaneGeometry(10, 6);
+      const window1 = new THREE.Mesh(windowGeometry, windowMaterial);
+      window1.position.set(x - 10, 10, z);
+      scene.add(window1);
+      const window2 = new THREE.Mesh(windowGeometry, windowMaterial);
+      window2.position.set(x + 10, 10, z);
+      scene.add(window2);
     }
 
     // Create McDonald's building
     createMcdonaldsBuilding(0, 0);
 
-    // Create NPCs (as cubes)
+    // Function to create NPCs with burgers
     function createNPC(x, z) {
       const geometry = new THREE.BoxGeometry(5, 10, 5); // NPC is a cube
       const material = new THREE.MeshBasicMaterial({ color: 0x0000ff }); // Blue color
       const npc = new THREE.Mesh(geometry, material);
       npc.position.set(x, 5, z);
       scene.add(npc);
+
+      // Create burger (small sphere)
+      const burgerGeometry = new THREE.SphereGeometry(1, 8, 8);
+      const burgerMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 }); // Brown color (burger)
+      const burger = new THREE.Mesh(burgerGeometry, burgerMaterial);
+      burger.position.set(x, 10, z + 2); // Position burger slightly above NPC
+      scene.add(burger);
+
       return npc;
     }
 
-    // Create some NPCs in the world
+    // Create some NPCs with burgers inside the McDonald's
     const npcs = [];
     for (let i = -2; i <= 2; i++) {
       for (let j = -2; j <= 2; j++) {
         if (Math.random() < 0.5) { // Randomly place NPCs
-          npcs.push(createNPC(i * 100, j * 100));
+          npcs.push(createNPC(i * 10, j * 10));
         }
       }
     }
