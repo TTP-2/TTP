@@ -137,8 +137,8 @@
         case 'KeyD': moveRight = true; break;
         case 'ArrowLeft': cameraRotationY = 0.05; break;
         case 'ArrowRight': cameraRotationY = -0.05; break;
-        case 'ArrowUp': cameraRotationX = 0.05; break;  // Look up
-        case 'ArrowDown': cameraRotationX = -0.05; break; // Look down
+        case 'ArrowUp': camera.rotation.x = -Math.PI / 2; break;  // Look straight up
+        case 'ArrowDown': camera.rotation.x = Math.PI / 2; break; // Look straight down
       }
     });
 
@@ -194,7 +194,6 @@
       if (moveRight) camera.position.addScaledVector(rightVector, 0.1);
 
       camera.rotation.y += cameraRotationY;
-      camera.rotation.x += cameraRotationX;  // Apply pitch (up/down)
 
       // Check if the camera is underwater
       const isUnderwater = camera.position.y < 0;
