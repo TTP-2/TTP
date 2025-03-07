@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messaging Room</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f0f0;
+      margin: 0;
+    }
+    .container {
+      width: 400px;
+      text-align: center;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+    input {
+      width: 80%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #chatRoom {
+      display: none;
+    }
+    #messages {
+      width: 100%;
+      height: 200px;
+      border: 1px solid #ddd;
+      margin-bottom: 10px;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    #messageInput {
+      width: 80%;
+      padding: 10px;
+    }
+    .message {
+      margin: 5px 0;
+      padding: 5px;
+      background-color: #f1f1f1;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Messaging Room</h2>
+
+    <!-- Section for creating a room -->
+    <div id="createRoomSection">
+      <button id="createRoomBtn">Create a Room</button>
+      <p id="roomCodeMessage" style="display: none;">Room Code: <span id="roomCode"></span></p>
+    </div>
+
+    <!-- Section for joining a room -->
+    <div id="joinRoomSection">
+      <input id="codeInput" type="text" placeholder="Enter Room Code">
+      <button id="joinRoomBtn">Join Room</button>
+    </div>
+
+    <!-- Chat Room Section -->
+    <div id="chatRoom">
+      <h3>Chat Room</h3>
+      <div id="messages"></div>
+      <input id="messageInput" type="text" placeholder="Type your message">
+      <button id="sendMessageBtn">Send</button>
+      <button id="leaveRoomBtn">Leave Room</button>
+    </div>
+  </div>
+
+  <script>
+    // JavaScript code for the messaging functionality
+    let currentRoomCode = null;
+    let userName = "User" + Math.floor(Math.random() * 1000); // Example random username
+    const roomCodeEl = document.getElementById('roomCode');
+    const roomCodeMessage = document.getElementById('roomCodeMessage');
+    const createRoomBtn = document.getElementById('createRoomBtn');
+    const joinRoomBtn = document.getElementById('joinRoomBtn');
+    const codeInput = document.getElementById('codeInput');
+    const chatRoom = document.getElementById('chatRoom');
+    const messagesEl = document.getElementById('messages');
+    const messageInput = document.getElementById('messageInput');
+    const sendMessageBtn = document.getElementById('sendMessageBtn');
+    const leaveRoomBtn = document.getElementById('leaveRoomBtn');
+
+    // 1. Create a Room
+    createRoomBtn.onclick = () => {
+      currentRoomCode = generateRoomCode();
+      roomCodeEl.textContent = currentRoomCode;
+      roomCodeMessage.style.display = 'block';
+      document.getElementById('createRoomSection').style.display = 'none';
+      document.getElementById('joinRoomSection').style.display = 'none';
+      chatRoom.style.display = 'block';
+      displayMessage('System', 'Room created! Share the code with others.');
+    };
+
+    // 2. Join a Room
+    joinRoomBtn.onclick = () => {
+      const enteredCode = codeInput.value;
+      if (enteredCode === currentRoomCode) {
+        chatRoom.style.display = 'block';
+        displayMessage('System', 'You have joined the room!');
+        document.getElementById('createRoomSection').style.display = 'none';
+        document.getElementById('joinRoomSection').style.display = 'none';
+      } else {
+        alert('Invalid code! Please try again.');
+      }
+    };
+
+    // 3. Send Message
+    sendMessageBtn.onclick = () => {
+      const message = messageInput.value;
+      if (message.trim() !== "") {
+        displayMessage(userName, message);
+        messageInput.value = ''; // Clear the input field
+      }
+    };
+
+    // 4. Leave Room
+    leaveRoomBtn.onclick = () => {
+      chatRoom.style.display = 'none';
+      document.getElementById('createRoomSection').style.display = 'block';
+      document.getElementById('joinRoomSection').style.display = 'block';
+    };
+
+    // Function to generate a random room code
+    function generateRoomCode() {
+      return Math.random().toString(36).substr(2, 6); // 6-character random code
+    }
+
+    // Function to display messages in the chat
+    function displayMessage(user, message) {
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message');
+      messageDiv.textContent = `${user}: ${message}`;
+      messagesEl.appendChild(messageDiv);
+      messagesEl.scrollTop = messagesEl.scrollHeight; // Scroll to bottom
+    }
+  </script>
+
+</body>
+</html>
