@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simple 3D Game - Minecraft Style</title>
+  <title>Massive Mall - 3D World</title>
   <style>
     body {
       margin: 0;
@@ -27,138 +27,77 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Sun as a circle
-    const sunGeometry = new THREE.SphereGeometry(10, 32, 32);
-    const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
-    const sun = new THREE.Mesh(sunGeometry, sunMaterial);
-    sun.position.set(50, 50, 50); // Position the sun
-    scene.add(sun);
+    // Create a massive mall structure
+    function createMall(x, z) {
+      // Create the floor of the mall (grass or carpet color)
+      const floorGeometry = new THREE.PlaneGeometry(100, 100);
+      const floorMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, side: THREE.DoubleSide });
+      const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.set(x, 0, z);
+      scene.add(floor);
 
-    let isDay = true;
-    const moon = new THREE.PointLight(0xaaaaaa, 1, 200);
-    moon.position.set(-50, 100, -50);
-    moon.visible = false;
-    scene.add(moon);
+      // Create the walls of the mall (gray for simplicity)
+      const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 });
+      
+      // Front wall (with an entrance)
+      const frontWallGeometry = new THREE.BoxGeometry(100, 20, 1);
+      const frontWall = new THREE.Mesh(frontWallGeometry, wallMaterial);
+      frontWall.position.set(x, 10, z - 50);
+      scene.add(frontWall);
 
-    function updateSky() {
-      if (isDay) {
-        scene.background = new THREE.Color(0x87CEEB);
-        sun.visible = true;
-        moon.visible = false;
-      } else {
-        scene.background = new THREE.Color(0x000000);
-        sun.visible = false;
-        moon.visible = true;
-      }
-    }
+      // Back wall
+      const backWallGeometry = new THREE.BoxGeometry(100, 20, 1);
+      const backWall = new THREE.Mesh(backWallGeometry, wallMaterial);
+      backWall.position.set(x, 10, z + 50);
+      scene.add(backWall);
 
-    function toggleDayNight() {
-      isDay = !isDay;
-      updateSky();
-      setTimeout(toggleDayNight, 300000);
-    }
+      // Left wall
+      const leftWallGeometry = new THREE.BoxGeometry(1, 20, 100);
+      const leftWall = new THREE.Mesh(leftWallGeometry, wallMaterial);
+      leftWall.position.set(x - 50, 10, z);
+      scene.add(leftWall);
 
-    updateSky();
-    setTimeout(toggleDayNight, 300000);
+      // Right wall
+      const rightWallGeometry = new THREE.BoxGeometry(1, 20, 100);
+      const rightWall = new THREE.Mesh(rightWallGeometry, wallMaterial);
+      rightWall.position.set(x + 50, 10, z);
+      scene.add(rightWall);
 
-    // Function to create ground
-    function createGround(x, z, color) {
-      const geometry = new THREE.PlaneGeometry(100, 100);
-      const material = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
-      const plane = new THREE.Mesh(geometry, material);
-      plane.rotation.x = -Math.PI / 2;
-      plane.position.set(x, 0, z);
-      scene.add(plane);
-    }
-
-    // Create ground and grass
-    for (let i = -2; i <= 2; i++) {
-      for (let j = -2; j <= 2; j++) {
-        createGround(i * 100, j * 100, 0x00ff00); // Grass color
-      }
-    }
-
-    // Function to create a McDonald's building with logo and see-through windows
-    function createMcdonaldsBuilding(x, z) {
-      // Main building body (red color)
-      const buildingGeometry = new THREE.BoxGeometry(30, 15, 20);
-      const buildingMaterial = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
-      const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
-      building.position.set(x, 7.5, z);
-      scene.add(building);
-
-      // Roof (yellow color)
-      const roofGeometry = new THREE.CylinderGeometry(10, 10, 5, 32);
-      const roofMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
+      // Create the roof of the mall (gray color)
+      const roofGeometry = new THREE.PlaneGeometry(100, 100);
+      const roofMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 });
       const roof = new THREE.Mesh(roofGeometry, roofMaterial);
       roof.rotation.x = Math.PI / 2;
-      roof.position.set(x, 15, z);
+      roof.position.set(x, 20, z);
       scene.add(roof);
 
-      // Golden Arches (arches on the roof)
-      const archGeometry = new THREE.TorusGeometry(5, 1, 16, 100);
-      const archMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
-      const arch1 = new THREE.Mesh(archGeometry, archMaterial);
-      arch1.rotation.x = Math.PI / 2;
-      arch1.position.set(x - 8, 15, z + 5);
-      scene.add(arch1);
-
-      const arch2 = new THREE.Mesh(archGeometry, archMaterial);
-      arch2.rotation.x = Math.PI / 2;
-      arch2.position.set(x + 8, 15, z + 5);
-      scene.add(arch2);
-
-      // McDonald's logo as a billboard on the building's facade
-      const logoGeometry = new THREE.PlaneGeometry(12, 6);
-      const logoTexture = new THREE.TextureLoader().load('https://upload.wikimedia.org/wikipedia/commons/4/4b/McDonald%27s_Golden_Arches.svg'); // McDonald's logo
-      const logoMaterial = new THREE.MeshBasicMaterial({ map: logoTexture, transparent: true });
-      const logo = new THREE.Mesh(logoGeometry, logoMaterial);
-      logo.position.set(x, 10, z - 10); // Position logo on the facade
-      scene.add(logo);
-
-      // Windows (transparent)
-      const windowMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff, transparent: true, opacity: 0.5 });
-      const windowGeometry = new THREE.PlaneGeometry(10, 6);
-      const window1 = new THREE.Mesh(windowGeometry, windowMaterial);
-      window1.position.set(x - 10, 10, z);
-      scene.add(window1);
-      const window2 = new THREE.Mesh(windowGeometry, windowMaterial);
-      window2.position.set(x + 10, 10, z);
-      scene.add(window2);
+      // Make the entrance wide open by cutting out the front wall area (optional)
     }
 
-    // Create McDonald's building
-    createMcdonaldsBuilding(0, 0);
+    // Create the mall
+    createMall(0, 0);
 
-    // Function to create NPCs with burgers
+    // Function to create NPCs with random movements inside the mall
     function createNPC(x, z) {
-      const geometry = new THREE.BoxGeometry(5, 10, 5); // NPC is a cube
-      const material = new THREE.MeshBasicMaterial({ color: 0x0000ff }); // Blue color
+      const geometry = new THREE.BoxGeometry(2, 4, 2); // NPC as a small box
+      const material = new THREE.MeshBasicMaterial({ color: 0x0000ff });
       const npc = new THREE.Mesh(geometry, material);
-      npc.position.set(x, 5, z);
+      npc.position.set(x, 2, z);
       scene.add(npc);
-
-      // Create burger (small sphere)
-      const burgerGeometry = new THREE.SphereGeometry(1, 8, 8);
-      const burgerMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 }); // Brown color (burger)
-      const burger = new THREE.Mesh(burgerGeometry, burgerMaterial);
-      burger.position.set(x, 10, z + 2); // Position burger slightly above NPC
-      scene.add(burger);
-
       return npc;
     }
 
-    // Create some NPCs with burgers inside the McDonald's
+    // Create some NPCs moving randomly inside the mall
     const npcs = [];
-    for (let i = -2; i <= 2; i++) {
-      for (let j = -2; j <= 2; j++) {
-        if (Math.random() < 0.5) { // Randomly place NPCs
-          npcs.push(createNPC(i * 10, j * 10));
-        }
+    for (let i = -20; i <= 20; i += 10) {
+      for (let j = -20; j <= 20; j += 10) {
+        npcs.push(createNPC(i, j));
       }
     }
 
-    camera.position.set(0, 2, 5);
+    // Camera movement setup
+    camera.position.set(0, 2, 10);
     let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
     let cameraRotationY = 0;
 
@@ -224,7 +163,7 @@
 
       camera.rotation.y += cameraRotationY;
 
-      // NPC behavior (simple random movement)
+      // NPC behavior (random movement within the mall)
       npcs.forEach(npc => {
         npc.position.x += (Math.random() - 0.5) * 0.5; // Random movement in X
         npc.position.z += (Math.random() - 0.5) * 0.5; // Random movement in Z
