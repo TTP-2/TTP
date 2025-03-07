@@ -95,24 +95,20 @@
       }
     }
 
-    // Function to create a winding road
+    // Function to create a winding road with yellow connected lines
     function createRoad() {
-      const roadMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 }); // Gray road color
-      const roadWidth = 10;
-      const roadLength = 300;
-      
-      // Create a winding road using a series of planes
-      for (let i = 0; i < roadLength; i += 10) {
-        const angle = Math.sin(i / 20) * Math.PI / 6; // Winding effect using sine wave
-        const roadGeometry = new THREE.PlaneGeometry(roadWidth, 10);
-        const road = new THREE.Mesh(roadGeometry, roadMaterial);
+      const roadMaterial = new THREE.LineBasicMaterial({ color: 0xFFFF00, linewidth: 2 }); // Yellow road lines
 
-        road.rotation.x = -Math.PI / 2;
-        road.position.set(i, 0.1, Math.sin(i / 20) * 50); // Move along a winding path
-        road.rotation.z = angle;
-
-        scene.add(road);
+      const roadPath = [];
+      for (let i = 0; i < 200; i++) {
+        const x = i * 10;
+        const z = Math.sin(i / 20) * 50; // Create a winding path using sine
+        roadPath.push(new THREE.Vector3(x, 0.1, z));
       }
+
+      const geometry = new THREE.BufferGeometry().setFromPoints(roadPath);
+      const road = new THREE.Line(geometry, roadMaterial);
+      scene.add(road);
     }
 
     createRoad(); // Call the function to create the winding road
