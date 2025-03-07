@@ -82,7 +82,7 @@
       // Create the walls of the mall (gray color)
       const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 });
       
-      // Front wall (with an entrance space)
+      // Front wall (with an entrance space for walking through)
       const frontWallGeometry = new THREE.BoxGeometry(100, 20, 1);
       const frontWall = new THREE.Mesh(frontWallGeometry, wallMaterial);
       frontWall.position.set(x, 10, z - 50);
@@ -113,6 +113,14 @@
       roof.rotation.x = Math.PI / 2;
       roof.position.set(x, 20, z);
       scene.add(roof);
+
+      // Create the entrance (square hole in the front wall)
+      const entranceGeometry = new THREE.PlaneGeometry(40, 20);
+      const entranceMaterial = new THREE.MeshBasicMaterial({ color: 0x808080, transparent: true, opacity: 0 });
+      const entrance = new THREE.Mesh(entranceGeometry, entranceMaterial);
+      entrance.position.set(x, 10, z - 50);
+      entrance.rotation.x = Math.PI / 2;
+      scene.add(entrance);
     }
 
     // Create the mall structure at (0, 0)
