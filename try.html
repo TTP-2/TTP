@@ -27,11 +27,14 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    let isDay = true;
-    const sun = new THREE.DirectionalLight(0xffffff, 1);
-    sun.position.set(50, 100, 50);
+    // Sun as a circle
+    const sunGeometry = new THREE.SphereGeometry(10, 32, 32);
+    const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
+    const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+    sun.position.set(50, 50, 50); // Position the sun
     scene.add(sun);
 
+    let isDay = true;
     const moon = new THREE.PointLight(0xaaaaaa, 1, 200);
     moon.position.set(-50, 100, -50);
     moon.visible = false;
@@ -113,11 +116,10 @@
         case 'ArrowLeft': cameraRotationY = 0.05; break;
         case 'ArrowRight': cameraRotationY = -0.05; break;
         case 'ArrowUp': 
-          lookingUp = true;
-          break;  // Start looking up
+          lookingUp = true; // Start looking up
+          break; 
         case 'ArrowDown': 
-          lookingDown = true;
-          camera.rotation.x = maxLookDown; // Look straight down immediately
+          lookingDown = true; // Start looking down
           break; 
       }
     });
@@ -131,10 +133,10 @@
         case 'ArrowLeft':
         case 'ArrowRight': cameraRotationY = 0; break;
         case 'ArrowUp': 
-          lookingUp = false;
-          break; // Stop looking up
+          lookingUp = false; // Stop looking up
+          break; 
         case 'ArrowDown': 
-          lookingDown = false;
+          lookingDown = false; // Stop looking down
           break; 
       }
     });
@@ -184,9 +186,9 @@
         camera.rotation.x -= 0.01;  // Slowly look up
       }
 
-      // If ArrowDown is pressed, make sure we are looking straight down
-      if (lookingDown) {
-        camera.rotation.x = maxLookDown;
+      // Smoothly rotate the camera down when ArrowDown is pressed
+      if (lookingDown && camera.rotation.x < maxLookDown) {
+        camera.rotation.x += 0.01;  // Slowly look down
       }
 
       socket.emit('move', {
