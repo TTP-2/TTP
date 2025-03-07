@@ -1,132 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2D Platformer Game</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Call</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f0f0f0;
+    }
 
-        #game-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            background-color: #87CEEB; /* Sky blue */
-        }
+    .container {
+      text-align: center;
+    }
 
-        .platform {
-            position: absolute;
-            width: 200px;
-            height: 20px;
-            background-color: #228B22; /* Green for platforms */
-        }
+    video {
+      width: 300px;
+      height: 200px;
+      margin: 10px;
+      border: 1px solid #ccc;
+    }
 
-        #player {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            background-color: #FF6347; /* Red for the player */
-            bottom: 0;
-            left: 50px;
-        }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
 
-        .coin {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background-color: gold;
-            border-radius: 50%;
-        }
-    </style>
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
 </head>
 <body>
-    <div id="game-container">
-        <div id="player"></div>
-        <div class="platform" style="top: 500px; left: 0;"></div>
-        <div class="platform" style="top: 400px; left: 200px;"></div>
-        <div class="platform" style="top: 300px; left: 400px;"></div>
-        <div class="coin" style="top: 380px; left: 210px;"></div>
-        <div class="coin" style="top: 280px; left: 420px;"></div>
-    </div>
-    <script>
-        const player = document.getElementById('player');
-        const coins = document.querySelectorAll('.coin');
-        const platforms = document.querySelectorAll('.platform');
+  <div class="container">
+    <video id="localVideo" autoplay muted></video>
+    <video id="remoteVideo" autoplay></video>
+    <button id="startCall">Start Call</button>
+    <button id="endCall">End Call</button>
+  </div>
 
-        let playerVelocityY = 0;
-        let playerPositionX = 50;
-        let playerPositionY = 0;
-        let isJumping = false;
-        let collectedCoins = 0;
+  <script>
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+    const startCallButton = document.getElementById('startCall');
+    const endCallButton = document.getElementById('endCall');
+    let localStream;
+    let peerConnection;
+    let remoteStream;
 
-        const gravity = 0.8;
-        const jumpPower = 15;
+    // Set up local video stream
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(stream => {
+        localStream = stream;
+        localVideo.srcObject = stream;
+      }).catch(error => {
+        console.error('Error accessing media devices.', error);
+      });
 
-        function gameLoop() {
-            // Apply gravity
-            if (playerPositionY < window.innerHeight - player.offsetHeight) {
-                playerVelocityY += gravity;
-            } else {
-                playerVelocityY = 0;
-                playerPositionY = window.innerHeight - player.offsetHeight;
-                isJumping = false;
-            }
-
-            // Update player position
-            playerPositionY += playerVelocityY;
-            player.style.bottom = playerPositionY + 'px';
-            player.style.left = playerPositionX + 'px';
-
-            // Collision with platforms
-            platforms.forEach(platform => {
-                const platformRect = platform.getBoundingClientRect();
-                const playerRect = player.getBoundingClientRect();
-
-                if (playerRect.bottom <= platformRect.top + 10 &&
-                    playerRect.bottom + playerVelocityY >= platformRect.top + 10 &&
-                    playerRect.left < platformRect.right &&
-                    playerRect.right > platformRect.left) {
-                    playerPositionY = platformRect.top + player.offsetHeight;
-                    playerVelocityY = 0;
-                    isJumping = false;
-                }
-            });
-
-            // Coin collection
-            coins.forEach(coin => {
-                const coinRect = coin.getBoundingClientRect();
-                const playerRect = player.getBoundingClientRect();
-
-                if (playerRect.left < coinRect.right &&
-                    playerRect.right > coinRect.left &&
-                    playerRect.top < coinRect.bottom &&
-                    playerRect.bottom > coinRect.top) {
-                    coin.style.display = 'none'; // Hide coin after collection
-                    collectedCoins++;
-                    console.log("Coins collected: " + collectedCoins);
-                }
-            });
-
-            requestAnimationFrame(gameLoop);
-        }
-
-        // Player movement
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') {
-                playerPositionX -= 5;
-            } else if (e.key === 'ArrowRight') {
-                playerPositionX += 5;
-            } else if (e.key === ' ' && !isJumping) { // Spacebar for jumping
-                playerVelocityY = -jumpPower;
-                isJumping = true;
-            }
+    // Start Call Button
+    startCallButton.onclick = () => {
+      // Example: Initialize peer connection and start WebRTC
+      peerConnection = new RTCPeerConnection();
+      
+      // Add local stream to peer connection
+      localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+      
+      peerConnection.ontrack = (event) => {
+        remoteStream = event.streams[0];
+        remoteVideo.srcObject = remoteStream;
+      };
+      
+      peerConnection.createOffer()
+        .then(offer => {
+          peerConnection.setLocalDescription(offer);
+          // Normally, signaling would be done via a server here
+          // For demo purposes, just log the offer to the console
+          console.log("Offer created: ", offer);
+        })
+        .catch(error => {
+          console.error('Error creating offer:', error);
         });
+    };
 
-        gameLoop();
-    </script>
+    // End Call Button
+    endCallButton.onclick = () => {
+      if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+      }
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+      }
+    };
+
+    // Simulate receiving an offer and responding with an answer
+    // This would normally come from the server via WebSocket or similar
+    function simulateAnswer(offer) {
+      peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+      peerConnection.createAnswer()
+        .then(answer => {
+          peerConnection.setLocalDescription(answer);
+          console.log("Answer created: ", answer);
+        })
+        .catch(error => {
+          console.error('Error creating answer:', error);
+        });
+    }
+
+    // Simulate receiving an answer and handling ICE candidates
+    // This would normally come from the server as well
+    function simulateAnswerReceived(answer) {
+      peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+    }
+  </script>
 </body>
 </html>
