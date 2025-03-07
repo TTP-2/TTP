@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple 3D Game - Minecraft Style</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+</head>
+<body>
+  <script>
+    const socket = io();
+    
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    
+    let isDay = true;
+    const sun = new THREE.DirectionalLight(0xffffff, 1);
+    sun.position.set(50, 100, 50);
+    scene.add(sun);
+
+    const moon = new THREE.PointLight(0xaaaaaa, 1, 200);
+    moon.position.set(-50, 100, -50);
+    moon.visible = false;
+    scene.add(moon);
+
+    function updateSky() {
+      if (isDay) {
+        scene.background = new THREE.Color(0x87CEEB);
+        sun.visible = true;
+        moon.visible = false;
+      } else {
+        scene.background = new THREE.Color(0x000000);
+        sun.visible = false;
+        moon.visible = true;
+      }
+    }
+
+    function toggleDayNight() {
+      isDay = !isDay;
+      updateSky();
+      setTimeout(toggleDayNight, 300000);
+    }
+
+    updateSky();
+    setTimeout(toggleDayNight, 300000);
+
+    function createGround(x, z, color) {
+      const geometry = new THREE.PlaneGeometry(100, 100);
+      const material = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
+      const plane = new THREE.Mesh(geometry, material);
+      plane.rotation.x = -Math.PI / 2;
+      plane.position.set(x, 0, z);
+      scene.add(plane);
+    }
+
+    // Creating grass, sand, and water areas
+    for (let i = -2; i <= 2; i++) {
+      for (let j = -2; j <= 2; j++) {
+        const isWater = j > 1;
+        const isSand = j === 1;
+        createGround(i * 100, j * 100, isWater ? 0x0000ff : isSand ? 0xFFD700 : 0x00ff00);
+      }
+    }
+
+    // Function to create a tall gray building
+    function createBuilding(x, z) {
+      const buildingHeight = Math.random() * 40 + 30; // Random height between 30 and 70
+      const geometry = new THREE.BoxGeometry(10, buildingHeight, 10);
+      const material = new THREE.MeshBasicMaterial({ color: 0x808080 }); // Gray color
+      const building = new THREE.Mesh(geometry, material);
+      building.position.set(x, buildingHeight / 2, z);
+      scene.add(building);
+    }
+
+    // Create tall buildings at random positions on the grass
+    for (let i = -2; i <= 2; i++) {
+      for (let j = -2; j <= 2; j++) {
+        if (j === 0) { // Place buildings only on the grass
+          createBuilding(i * 100, j * 100);
+        }
+      }
+    }
+
+    // Function to create a winding road
+    function createRoad() {
+      const roadMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 }); // Gray road color
+      const roadWidth = 10;
+      const roadLength = 300;
+      
+      // Create a winding road using a series of planes
+      for (let i = 0; i < roadLength; i += 10) {
+        const angle = Math.sin(i / 20) * Math.PI / 6; // Winding effect using sine wave
+        const roadGeometry = new THREE.PlaneGeometry(roadWidth, 10);
+        const road = new THREE.Mesh(roadGeometry, roadMaterial);
+
+        road.rotation.x = -Math.PI / 2;
+        road.position.set(i, 0.1, Math.sin(i / 20) * 50); // Move along a winding path
+        road.rotation.z = angle;
+
+        scene.add(road);
+      }
+    }
+
+    createRoad(); // Call the function to create the winding road
+
+    // Camera setup
+    camera.position.set(0, 2, 5);
+    let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+    let cameraRotationY = 0;
+
+    document.addEventListener('keydown', (event) => {
+      switch (event.code) {
+        case 'KeyW': moveForward = true; break;
+        case 'KeyS': moveBackward = true; break;
+        case 'KeyA': moveLeft = true; break;
+        case 'KeyD': moveRight = true; break;
+        case 'ArrowLeft': cameraRotationY = 0.05; break;
+        case 'ArrowRight': cameraRotationY = -0.05; break;
+      }
+    });
+
+    document.addEventListener('keyup', (event) => {
+      switch (event.code) {
+        case 'KeyW': moveForward = false; break;
+        case 'KeyS': moveBackward = false; break;
+        case 'KeyA': moveLeft = false; break;
+        case 'KeyD': moveRight = false; break;
+        case 'ArrowLeft':
+        case 'ArrowRight': cameraRotationY = 0; break;
+      }
+    });
+
+    const players = {};
+
+    socket.on('updatePlayers', (serverPlayers) => {
+      for (let id in serverPlayers) {
+        if (!players[id]) {
+          const cube = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 1, 1),
+            new THREE.MeshBasicMaterial({ color: 0xff0000 })
+          );
+          scene.add(cube);
+          players[id] = cube;
+        }
+        players[id].position.set(
+          serverPlayers[id].x,
+          serverPlayers[id].y,
+          serverPlayers[id].z
+        );
+      }
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const direction = new THREE.Vector3();
+      camera.getWorldDirection(direction);
+      direction.y = 0;
+      direction.normalize();
+
+      const rightVector = new THREE.Vector3();
+      camera.getWorldDirection(rightVector);
+      rightVector.y = 0;
+      rightVector.cross(new THREE.Vector3(0, 1, 0)).normalize();
+
+      if (moveForward) camera.position.addScaledVector(direction, 0.1);
+      if (moveBackward) camera.position.addScaledVector(direction, -0.1);
+      if (moveLeft) camera.position.addScaledVector(rightVector, -0.1);
+      if (moveRight) camera.position.addScaledVector(rightVector, 0.1);
+
+      camera.rotation.y += cameraRotationY;
+      
+      socket.emit('move', {
+        x: camera.position.x,
+        y: camera.position.y,
+        z: camera.position.z
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
