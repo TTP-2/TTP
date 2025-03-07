@@ -4,46 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2D Platformer Game</title>
-    <link rel="stylesheet" href="style.css">
-  <style>
-    body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-}
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
 
-#game-container {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-    background-color: #87CEEB; /* Sky blue */
-}
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-color: #87CEEB; /* Sky blue */
+        }
 
-.platform {
-    position: absolute;
-    width: 200px;
-    height: 20px;
-    background-color: #228B22; /* Green for platforms */
-}
+        .platform {
+            position: absolute;
+            width: 200px;
+            height: 20px;
+            background-color: #228B22; /* Green for platforms */
+        }
 
-#player {
-    position: absolute;
-    width: 50px;
-    height: 50px;
-    background-color: #FF6347; /* Red for the player */
-    bottom: 0;
-    left: 50px;
-}
+        #player {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: #FF6347; /* Red for the player */
+            bottom: 0;
+            left: 50px;
+        }
 
-.coin {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    background-color: gold;
-    border-radius: 50%;
-}
-
-  </style>
+        .coin {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: gold;
+            border-radius: 50%;
+        }
+    </style>
 </head>
 <body>
     <div id="game-container">
@@ -54,82 +52,81 @@
         <div class="coin" style="top: 380px; left: 210px;"></div>
         <div class="coin" style="top: 280px; left: 420px;"></div>
     </div>
-    <script src="game.js">
-      const player = document.getElementById('player');
-const coins = document.querySelectorAll('.coin');
-const platforms = document.querySelectorAll('.platform');
+    <script>
+        const player = document.getElementById('player');
+        const coins = document.querySelectorAll('.coin');
+        const platforms = document.querySelectorAll('.platform');
 
-let playerVelocityY = 0;
-let playerPositionX = 50;
-let playerPositionY = 0;
-let isJumping = false;
-let collectedCoins = 0;
+        let playerVelocityY = 0;
+        let playerPositionX = 50;
+        let playerPositionY = 0;
+        let isJumping = false;
+        let collectedCoins = 0;
 
-const gravity = 0.8;
-const jumpPower = 15;
+        const gravity = 0.8;
+        const jumpPower = 15;
 
-function gameLoop() {
-    // Apply gravity
-    if (playerPositionY < window.innerHeight - player.offsetHeight) {
-        playerVelocityY += gravity;
-    } else {
-        playerVelocityY = 0;
-        playerPositionY = window.innerHeight - player.offsetHeight;
-        isJumping = false;
-    }
+        function gameLoop() {
+            // Apply gravity
+            if (playerPositionY < window.innerHeight - player.offsetHeight) {
+                playerVelocityY += gravity;
+            } else {
+                playerVelocityY = 0;
+                playerPositionY = window.innerHeight - player.offsetHeight;
+                isJumping = false;
+            }
 
-    // Update player position
-    playerPositionY += playerVelocityY;
-    player.style.bottom = playerPositionY + 'px';
-    player.style.left = playerPositionX + 'px';
+            // Update player position
+            playerPositionY += playerVelocityY;
+            player.style.bottom = playerPositionY + 'px';
+            player.style.left = playerPositionX + 'px';
 
-    // Collision with platforms
-    platforms.forEach(platform => {
-        const platformRect = platform.getBoundingClientRect();
-        const playerRect = player.getBoundingClientRect();
+            // Collision with platforms
+            platforms.forEach(platform => {
+                const platformRect = platform.getBoundingClientRect();
+                const playerRect = player.getBoundingClientRect();
 
-        if (playerRect.bottom <= platformRect.top + 10 &&
-            playerRect.bottom + playerVelocityY >= platformRect.top + 10 &&
-            playerRect.left < platformRect.right &&
-            playerRect.right > platformRect.left) {
-            playerPositionY = platformRect.top + player.offsetHeight;
-            playerVelocityY = 0;
-            isJumping = false;
+                if (playerRect.bottom <= platformRect.top + 10 &&
+                    playerRect.bottom + playerVelocityY >= platformRect.top + 10 &&
+                    playerRect.left < platformRect.right &&
+                    playerRect.right > platformRect.left) {
+                    playerPositionY = platformRect.top + player.offsetHeight;
+                    playerVelocityY = 0;
+                    isJumping = false;
+                }
+            });
+
+            // Coin collection
+            coins.forEach(coin => {
+                const coinRect = coin.getBoundingClientRect();
+                const playerRect = player.getBoundingClientRect();
+
+                if (playerRect.left < coinRect.right &&
+                    playerRect.right > coinRect.left &&
+                    playerRect.top < coinRect.bottom &&
+                    playerRect.bottom > coinRect.top) {
+                    coin.style.display = 'none'; // Hide coin after collection
+                    collectedCoins++;
+                    console.log("Coins collected: " + collectedCoins);
+                }
+            });
+
+            requestAnimationFrame(gameLoop);
         }
-    });
 
-    // Coin collection
-    coins.forEach(coin => {
-        const coinRect = coin.getBoundingClientRect();
-        const playerRect = player.getBoundingClientRect();
+        // Player movement
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                playerPositionX -= 5;
+            } else if (e.key === 'ArrowRight') {
+                playerPositionX += 5;
+            } else if (e.key === ' ' && !isJumping) { // Spacebar for jumping
+                playerVelocityY = -jumpPower;
+                isJumping = true;
+            }
+        });
 
-        if (playerRect.left < coinRect.right &&
-            playerRect.right > coinRect.left &&
-            playerRect.top < coinRect.bottom &&
-            playerRect.bottom > coinRect.top) {
-            coin.style.display = 'none'; // Hide coin after collection
-            collectedCoins++;
-            console.log("Coins collected: " + collectedCoins);
-        }
-    });
-
-    requestAnimationFrame(gameLoop);
-}
-
-// Player movement
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft') {
-        playerPositionX -= 5;
-    } else if (e.key === 'ArrowRight') {
-        playerPositionX += 5;
-    } else if (e.key === ' ' && !isJumping) { // Spacebar for jumping
-        playerVelocityY = -jumpPower;
-        isJumping = true;
-    }
-});
-
-gameLoop();
-
+        gameLoop();
     </script>
 </body>
 </html>
