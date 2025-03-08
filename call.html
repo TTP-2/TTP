@@ -1,165 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Video Call</title>
-  <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: #f0f0f0;
-    }
-
-    .container {
-      text-align: center;
-    }
-
-    video {
-      width: 300px;
-      height: 200px;
-      margin: 10px;
-      border: 1px solid #ccc;
-    }
-
-    button {
-      margin: 10px;
-      padding: 10px 20px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #45a049;
-    }
-
-    .input-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .input-section input {
-      padding: 10px;
-      margin: 5px;
-      font-size: 16px;
-    }
-
-    .code-input {
-      display: none;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Call</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+            font-family: Arial, sans-serif;
+        }
+        h2 {
+            color: #333;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .video-container {
+            display: flex;
+            gap: 10px;
+        }
+        video {
+            width: 45%;
+            border-radius: 10px;
+            border: 2px solid #333;
+            background: black;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div class="input-section">
-      <h2>Create or Join a Video Call</h2>
-      <button id="createCallBtn">Create a Call</button>
-      <div class="code-input">
-        <input id="codeInput" type="text" placeholder="Enter code to join">
-        <button id="joinCallBtn">Join Call</button>
-      </div>
+    <h2>Simple Video Calling</h2>
+    <div class="controls">
+        <input id="room" type="text" placeholder="Enter Room ID">
+        <button onclick="createRoom()">Create Room</button>
+        <button onclick="joinRoom()">Join Room</button>
     </div>
+    <div class="video-container">
+        <video id="localVideo" autoplay playsinline></video>
+        <video id="remoteVideo" autoplay playsinline></video>
+    </div>
+    <br>
+    <button onclick="endCall()">End Call</button>
 
-    <video id="localVideo" autoplay muted></video>
-    <video id="remoteVideo" autoplay></video>
-    <button id="startCall">Start Call</button>
-    <button id="endCall">End Call</button>
-  </div>
+    <script>
+        const socket = new WebSocket("ws://localhost:3000");
+        let localStream;
+        let peerConnection;
+        let roomID;
+        let isCaller = false;
+        const localVideo = document.getElementById("localVideo");
+        const remoteVideo = document.getElementById("remoteVideo");
+        const roomInput = document.getElementById("room");
+        const servers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-  <script>
-    const localVideo = document.getElementById('localVideo');
-    const remoteVideo = document.getElementById('remoteVideo');
-    const startCallButton = document.getElementById('startCall');
-    const endCallButton = document.getElementById('endCall');
-    const createCallBtn = document.getElementById('createCallBtn');
-    const codeInput = document.getElementById('codeInput');
-    const joinCallBtn = document.getElementById('joinCallBtn');
-    const codeInputSection = document.querySelector('.code-input');
-    let localStream;
-    let peerConnection;
-    let remoteStream;
-    let callCode;
+        socket.onmessage = async (message) => {
+            const data = JSON.parse(message.data);
+            if (data.type === "offer") {
+                isCaller = false;
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                socket.send(JSON.stringify({ type: "answer", answer, room: data.room }));
+            } else if (data.type === "answer") {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+            } else if (data.type === "ice-candidate") {
+                peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+            }
+        };
 
-    // Set up local video stream
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then(stream => {
-        localStream = stream;
-        localVideo.srcObject = stream;
-      }).catch(error => {
-        console.error('Error accessing media devices.', error);
-      });
+        async function createRoom() {
+            roomID = Math.random().toString(36).substr(2, 6);
+            roomInput.value = roomID;
+            isCaller = true;
+            startCall(roomID);
+        }
 
-    // Show code input for joining a call
-    createCallBtn.onclick = () => {
-      callCode = generateCode();
-      alert(`Call code is: ${callCode}`);
-      localStorage.setItem('callCode', callCode); // Store the code for the current session
-      codeInputSection.style.display = 'block';
-    };
+        async function joinRoom() {
+            roomID = roomInput.value;
+            isCaller = false;
+            startCall(roomID);
+        }
 
-    // Join the call with a code
-    joinCallBtn.onclick = () => {
-      const enteredCode = codeInput.value;
-      const storedCode = localStorage.getItem('callCode');
-      
-      if (enteredCode === storedCode) {
-        alert("Joined the call successfully!");
-        startCallButton.style.display = 'inline-block'; // Show start button for call
-      } else {
-        alert("Invalid code. Please try again.");
-      }
-    };
+        async function startCall(room) {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            localVideo.srcObject = localStream;
+            peerConnection = new RTCPeerConnection(servers);
+            peerConnection.ontrack = (event) => remoteVideo.srcObject = event.streams[0];
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.send(JSON.stringify({ type: "ice-candidate", candidate: event.candidate, room }));
+                }
+            };
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+            if (isCaller) {
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                socket.send(JSON.stringify({ type: "offer", offer, room }));
+            }
+        }
 
-    // Start Call Button
-    startCallButton.onclick = () => {
-      if (!callCode) {
-        alert('You must create or join a call first!');
-        return;
-      }
-
-      // Initialize peer connection and start WebRTC
-      peerConnection = new RTCPeerConnection();
-      localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-      
-      peerConnection.ontrack = (event) => {
-        remoteStream = event.streams[0];
-        remoteVideo.srcObject = remoteStream;
-      };
-      
-      peerConnection.createOffer()
-        .then(offer => {
-          peerConnection.setLocalDescription(offer);
-          // Normally, signaling would be done via a server here
-          // For demo purposes, just log the offer to the console
-          console.log("Offer created: ", offer);
-        })
-        .catch(error => {
-          console.error('Error creating offer:', error);
-        });
-    };
-
-    // End Call Button
-    endCallButton.onclick = () => {
-      if (peerConnection) {
-        peerConnection.close();
-        peerConnection = null;
-      }
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-      }
-    };
-
-    // Generate a random code (could be a UUID or any unique string)
-    function generateCode() {
-      return Math.random().toString(36).substr(2, 6); // Generate a random 6-character code
-    }
-  </script>
+        function endCall() {
+            if (peerConnection) peerConnection.close();
+            localVideo.srcObject = null;
+            remoteVideo.srcObject = null;
+        }
+    </script>
 </body>
 </html>
