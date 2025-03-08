@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messaging Platform with Secret Code</title>
+    <title>Join Chat Room with Code</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -62,48 +62,64 @@
         .input-container {
             margin-bottom: 10px;
         }
+
+        .join-section {
+            display: block;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-box" id="chatBox"></div>
-
-        <!-- Secret Code Input -->
-        <div class="input-container">
-            <input type="text" id="secretCode" placeholder="Enter Secret Code">
+    <div class="chat-container" id="chatContainer">
+        <!-- Room Code Input Section -->
+        <div id="joinSection" class="join-section">
+            <input type="text" id="roomCodeInput" placeholder="Enter Room Code">
+            <button onclick="joinRoom()">Join Room</button>
         </div>
 
-        <!-- Message Input -->
-        <div class="input-container">
-            <input type="text" id="messageInput" placeholder="Type a message...">
+        <!-- Chat Box Section -->
+        <div id="chatSection" style="display:none;">
+            <div class="chat-box" id="chatBox"></div>
+            <div class="input-container">
+                <input type="text" id="messageInput" placeholder="Type a message...">
+            </div>
+            <button onclick="sendMessage()">Send</button>
         </div>
-
-        <!-- Send Button -->
-        <button onclick="sendMessage()">Send</button>
     </div>
 
     <script>
-        const SECRET_CODE = "1234";  // Set the secret code here
+        const validRoomCodes = ['room123', 'chat456', 'talk789'];  // List of valid room codes
+
+        let currentRoom = null;
+
+        function joinRoom() {
+            const roomCode = document.getElementById('roomCodeInput').value;
+
+            if (validRoomCodes.includes(roomCode)) {
+                currentRoom = roomCode;
+                document.getElementById('joinSection').style.display = 'none';
+                document.getElementById('chatSection').style.display = 'block';
+                document.getElementById('chatBox').innerHTML = '';  // Clear chat history on room join
+                document.getElementById('roomCodeInput').value = '';  // Clear room code input
+            } else {
+                alert('Invalid room code. Please try again.');
+            }
+        }
 
         function sendMessage() {
-            const secretCode = document.getElementById("secretCode").value;
-            const message = document.getElementById("messageInput").value;
+            const message = document.getElementById('messageInput').value;
 
-            if (secretCode === SECRET_CODE && message.trim() !== "") {
-                let chatBox = document.getElementById("chatBox");
-                let newMessage = document.createElement("div");
-                newMessage.classList.add("message");
-                newMessage.textContent = message;
+            if (message.trim() !== '') {
+                let chatBox = document.getElementById('chatBox');
+                let newMessage = document.createElement('div');
+                newMessage.classList.add('message');
+                newMessage.textContent = `${currentRoom}: ${message}`;  // Include room name in message
                 chatBox.appendChild(newMessage);
 
-                // Clear the input fields
-                document.getElementById("secretCode").value = "";
-                document.getElementById("messageInput").value = "";
-
-                // Scroll to the bottom of the chat
-                chatBox.scrollTop = chatBox.scrollHeight;
+                document.getElementById('messageInput').value = '';  // Clear message input
+                chatBox.scrollTop = chatBox.scrollHeight;  // Scroll to the bottom
             } else {
-                alert("Incorrect secret code or empty message. Please try again.");
+                alert('Please enter a message.');
             }
         }
     </script>
