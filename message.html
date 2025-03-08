@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Secret Code Messaging App</title>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
         * {
             margin: 0;
@@ -143,36 +144,21 @@
             <button id="joinRoomButton">Join</button>
         </div>
 
-        <div class="chat-box" id="chatBox"></div>
+        <div class="chat-box" id="chatBox" style="display: none;"></div>
 
-        <div class="chat-input">
+        <div class="chat-input" style="display: none;">
             <input type="text" id="messageInput" placeholder="Type a message...">
             <button id="sendMessageButton">Send</button>
         </div>
     </div>
 
     <script>
-        function loadMessages(code) {
-            const messages = JSON.parse(localStorage.getItem(code)) || [];
-            const chatBox = document.getElementById('chatBox');
-            chatBox.innerHTML = '';  // Clear previous messages
-            messages.forEach(message => {
-                const messageElement = document.createElement('p');
-                messageElement.textContent = message;
-                chatBox.appendChild(messageElement);
-            });
-        }
-
-        function saveMessage(code, message) {
-            const messages = JSON.parse(localStorage.getItem(code)) || [];
-            messages.push(message);
-            localStorage.setItem(code, JSON.stringify(messages));
-        }
+        const socket = io();  // Connect to the Socket.io server
 
         document.getElementById('joinRoomButton').addEventListener('click', function() {
             const secretCode = document.getElementById('secretCode').value.trim();
             if (secretCode) {
-                loadMessages(secretCode);  // Load chat history for the secret code
+                socket.emit('joinRoom', secretCode);  // Join the room using the secret code
                 document.querySelector('.chat-header h2').textContent = `Chat Room: ${secretCode}`;
                 document.querySelector('.chat-box').style.display = 'block';
                 document.querySelector('.chat-input').style.display = 'flex';
@@ -180,24 +166,69 @@
             }
         });
 
+        // When a new message is received, append it to the chat box
+        socket.on('receiveMessage', (message) => {
+            const messageElement = document.createElement('p');
+            messageElement.textContent = message;
+            document.getElementById('chatBox').appendChild(messageElement);
+        });
+
+        // Send message when the send button is clicked
         document.getElementById('sendMessageButton').addEventListener('click', function() {
             const secretCode = document.getElementById('secretCode').value.trim();
             const messageInput = document.getElementById('messageInput');
             const messageText = messageInput.value.trim();
 
             if (messageText) {
-                saveMessage(secretCode, messageText);  // Save message to localStorage
-                loadMessages(secretCode);  // Reload messages
+                socket.emit('sendMessage', messageText, secretCode);  // Emit the message to the server
                 messageInput.value = '';  // Clear the input field
-                messageInput.focus();  // Focus back on the input
+                messageInput.focus();  // Focus back on the input field
             }
         });
 
+        // Send message when Enter key is pressed
         document.getElementById('messageInput').addEventListener('keypress', function(event) {
             if (event.key === 'Enter') {
                 document.getElementById('sendMessageButton').click();
             }
         });
+        const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
+
+// Serve static files (chat app)
+app.use(express.static('public'));
+
+// When a client connects
+io.on('connection', (socket) => {
+    console.log('A user connected');
+
+    // Join a room based on the secret code
+    socket.on('joinRoom', (secretCode) => {
+        socket.join(secretCode);
+        console.log(`User joined room: ${secretCode}`);
+    });
+
+    // Listen for new messages and broadcast them to the room
+    socket.on('sendMessage', (message, secretCode) => {
+        io.to(secretCode).emit('receiveMessage', message);
+    });
+
+    // When a user disconnects
+    socket.on('disconnect', () => {
+        console.log('A user disconnected');
+    });
+});
+
+// Start the server on port 3000
+server.listen(3000, () => {
+    console.log('Server is running on http://localhost:3000');
+});
+
     </script>
 </body>
 </html>
