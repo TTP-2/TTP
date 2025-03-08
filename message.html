@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messaging Platform</title>
+    <title>Messaging Platform with Secret Code</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -58,26 +58,52 @@
             background-color: #e7f5e7;
             word-wrap: break-word;
         }
+
+        .input-container {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="chat-container">
         <div class="chat-box" id="chatBox"></div>
-        <input type="text" id="messageInput" placeholder="Type a message...">
+
+        <!-- Secret Code Input -->
+        <div class="input-container">
+            <input type="text" id="secretCode" placeholder="Enter Secret Code">
+        </div>
+
+        <!-- Message Input -->
+        <div class="input-container">
+            <input type="text" id="messageInput" placeholder="Type a message...">
+        </div>
+
+        <!-- Send Button -->
         <button onclick="sendMessage()">Send</button>
     </div>
 
     <script>
+        const SECRET_CODE = "1234";  // Set the secret code here
+
         function sendMessage() {
-            let message = document.getElementById("messageInput").value;
-            if (message.trim() !== "") {
+            const secretCode = document.getElementById("secretCode").value;
+            const message = document.getElementById("messageInput").value;
+
+            if (secretCode === SECRET_CODE && message.trim() !== "") {
                 let chatBox = document.getElementById("chatBox");
                 let newMessage = document.createElement("div");
                 newMessage.classList.add("message");
                 newMessage.textContent = message;
                 chatBox.appendChild(newMessage);
-                document.getElementById("messageInput").value = "";  // Clear input field
-                chatBox.scrollTop = chatBox.scrollHeight;  // Scroll to bottom
+
+                // Clear the input fields
+                document.getElementById("secretCode").value = "";
+                document.getElementById("messageInput").value = "";
+
+                // Scroll to the bottom of the chat
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } else {
+                alert("Incorrect secret code or empty message. Please try again.");
             }
         }
     </script>
