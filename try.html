@@ -3,98 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Game</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/controls/PointerLockControls.js"></script>
+    <title>Messaging Chat</title>
     <style>
-        body { margin: 0; overflow: hidden; }
-        canvas { display: block; }
+        /* Basic Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        input {
+            padding: 10px;
+            width: 80%;
+            font-size: 1rem;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px 15px;
+            font-size: 1rem;
+            background-color: #f0a500;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #e08700;
+        }
+
+        .messages {
+            background-color: #f9f9f9;
+            height: 250px;
+            overflow-y: scroll;
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .message {
+            background: #f0f0f0;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+
+        footer {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #777;
+        }
     </style>
 </head>
 <body>
+
+    <div class="container">
+        <h1>Messaging Chat</h1>
+
+        <!-- Chat Creation Section -->
+        <div id="chatCreation">
+            <h2>Create a Chat</h2>
+            <input type="text" id="chatCode" placeholder="Enter a unique chat code" />
+            <button id="createChat">Create Chat</button>
+        </div>
+
+        <!-- Chat Section -->
+        <div id="chatSection" style="display:none;">
+            <h2>Chat Room: <span id="chatRoomCode"></span></h2>
+            <div class="messages" id="messages"></div>
+            <input type="text" id="messageInput" placeholder="Type your message" />
+            <button id="sendMessage">Send</button>
+        </div>
+
+        <footer>
+            <p>&copy; 2025 Messaging Chat</p>
+        </footer>
+    </div>
+
     <script>
-        // Scene setup
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+        let chatRoomCode = "";
+        let chatMessages = [];
 
-        // Lighting
-        const light = new THREE.DirectionalLight(0xffffff, 1);
-        light.position.set(5, 10, 5).normalize();
-        scene.add(light);
+        document.getElementById("createChat").addEventListener("click", function () {
+            chatRoomCode = document.getElementById("chatCode").value.trim();
 
-        // Ground
-        const groundGeometry = new THREE.PlaneGeometry(100, 100);
-        const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
-        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-        ground.rotation.x = -Math.PI / 2;
-        scene.add(ground);
-
-        // Mountains (simple cones)
-        function createMountain(x, z) {
-            const geometry = new THREE.ConeGeometry(5, 10, 32);
-            const material = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
-            const mountain = new THREE.Mesh(geometry, material);
-            mountain.position.set(x, 5, z);
-            scene.add(mountain);
-        }
-        createMountain(-10, -10);
-        createMountain(15, -5);
-        createMountain(-15, 10);
-
-        // Waterfall (simple blue plane)
-        const waterfallGeometry = new THREE.PlaneGeometry(5, 10);
-        const waterfallMaterial = new THREE.MeshStandardMaterial({ color: 0x1E90FF, transparent: true, opacity: 0.7 });
-        const waterfall = new THREE.Mesh(waterfallGeometry, waterfallMaterial);
-        waterfall.position.set(0, 5, -20);
-        scene.add(waterfall);
-
-        // Player controls
-        const controls = new THREE.PointerLockControls(camera, document.body);
-        document.addEventListener('click', () => controls.lock());
-
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-        let rotateLeft = false, rotateRight = false;
-
-        document.addEventListener('keydown', (event) => {
-            switch (event.code) {
-                case 'KeyW': moveForward = true; break;
-                case 'KeyS': moveBackward = true; break;
-                case 'KeyA': moveLeft = true; break;
-                case 'KeyD': moveRight = true; break;
-                case 'ArrowLeft': rotateLeft = true; break;
-                case 'ArrowRight': rotateRight = true; break;
+            if (chatRoomCode !== "") {
+                document.getElementById("chatRoomCode").innerText = chatRoomCode;
+                document.getElementById("chatSection").style.display = "block";
+                document.getElementById("chatCreation").style.display = "none";
+                loadMessages();
             }
         });
 
-        document.addEventListener('keyup', (event) => {
-            switch (event.code) {
-                case 'KeyW': moveForward = false; break;
-                case 'KeyS': moveBackward = false; break;
-                case 'KeyA': moveLeft = false; break;
-                case 'KeyD': moveRight = false; break;
-                case 'ArrowLeft': rotateLeft = false; break;
-                case 'ArrowRight': rotateRight = false; break;
+        document.getElementById("sendMessage").addEventListener("click", function () {
+            const messageInput = document.getElementById("messageInput");
+            const newMessage = messageInput.value.trim();
+
+            if (newMessage !== "") {
+                chatMessages.push({ sender: "You", message: newMessage });
+                messageInput.value = "";
+                loadMessages();
             }
         });
 
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            if (moveForward) controls.moveForward(0.2);
-            if (moveBackward) controls.moveForward(-0.2);
-            if (moveLeft) controls.moveRight(-0.2);
-            if (moveRight) controls.moveRight(0.2);
-            if (rotateLeft) camera.rotation.y += 0.02;
-            if (rotateRight) camera.rotation.y -= 0.02;
-            
-            renderer.render(scene, camera);
+        function loadMessages() {
+            const messagesDiv = document.getElementById("messages");
+            messagesDiv.innerHTML = "";
+
+            chatMessages.forEach(msg => {
+                const messageElement = document.createElement("div");
+                messageElement.classList.add("message");
+                messageElement.innerHTML = `<strong>${msg.sender}: </strong>${msg.message}`;
+                messagesDiv.appendChild(messageElement);
+            });
+
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
-        
-        camera.position.set(0, 2, 5);
-        animate();
     </script>
+
 </body>
 </html>
