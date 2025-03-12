@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Game</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/controls/PointerLockControls.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Lighting
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 10, 5).normalize();
+        scene.add(light);
+
+        // Ground
+        const groundGeometry = new THREE.PlaneGeometry(100, 100);
+        const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
+
+        // Mountains (simple cones)
+        function createMountain(x, z) {
+            const geometry = new THREE.ConeGeometry(5, 10, 32);
+            const material = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+            const mountain = new THREE.Mesh(geometry, material);
+            mountain.position.set(x, 5, z);
+            scene.add(mountain);
+        }
+        createMountain(-10, -10);
+        createMountain(15, -5);
+        createMountain(-15, 10);
+
+        // Waterfall (simple blue plane)
+        const waterfallGeometry = new THREE.PlaneGeometry(5, 10);
+        const waterfallMaterial = new THREE.MeshStandardMaterial({ color: 0x1E90FF, transparent: true, opacity: 0.7 });
+        const waterfall = new THREE.Mesh(waterfallGeometry, waterfallMaterial);
+        waterfall.position.set(0, 5, -20);
+        scene.add(waterfall);
+
+        // Player controls
+        const controls = new THREE.PointerLockControls(camera, document.body);
+        document.addEventListener('click', () => controls.lock());
+
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let rotateLeft = false, rotateRight = false;
+
+        document.addEventListener('keydown', (event) => {
+            switch (event.code) {
+                case 'KeyW': moveForward = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyD': moveRight = true; break;
+                case 'ArrowLeft': rotateLeft = true; break;
+                case 'ArrowRight': rotateRight = true; break;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            switch (event.code) {
+                case 'KeyW': moveForward = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyA': moveLeft = false; break;
+                case 'KeyD': moveRight = false; break;
+                case 'ArrowLeft': rotateLeft = false; break;
+                case 'ArrowRight': rotateRight = false; break;
+            }
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (moveForward) controls.moveForward(0.2);
+            if (moveBackward) controls.moveForward(-0.2);
+            if (moveLeft) controls.moveRight(-0.2);
+            if (moveRight) controls.moveRight(0.2);
+            if (rotateLeft) camera.rotation.y += 0.02;
+            if (rotateRight) camera.rotation.y -= 0.02;
+            
+            renderer.render(scene, camera);
+        }
+        
+        camera.position.set(0, 2, 5);
+        animate();
+    </script>
+</body>
+</html>
