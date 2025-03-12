@@ -3,147 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messaging Chat</title>
+    <title>Creative Chat & Marketplace</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-        /* Basic Reset */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            text-align: center;
-        }
-
-        .container {
-            width: 90%;
-            max-width: 500px;
-            margin: 50px auto;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        h1 {
-            font-size: 2rem;
-            margin-bottom: 20px;
-        }
-
-        input {
-            padding: 10px;
-            width: 80%;
-            font-size: 1rem;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-
-        button {
-            padding: 10px 15px;
-            font-size: 1rem;
-            background-color: #f0a500;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #e08700;
-        }
-
-        .messages {
-            background-color: #f9f9f9;
-            height: 250px;
-            overflow-y: scroll;
-            margin: 20px 0;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
-
-        .message {
-            background: #f0f0f0;
-            padding: 8px;
-            margin: 5px 0;
-            border-radius: 5px;
-        }
-
-        footer {
-            margin-top: 20px;
-            font-size: 0.8rem;
-            color: #777;
-        }
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
+        .container { max-width: 500px; margin: 50px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        input { width: 80%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px; background: #f0a500; color: white; border: none; cursor: pointer; border-radius: 5px; }
+        .messages, .marketplace { height: 200px; overflow-y: scroll; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; border-radius: 5px; text-align: left; margin-top: 10px; }
+        .message, .item { background: #f0f0f0; padding: 8px; margin: 5px 0; border-radius: 5px; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>Messaging Chat</h1>
-
-        <!-- Chat Creation Section -->
-        <div id="chatCreation">
-            <h2>Create a Chat</h2>
-            <input type="text" id="chatCode" placeholder="Enter a unique chat code" />
-            <button id="createChat">Create Chat</button>
+        <h1>Creative Chat & Marketplace</h1>
+        
+        <!-- Chat Setup -->
+        <div id="chatSetup">
+            <h2>Enter Chat Code</h2>
+            <input type="text" id="chatCode" placeholder="Chat Code">
+            <button id="joinChat">Join Chat</button>
         </div>
 
-        <!-- Chat Section -->
-        <div id="chatSection" style="display:none;">
-            <h2>Chat Room: <span id="chatRoomCode"></span></h2>
+        <!-- Chat Room -->
+        <div id="chatRoom" style="display:none;">
+            <h2>Chat Room: <span id="roomCode"></span></h2>
             <div class="messages" id="messages"></div>
-            <input type="text" id="messageInput" placeholder="Type your message" />
+            <input type="text" id="messageInput" placeholder="Type a message">
             <button id="sendMessage">Send</button>
         </div>
 
-        <footer>
-            <p>&copy; 2025 Messaging Chat</p>
-        </footer>
+        <!-- Marketplace -->
+        <div id="marketplaceSection" style="display:none;">
+            <h2>Creative Marketplace</h2>
+            <input type="text" id="itemName" placeholder="Item Name">
+            <button id="addItem">Add to Marketplace</button>
+            <div class="marketplace" id="marketplace"></div>
+        </div>
     </div>
 
     <script>
-        let chatRoomCode = "";
-        let chatMessages = [];
+        const socket = io("http://localhost:3000");
 
-        document.getElementById("createChat").addEventListener("click", function () {
-            chatRoomCode = document.getElementById("chatCode").value.trim();
+        let chatRoom = "";
+        let marketplaceItems = [];
 
-            if (chatRoomCode !== "") {
-                document.getElementById("chatRoomCode").innerText = chatRoomCode;
-                document.getElementById("chatSection").style.display = "block";
-                document.getElementById("chatCreation").style.display = "none";
-                loadMessages();
+        document.getElementById("joinChat").addEventListener("click", () => {
+            chatRoom = document.getElementById("chatCode").value.trim();
+            if (chatRoom !== "") {
+                socket.emit("joinRoom", chatRoom);
+                document.getElementById("roomCode").innerText = chatRoom;
+                document.getElementById("chatSetup").style.display = "none";
+                document.getElementById("chatRoom").style.display = "block";
+                document.getElementById("marketplaceSection").style.display = "block";
             }
         });
 
-        document.getElementById("sendMessage").addEventListener("click", function () {
+        document.getElementById("sendMessage").addEventListener("click", () => {
             const messageInput = document.getElementById("messageInput");
-            const newMessage = messageInput.value.trim();
+            const message = messageInput.value.trim();
 
-            if (newMessage !== "") {
-                chatMessages.push({ sender: "You", message: newMessage });
+            if (message !== "") {
+                socket.emit("sendMessage", { room: chatRoom, message: `You: ${message}` });
                 messageInput.value = "";
-                loadMessages();
             }
         });
 
-        function loadMessages() {
+        socket.on("receiveMessage", (message) => {
             const messagesDiv = document.getElementById("messages");
-            messagesDiv.innerHTML = "";
+            const messageElement = document.createElement("div");
+            messageElement.classList.add("message");
+            messageElement.innerText = message;
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
 
-            chatMessages.forEach(msg => {
-                const messageElement = document.createElement("div");
-                messageElement.classList.add("message");
-                messageElement.innerHTML = `<strong>${msg.sender}: </strong>${msg.message}`;
-                messagesDiv.appendChild(messageElement);
+        document.getElementById("addItem").addEventListener("click", () => {
+            const itemInput = document.getElementById("itemName");
+            const itemName = itemInput.value.trim();
+
+            if (itemName !== "") {
+                marketplaceItems.push(itemName);
+                updateMarketplace();
+                itemInput.value = "";
+            }
+        });
+
+        function updateMarketplace() {
+            const marketplaceDiv = document.getElementById("marketplace");
+            marketplaceDiv.innerHTML = "";
+
+            marketplaceItems.forEach(item => {
+                const itemElement = document.createElement("div");
+                itemElement.classList.add("item");
+                itemElement.innerText = item;
+                marketplaceDiv.appendChild(itemElement);
             });
 
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            marketplaceDiv.scrollTop = marketplaceDiv.scrollHeight;
         }
     </script>
 
