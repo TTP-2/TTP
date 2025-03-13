@@ -97,6 +97,8 @@
     let isJumping = false;
     let isFlying = false;
     let jumpHeight = 0;
+    const maxHeight = 100;  // Limit the max height before walking on the moon
+    let moonWalk = false;
 
     camera.position.set(0, 2, 5);
     let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
@@ -111,11 +113,16 @@
         case 'ArrowLeft': cameraRotationY = 0.05; break;
         case 'ArrowRight': cameraRotationY = -0.05; break;
         case 'Space':
-          if (!isJumping) {
+          if (!isJumping && camera.position.y < maxHeight) {
             isJumping = true;
             jumpHeight = 3; // Set the initial jump height
-          } else if (!isFlying) {
+          } else if (!isFlying && camera.position.y < maxHeight) {
             isFlying = true;
+          }
+          break;
+        case 'ShiftLeft':
+          if (camera.position.y > 0) { // Prevent flying below ground level
+            isFlying = false;
           }
           break;
       }
@@ -131,7 +138,7 @@
         case 'ArrowRight': cameraRotationY = 0; break;
         case 'Space':
           if (isFlying) {
-            isFlying = false; // Stop flying when space is released
+            isFlying = false;
           }
           break;
       }
@@ -187,11 +194,23 @@
       }
 
       if (isFlying) {
-        if (jumpHeight > 0) {
+        if (camera.position.y < maxHeight) {
           camera.position.y += 0.1; // Fly up
-        } else {
-          camera.position.y -= 0.1; // Fly down when not jumping
         }
+      }
+
+      // Allow going down with Shift
+      if (!isFlying && camera.position.y > 0) {
+        camera.position.y -= 0.1; // Move down (but not below ground level)
+      }
+
+      // Switch to Moon Walk if above the max height
+      if (camera.position.y >= maxHeight && !moonWalk) {
+        moonWalk = true;
+        scene.background = new THREE.Color(0x000000);  // Make the background dark like space
+        moon.visible = true;
+        scene.add(moon);  // Make moon visible when you reach high enough
+        console.log('You are now walking on the moon!');
       }
 
       socket.emit('move', {
