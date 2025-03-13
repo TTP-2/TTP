@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Helicopter Landing - Minecraft Style with Sand Castle</title>
+  <title>3D Movement with Camera Rotation</title>
   <style>
     body {
       margin: 0;
@@ -27,42 +27,31 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    const helicopter = createHelicopter();
-    helicopter.position.set(0, 50, 0); // Start the helicopter above the ground
+    // Camera movement variables
+    let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+    let cameraRotationY = 0;
+    let isNearHouse = false;
 
-    // Create a basic ground
-    createGround(0, 0, 0x00ff00); 
-
-    // Create a sand castle instead of shells
-    createSandCastle(0, 0);
+    // Create a simple ground and house
+    createGround(0, 0, 0x00ff00);
+    const housePosition = { x: 15, z: 0 };
+    const house = createHouse(housePosition.x, housePosition.z);
 
     camera.position.set(0, 2, 5);
 
-    // Landing logic: Move helicopter downward
-    let isLanding = false;
-    let landingSpeed = 0.2;
-    
-    function createHelicopter() {
-      const helicopterGroup = new THREE.Group();
+    // Mouse movement for camera rotation
+    let mouseX = 0;
+    let mouseY = 0;
+    let prevMouseX = 0;
 
-      // Helicopter body
-      const bodyGeometry = new THREE.BoxGeometry(5, 1, 10);
-      const bodyMaterial = new THREE.MeshBasicMaterial({ color: 0x555555 });
-      const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-      helicopterGroup.add(body);
+    // Handle mouse movement for camera rotation
+    document.addEventListener('mousemove', (event) => {
+      mouseX = (event.clientX / window.innerWidth) * 2 - 1; // Normalize the mouse position (-1 to 1)
+      cameraRotationY = (mouseX - prevMouseX) * Math.PI; // Calculate rotation amount
+      prevMouseX = mouseX;
+    });
 
-      // Helicopter rotor
-      const rotorGeometry = new THREE.CylinderGeometry(1, 1, 0.2, 10);
-      const rotorMaterial = new THREE.MeshBasicMaterial({ color: 0x222222 });
-      const rotor = new THREE.Mesh(rotorGeometry, rotorMaterial);
-      rotor.rotation.x = Math.PI / 2; // Rotate the rotor to lie flat
-      rotor.position.set(0, 1, 0); // Position it on top of the body
-      helicopterGroup.add(rotor);
-
-      scene.add(helicopterGroup);
-      return helicopterGroup;
-    }
-
+    // Create ground
     function createGround(x, z, color) {
       const geometry = new THREE.PlaneGeometry(100, 100);
       const material = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
@@ -72,60 +61,96 @@
       scene.add(plane);
     }
 
-    // Create a sand castle using cubes
-    function createSandCastle(x, z) {
-      const castleMaterial = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+    // Create a simple house
+    function createHouse(x, z) {
+      const houseGroup = new THREE.Group();
 
-      // Base of the sand castle
-      const baseGeometry = new THREE.BoxGeometry(8, 1, 8);
-      const base = new THREE.Mesh(baseGeometry, castleMaterial);
-      base.position.set(x, 0.5, z);
-      scene.add(base);
+      // Walls of the house
+      const wallGeometry = new THREE.BoxGeometry(10, 6, 10);
+      const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 }); // Brown color
+      const walls = new THREE.Mesh(wallGeometry, wallMaterial);
+      walls.position.set(x, 3, z);
+      scene.add(walls);
 
-      // Towers of the sand castle
-      const towerGeometry = new THREE.BoxGeometry(2, 6, 2);
-      const tower1 = new THREE.Mesh(towerGeometry, castleMaterial);
-      tower1.position.set(x - 3, 3.5, z - 3);
-      scene.add(tower1);
+      // Roof of the house
+      const roofGeometry = new THREE.ConeGeometry(7, 4, 4);
+      const roofMaterial = new THREE.MeshBasicMaterial({ color: 0xB22222 }); // Firebrick color
+      const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+      roof.position.set(x, 7, z);
+      roof.rotation.y = Math.PI / 4; // Make the roof slanted
+      scene.add(roof);
 
-      const tower2 = new THREE.Mesh(towerGeometry, castleMaterial);
-      tower2.position.set(x + 3, 3.5, z - 3);
-      scene.add(tower2);
+      // Door of the house
+      const doorGeometry = new THREE.BoxGeometry(2, 4, 1);
+      const doorMaterial = new THREE.MeshBasicMaterial({ color: 0x3e2723 }); // Dark brown
+      const door = new THREE.Mesh(doorGeometry, doorMaterial);
+      door.position.set(x, 2, z + 5);
+      scene.add(door);
 
-      const tower3 = new THREE.Mesh(towerGeometry, castleMaterial);
-      tower3.position.set(x - 3, 3.5, z + 3);
-      scene.add(tower3);
-
-      const tower4 = new THREE.Mesh(towerGeometry, castleMaterial);
-      tower4.position.set(x + 3, 3.5, z + 3);
-      scene.add(tower4);
-
-      // Top of the castle
-      const topGeometry = new THREE.BoxGeometry(6, 1, 6);
-      const top = new THREE.Mesh(topGeometry, castleMaterial);
-      top.position.set(x, 6, z);
-      scene.add(top);
+      return houseGroup;
     }
 
+    // Teleport to the house
+    function checkProximityToHouse() {
+      const distance = Math.sqrt(
+        Math.pow(camera.position.x - housePosition.x, 2) +
+        Math.pow(camera.position.z - housePosition.z, 2)
+      );
+      isNearHouse = distance < 5; // Adjust the range for proximity
+    }
+
+    // Keyboard controls for movement
+    document.addEventListener('keydown', (event) => {
+      if (event.code === 'KeyW') moveForward = true;
+      if (event.code === 'KeyS') moveBackward = true;
+      if (event.code === 'KeyA') moveLeft = true;
+      if (event.code === 'KeyD') moveRight = true;
+      if (event.code === 'KeyY' && isNearHouse) {
+        camera.position.set(housePosition.x, 2, housePosition.z + 5); // Teleport to the house's entrance
+      }
+    });
+
+    document.addEventListener('keyup', (event) => {
+      if (event.code === 'KeyW') moveForward = false;
+      if (event.code === 'KeyS') moveBackward = false;
+      if (event.code === 'KeyA') moveLeft = false;
+      if (event.code === 'KeyD') moveRight = false;
+    });
+
+    // Update the camera position based on user input
+    function updateCameraPosition() {
+      const direction = new THREE.Vector3();
+      camera.getWorldDirection(direction);
+      direction.y = 0;
+      direction.normalize();
+
+      const rightVector = new THREE.Vector3();
+      camera.getWorldDirection(rightVector);
+      rightVector.y = 0;
+      rightVector.cross(new THREE.Vector3(0, 1, 0)).normalize();
+
+      // Apply movement based on keyboard input
+      if (moveForward) camera.position.addScaledVector(direction, 0.1);
+      if (moveBackward) camera.position.addScaledVector(direction, -0.1);
+      if (moveLeft) camera.position.addScaledVector(rightVector, -0.1);
+      if (moveRight) camera.position.addScaledVector(rightVector, 0.1);
+
+      // Apply rotation based on mouse movement
+      camera.rotation.y += cameraRotationY;
+    }
+
+    // Animate the scene
     function animate() {
       requestAnimationFrame(animate);
 
-      // Helicopter landing logic
-      if (isLanding && helicopter.position.y > 0) {
-        helicopter.position.y -= landingSpeed; // Move the helicopter downward
-      } else if (helicopter.position.y <= 0) {
-        isLanding = false; // Stop landing when the helicopter hits the ground
-      }
+      // Check if player is near the house
+      checkProximityToHouse();
+
+      // Update the camera position
+      updateCameraPosition();
 
       renderer.render(scene, camera);
     }
-
-    // Start landing the helicopter when 'L' is pressed
-    document.addEventListener('keydown', (event) => {
-      if (event.code === 'KeyL') {
-        isLanding = true;
-      }
-    });
 
     animate();
   </script>
