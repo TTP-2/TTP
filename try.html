@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simple 3D Game - McDonald's</title>
+  <title>Te Ao Mārama School - 3D Model</title>
   <style>
     body {
       margin: 0;
@@ -15,130 +15,65 @@
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
 </head>
 <body>
   <script>
-    const socket = io();
-    
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Function to create the ground
-    function createGround(x, z, color) {
-      const geometry = new THREE.PlaneGeometry(100, 100);
-      const material = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
-      const plane = new THREE.Mesh(geometry, material);
-      plane.rotation.x = -Math.PI / 2;
-      plane.position.set(x, 0, z);
-      scene.add(plane);
-    }
+    // Basic Ground
+    const groundGeometry = new THREE.PlaneGeometry(500, 500);
+    const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = - Math.PI / 2;
+    scene.add(ground);
 
-    // Creating the ground
-    createGround(0, 0, 0x00ff00); // Green grass ground
-
-    // Function to create the McDonald's building (simple box)
-    function createMcdonaldsBuilding(x, z) {
-      const buildingGeometry = new THREE.BoxGeometry(10, 5, 10);
-      const buildingMaterial = new THREE.MeshBasicMaterial({ color: 0xffcc00 }); // Yellow for McDonald's
-      const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
-      building.position.set(x, 2.5, z);
+    // Building 1 - Rectangular Block
+    function createBuilding(x, y, z, width, height, depth, color) {
+      const geometry = new THREE.BoxGeometry(width, height, depth);
+      const material = new THREE.MeshBasicMaterial({ color: color });
+      const building = new THREE.Mesh(geometry, material);
+      building.position.set(x, y, z);
       scene.add(building);
-
-      // Creating windows on the building
-      const windowGeometry = new THREE.PlaneGeometry(3, 2);
-      const windowMaterial = new THREE.MeshBasicMaterial({ color: 0x87ceeb, side: THREE.DoubleSide });
-
-      const window1 = new THREE.Mesh(windowGeometry, windowMaterial);
-      window1.position.set(x - 2, 4, z + 4); // Window on front side
-      scene.add(window1);
-
-      const window2 = new THREE.Mesh(windowGeometry, windowMaterial);
-      window2.position.set(x + 2, 4, z + 4); // Another window on front side
-      scene.add(window2);
-
-      // Creating the McDonald's sign
-      const signGeometry = new THREE.BoxGeometry(8, 1, 2);
-      const signMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red for sign
-      const sign = new THREE.Mesh(signGeometry, signMaterial);
-      sign.position.set(x, 5.5, z);
-      scene.add(sign);
     }
 
-    // Function to create the drive-through path
-    function createDriveThrough(x, z) {
-      const pathGeometry = new THREE.PlaneGeometry(30, 5);
-      const pathMaterial = new THREE.MeshBasicMaterial({ color: 0x808080, side: THREE.DoubleSide }); // Gray for the path
-      const path = new THREE.Mesh(pathGeometry, pathMaterial);
-      path.rotation.x = -Math.PI / 2;
-      path.position.set(x, 0.1, z);
-      scene.add(path);
-    }
+    createBuilding(0, 5, 0, 50, 20, 30, 0x00ffcc); // Main Building
+    createBuilding(60, 5, 0, 30, 20, 30, 0xccccff); // Side Building
+    createBuilding(-60, 5, 0, 30, 20, 30, 0xffcc00); // Another Side Building
 
-    // Creating the McDonald's building and the drive-through
-    createMcdonaldsBuilding(0, 0);  // McDonald's building at (0, 0)
-    createDriveThrough(0, 15);      // Drive-through path at (0, 15)
+    // Courtyard - Empty Space in the Middle
+    const courtyardGeometry = new THREE.PlaneGeometry(100, 100);
+    const courtyardMaterial = new THREE.MeshBasicMaterial({ color: 0xeeeeee, side: THREE.DoubleSide });
+    const courtyard = new THREE.Mesh(courtyardGeometry, courtyardMaterial);
+    courtyard.rotation.x = - Math.PI / 2;
+    courtyard.position.set(0, 0.1, 0);
+    scene.add(courtyard);
 
-    camera.position.set(0, 2, 15);  // Position the camera above the ground
+    // Camera Position
+    camera.position.set(0, 10, 100);
 
-    let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-    let cameraRotationY = 0;
+    // Basic Lighting
+    const light = new THREE.PointLight(0xffffff, 1, 1000);
+    light.position.set(0, 50, 50);
+    scene.add(light);
 
-    document.addEventListener('keydown', (event) => {
-      switch (event.code) {
-        case 'KeyW': moveForward = true; break;
-        case 'KeyS': moveBackward = true; break;
-        case 'KeyA': moveLeft = true; break;
-        case 'KeyD': moveRight = true; break;
-        case 'ArrowLeft': cameraRotationY = 0.05; break;
-        case 'ArrowRight': cameraRotationY = -0.05; break;
-      }
-    });
-
-    document.addEventListener('keyup', (event) => {
-      switch (event.code) {
-        case 'KeyW': moveForward = false; break;
-        case 'KeyS': moveBackward = false; break;
-        case 'KeyA': moveLeft = false; break;
-        case 'KeyD': moveRight = false; break;
-        case 'ArrowLeft':
-        case 'ArrowRight': cameraRotationY = 0; break;
-      }
-    });
-
+    // Animation Loop
     function animate() {
       requestAnimationFrame(animate);
-
-      const direction = new THREE.Vector3();
-      camera.getWorldDirection(direction);
-      direction.y = 0;
-      direction.normalize();
-
-      const rightVector = new THREE.Vector3();
-      camera.getWorldDirection(rightVector);
-      rightVector.y = 0;
-      rightVector.cross(new THREE.Vector3(0, 1, 0)).normalize();
-
-      if (moveForward) camera.position.addScaledVector(direction, 0.1);
-      if (moveBackward) camera.position.addScaledVector(direction, -0.1);
-      if (moveLeft) camera.position.addScaledVector(rightVector, -0.1);
-      if (moveRight) camera.position.addScaledVector(rightVector, 0.1);
-
-      camera.rotation.y += cameraRotationY;
-
-      socket.emit('move', {
-        x: camera.position.x,
-        y: camera.position.y,
-        z: camera.position.z
-      });
-
       renderer.render(scene, camera);
     }
 
     animate();
+
+    // Handling Window Resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
   </script>
 </body>
 </html>
