@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simple 3D Game - Minecraft Style</title>
+  <title>Simple 3D Game - McDonald's</title>
   <style>
     body {
       margin: 0;
@@ -13,20 +13,11 @@
     canvas {
       display: block;
     }
-    #interactionMessage {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      font-size: 24px;
-      color: white;
-      visibility: hidden;
-    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
 </head>
 <body>
-  <div id="interactionMessage">Press Y to interact</div>
   <script>
     const socket = io();
     
@@ -36,39 +27,7 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    const interactionMessage = document.getElementById('interactionMessage');
-
-    let isDay = true;
-    const sun = new THREE.DirectionalLight(0xffffff, 1);
-    sun.position.set(50, 100, 50);
-    scene.add(sun);
-
-    const moon = new THREE.PointLight(0xaaaaaa, 1, 200);
-    moon.position.set(-50, 100, -50);
-    moon.visible = false;
-    scene.add(moon);
-
-    function updateSky() {
-      if (isDay) {
-        scene.background = new THREE.Color(0x87CEEB);
-        sun.visible = true;
-        moon.visible = false;
-      } else {
-        scene.background = new THREE.Color(0x000000);
-        sun.visible = false;
-        moon.visible = true;
-      }
-    }
-
-    function toggleDayNight() {
-      isDay = !isDay;
-      updateSky();
-      setTimeout(toggleDayNight, 300000);
-    }
-
-    updateSky();
-    setTimeout(toggleDayNight, 300000);
-
+    // Function to create the ground
     function createGround(x, z, color) {
       const geometry = new THREE.PlaneGeometry(100, 100);
       const material = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
@@ -78,41 +37,53 @@
       scene.add(plane);
     }
 
-    for (let i = -2; i <= 2; i++) {
-      for (let j = -2; j <= 2; j++) {
-        const isWater = j > 1;
-        const isSand = j === 1;
-        createGround(i * 100, j * 100, isWater ? 0x0000ff : isSand ? 0xFFD700 : 0x00ff00);
-      }
+    // Creating the ground
+    createGround(0, 0, 0x00ff00); // Green grass ground
+
+    // Function to create the McDonald's building (simple box)
+    function createMcdonaldsBuilding(x, z) {
+      const buildingGeometry = new THREE.BoxGeometry(10, 5, 10);
+      const buildingMaterial = new THREE.MeshBasicMaterial({ color: 0xffcc00 }); // Yellow for McDonald's
+      const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+      building.position.set(x, 2.5, z);
+      scene.add(building);
+
+      // Creating windows on the building
+      const windowGeometry = new THREE.PlaneGeometry(3, 2);
+      const windowMaterial = new THREE.MeshBasicMaterial({ color: 0x87ceeb, side: THREE.DoubleSide });
+
+      const window1 = new THREE.Mesh(windowGeometry, windowMaterial);
+      window1.position.set(x - 2, 4, z + 4); // Window on front side
+      scene.add(window1);
+
+      const window2 = new THREE.Mesh(windowGeometry, windowMaterial);
+      window2.position.set(x + 2, 4, z + 4); // Another window on front side
+      scene.add(window2);
+
+      // Creating the McDonald's sign
+      const signGeometry = new THREE.BoxGeometry(8, 1, 2);
+      const signMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red for sign
+      const sign = new THREE.Mesh(signGeometry, signMaterial);
+      sign.position.set(x, 5.5, z);
+      scene.add(sign);
     }
 
-    function createRocket(x, z) {
-      const rocketColor = 0xFF0000; // Red color for the rocket
-      const rocketHeight = 5;
-
-      // Create a basic rocket shape using a cylinder and cone
-      const rocketBodyGeometry = new THREE.CylinderGeometry(1, 1, rocketHeight, 32);
-      const rocketBodyMaterial = new THREE.MeshBasicMaterial({ color: rocketColor });
-      const rocketBody = new THREE.Mesh(rocketBodyGeometry, rocketBodyMaterial);
-      rocketBody.position.set(x, rocketHeight / 2, z);
-      scene.add(rocketBody);
-
-      // Rocket's top (cone part)
-      const rocketTopGeometry = new THREE.ConeGeometry(1.5, 2, 32);
-      const rocketTopMaterial = new THREE.MeshBasicMaterial({ color: rocketColor });
-      const rocketTop = new THREE.Mesh(rocketTopGeometry, rocketTopMaterial);
-      rocketTop.position.set(x, rocketHeight + 1, z);
-      scene.add(rocketTop);
-
-      return { body: rocketBody, top: rocketTop };
+    // Function to create the drive-through path
+    function createDriveThrough(x, z) {
+      const pathGeometry = new THREE.PlaneGeometry(30, 5);
+      const pathMaterial = new THREE.MeshBasicMaterial({ color: 0x808080, side: THREE.DoubleSide }); // Gray for the path
+      const path = new THREE.Mesh(pathGeometry, pathMaterial);
+      path.rotation.x = -Math.PI / 2;
+      path.position.set(x, 0.1, z);
+      scene.add(path);
     }
 
-    const rocket = createRocket(0, 0);
-    let isInRocket = false;
-    let closeToRocket = false;
-    let rocketExitTimer;
+    // Creating the McDonald's building and the drive-through
+    createMcdonaldsBuilding(0, 0);  // McDonald's building at (0, 0)
+    createDriveThrough(0, 15);      // Drive-through path at (0, 15)
 
-    camera.position.set(0, 2, 5);
+    camera.position.set(0, 2, 15);  // Position the camera above the ground
+
     let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
     let cameraRotationY = 0;
 
@@ -124,28 +95,6 @@
         case 'KeyD': moveRight = true; break;
         case 'ArrowLeft': cameraRotationY = 0.05; break;
         case 'ArrowRight': cameraRotationY = -0.05; break;
-        case 'ShiftLeft':
-          if (camera.position.y > 0) { // Prevent going below ground level
-            camera.position.y -= 0.1; // Move down
-          }
-          break;
-        case 'KeyY':
-          if (closeToRocket && !isInRocket) {
-            // Interact with rocket
-            interactionMessage.style.visibility = 'hidden'; // Hide message
-            document.body.style.backgroundColor = 'black'; // Turn screen black
-            setTimeout(() => {
-              document.body.style.backgroundColor = ''; // Restore screen
-              isInRocket = true; // Player is now inside the rocket
-              camera.position.set(0, 5, 5); // Position player in the rocket
-            }, 3000);
-          } else if (isInRocket) {
-            // Player exits the rocket
-            isInRocket = false;
-            camera.position.set(0, 2, 5); // Return to original position
-            scene.background = new THREE.Color(0x808080); // Gray terrain
-          }
-          break;
       }
     });
 
@@ -160,22 +109,8 @@
       }
     });
 
-    function checkProximityToRocket() {
-      const rocketPos = rocket.body.position;
-      const distance = camera.position.distanceTo(rocketPos);
-      if (distance < 10) { // Check if the player is close to the rocket
-        closeToRocket = true;
-        interactionMessage.style.visibility = 'visible'; // Show interaction message
-      } else {
-        closeToRocket = false;
-        interactionMessage.style.visibility = 'hidden'; // Hide interaction message
-      }
-    }
-
     function animate() {
       requestAnimationFrame(animate);
-
-      checkProximityToRocket();
 
       const direction = new THREE.Vector3();
       camera.getWorldDirection(direction);
