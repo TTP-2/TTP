@@ -24,14 +24,15 @@
     </div>
 
     <script>
-        let scene, camera, renderer, controls;
+        let scene, camera, renderer, controls, raycaster, mouse;
         let selectedBlock = "grass";
         const blocks = [];
 
+        // Block Textures
         const textures = {
-            grass: new THREE.MeshBasicMaterial({ color: "green" }),
-            stone: new THREE.MeshBasicMaterial({ color: "gray" }),
-            wood: new THREE.MeshBasicMaterial({ color: "brown" })
+            grass: new THREE.MeshLambertMaterial({ color: "green" }),
+            stone: new THREE.MeshLambertMaterial({ color: "gray" }),
+            wood: new THREE.MeshLambertMaterial({ color: "brown" })
         };
 
         function init() {
@@ -42,43 +43,64 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
+            // Lighting
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(10, 10, 10);
+            scene.add(light);
+
             // Controls
             controls = new THREE.PointerLockControls(camera, document.body);
             document.body.addEventListener("click", () => controls.lock());
 
+            // Raycaster for placing blocks
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
             // Ground
             const groundGeometry = new THREE.PlaneGeometry(100, 100);
-            const groundMaterial = new THREE.MeshBasicMaterial({ color: "darkgreen", side: THREE.DoubleSide });
+            const groundMaterial = new THREE.MeshLambertMaterial({ color: "darkgreen", side: THREE.DoubleSide });
             const ground = new THREE.Mesh(groundGeometry, groundMaterial);
             ground.rotation.x = -Math.PI / 2;
             scene.add(ground);
 
-            // Move Camera Up
+            // Set Camera Start Position
             camera.position.set(0, 2, 5);
 
-            // Mouse Click Events
+            // Event Listeners
             document.addEventListener("mousedown", onMouseClick);
 
-            // Game Loop
+            // Start Game Loop
             animate();
         }
 
         function onMouseClick(event) {
             if (event.button === 0) { // Left Click - Place Block
-                const block = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), textures[selectedBlock]);
-                block.position.set(
-                    Math.floor(camera.position.x),
-                    Math.floor(camera.position.y),
-                    Math.floor(camera.position.z)
-                );
-                scene.add(block);
-                blocks.push(block);
+                placeBlock();
             } else if (event.button === 2) { // Right Click - Remove Block
                 event.preventDefault();
-                if (blocks.length > 0) {
-                    const lastBlock = blocks.pop();
-                    scene.remove(lastBlock);
-                }
+                removeBlock();
+            }
+        }
+
+        function placeBlock() {
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            const intersects = raycaster.intersectObjects(scene.children);
+            if (intersects.length > 0) {
+                const point = intersects[0].point;
+                const block = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), textures[selectedBlock]);
+                block.position.set(Math.round(point.x), Math.round(point.y) + 0.5, Math.round(point.z));
+                scene.add(block);
+                blocks.push(block);
+            }
+        }
+
+        function removeBlock() {
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            const intersects = raycaster.intersectObjects(blocks);
+            if (intersects.length > 0) {
+                const targetBlock = intersects[0].object;
+                scene.remove(targetBlock);
+                blocks.splice(blocks.indexOf(targetBlock), 1);
             }
         }
 
