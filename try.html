@@ -93,13 +93,6 @@
     createTallBuilding(100, 100);
     createTallBuilding(-100, 100);
 
-    // Jump and Fly functionality
-    let isJumping = false;
-    let isFlying = false;
-    let jumpHeight = 0;
-    const maxHeight = 100;  // Limit the max height before walking on the moon
-    let moonWalk = false;
-
     camera.position.set(0, 2, 5);
     let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
     let cameraRotationY = 0;
@@ -112,17 +105,9 @@
         case 'KeyD': moveRight = true; break;
         case 'ArrowLeft': cameraRotationY = 0.05; break;
         case 'ArrowRight': cameraRotationY = -0.05; break;
-        case 'Space':
-          if (!isJumping && camera.position.y < maxHeight) {
-            isJumping = true;
-            jumpHeight = 3; // Set the initial jump height
-          } else if (!isFlying && camera.position.y < maxHeight) {
-            isFlying = true;
-          }
-          break;
         case 'ShiftLeft':
-          if (camera.position.y > 0) { // Prevent flying below ground level
-            isFlying = false;
+          if (camera.position.y > 0) { // Prevent going below ground level
+            camera.position.y -= 0.1; // Move down
           }
           break;
       }
@@ -136,11 +121,6 @@
         case 'KeyD': moveRight = false; break;
         case 'ArrowLeft':
         case 'ArrowRight': cameraRotationY = 0; break;
-        case 'Space':
-          if (isFlying) {
-            isFlying = false;
-          }
-          break;
       }
     });
 
@@ -183,35 +163,6 @@
       if (moveRight) camera.position.addScaledVector(rightVector, 0.1);
 
       camera.rotation.y += cameraRotationY;
-
-      // Handle Jumping and Flying
-      if (isJumping) {
-        camera.position.y += 0.1;
-        jumpHeight -= 0.1;
-        if (jumpHeight <= 0) {
-          isJumping = false;
-        }
-      }
-
-      if (isFlying) {
-        if (camera.position.y < maxHeight) {
-          camera.position.y += 0.1; // Fly up
-        }
-      }
-
-      // Allow going down with Shift
-      if (!isFlying && camera.position.y > 0) {
-        camera.position.y -= 0.1; // Move down (but not below ground level)
-      }
-
-      // Switch to Moon Walk if above the max height
-      if (camera.position.y >= maxHeight && !moonWalk) {
-        moonWalk = true;
-        scene.background = new THREE.Color(0x000000);  // Make the background dark like space
-        moon.visible = true;
-        scene.add(moon);  // Make moon visible when you reach high enough
-        console.log('You are now walking on the moon!');
-      }
 
       socket.emit('move', {
         x: camera.position.x,
