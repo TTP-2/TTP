@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple 3D Game - Minecraft Style</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+</head>
+<body>
+  <script>
+    const socket = io();
+    
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    
+    let isDay = true;
+    const sun = new THREE.DirectionalLight(0xffffff, 1);
+    sun.position.set(50, 100, 50);
+    scene.add(sun);
+
+    const moon = new THREE.PointLight(0xaaaaaa, 1, 200);
+    moon.position.set(-50, 100, -50);
+    moon.visible = false;
+    scene.add(moon);
+
+    function updateSky() {
+      if (isDay) {
+        scene.background = new THREE.Color(0x87CEEB);
+        sun.visible = true;
+        moon.visible = false;
+      } else {
+        scene.background = new THREE.Color(0x000000);
+        sun.visible = false;
+        moon.visible = true;
+      }
+    }
+
+    function toggleDayNight() {
+      isDay = !isDay;
+      updateSky();
+      setTimeout(toggleDayNight, 300000);
+    }
+
+    updateSky();
+    setTimeout(toggleDayNight, 300000);
+
+    function createGround(x, z, color) {
+      const geometry = new THREE.PlaneGeometry(100, 100);
+      const material = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
+      const plane = new THREE.Mesh(geometry, material);
+      plane.rotation.x = -Math.PI / 2;
+      plane.position.set(x, 0, z);
+      scene.add(plane);
+    }
+
+    for (let i = -2; i <= 2; i++) {
+      for (let j = -2; j <= 2; j++) {
+        const isWater = j > 1;
+        const isSand = j === 1;
+        createGround(i * 100, j * 100, isWater ? 0x0000ff : isSand ? 0xFFD700 : 0x00ff00);
+      }
+    }
+
+    function createTallBuilding(x, z) {
+      const buildingColor = 0x808080; // Grey color for buildings
+      const buildingHeight = 20;
+
+      // Create building walls (basic cube)
+      const buildingGeometry = new THREE.BoxGeometry(6, buildingHeight, 6);
+      const buildingMaterial = new THREE.MeshBasicMaterial({ color: buildingColor });
+      const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+      building.position.set(x, buildingHeight / 2, z);
+      scene.add(building);
+    }
+
+    // Create a few tall buildings in the scene
+    createTallBuilding(50, -50);
+    createTallBuilding(-50, -50);
+    createTallBuilding(100, 100);
+    createTallBuilding(-100, 100);
+
+    // Jump and Fly functionality
+    let isJumping = false;
+    let isFlying = false;
+    let jumpHeight = 0;
+
+    camera.position.set(0, 2, 5);
+    let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+    let cameraRotationY = 0;
+
+    document.addEventListener('keydown', (event) => {
+      switch (event.code) {
+        case 'KeyW': moveForward = true; break;
+        case 'KeyS': moveBackward = true; break;
+        case 'KeyA': moveLeft = true; break;
+        case 'KeyD': moveRight = true; break;
+        case 'ArrowLeft': cameraRotationY = 0.05; break;
+        case 'ArrowRight': cameraRotationY = -0.05; break;
+        case 'Space':
+          if (!isJumping) {
+            isJumping = true;
+            jumpHeight = 3; // Set the initial jump height
+          } else if (!isFlying) {
+            isFlying = true;
+          }
+          break;
+      }
+    });
+
+    document.addEventListener('keyup', (event) => {
+      switch (event.code) {
+        case 'KeyW': moveForward = false; break;
+        case 'KeyS': moveBackward = false; break;
+        case 'KeyA': moveLeft = false; break;
+        case 'KeyD': moveRight = false; break;
+        case 'ArrowLeft':
+        case 'ArrowRight': cameraRotationY = 0; break;
+        case 'Space':
+          if (isFlying) {
+            isFlying = false; // Stop flying when space is released
+          }
+          break;
+      }
+    });
+
+    const players = {};
+
+    socket.on('updatePlayers', (serverPlayers) => {
+      for (let id in serverPlayers) {
+        if (!players[id]) {
+          const cube = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 1, 1),
+            new THREE.MeshBasicMaterial({ color: 0xff0000 })
+          );
+          scene.add(cube);
+          players[id] = cube;
+        }
+        players[id].position.set(
+          serverPlayers[id].x,
+          serverPlayers[id].y,
+          serverPlayers[id].z
+        );
+      }
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const direction = new THREE.Vector3();
+      camera.getWorldDirection(direction);
+      direction.y = 0;
+      direction.normalize();
+
+      const rightVector = new THREE.Vector3();
+      camera.getWorldDirection(rightVector);
+      rightVector.y = 0;
+      rightVector.cross(new THREE.Vector3(0, 1, 0)).normalize();
+
+      if (moveForward) camera.position.addScaledVector(direction, 0.1);
+      if (moveBackward) camera.position.addScaledVector(direction, -0.1);
+      if (moveLeft) camera.position.addScaledVector(rightVector, -0.1);
+      if (moveRight) camera.position.addScaledVector(rightVector, 0.1);
+
+      camera.rotation.y += cameraRotationY;
+
+      // Handle Jumping and Flying
+      if (isJumping) {
+        camera.position.y += 0.1;
+        jumpHeight -= 0.1;
+        if (jumpHeight <= 0) {
+          isJumping = false;
+        }
+      }
+
+      if (isFlying) {
+        if (jumpHeight > 0) {
+          camera.position.y += 0.1; // Fly up
+        } else {
+          camera.position.y -= 0.1; // Fly down when not jumping
+        }
+      }
+
+      socket.emit('move', {
+        x: camera.position.x,
+        y: camera.position.y,
+        z: camera.position.z
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
