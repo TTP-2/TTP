@@ -13,11 +13,20 @@
     canvas {
       display: block;
     }
+    #interactionMessage {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      color: white;
+      visibility: hidden;
+    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
 </head>
 <body>
+  <div id="interactionMessage">Press Y to interact</div>
   <script>
     const socket = io();
     
@@ -26,7 +35,9 @@
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
-    
+
+    const interactionMessage = document.getElementById('interactionMessage');
+
     let isDay = true;
     const sun = new THREE.DirectionalLight(0xffffff, 1);
     sun.position.set(50, 100, 50);
@@ -75,23 +86,31 @@
       }
     }
 
-    function createTallBuilding(x, z) {
-      const buildingColor = 0x808080; // Grey color for buildings
-      const buildingHeight = 20;
+    function createRocket(x, z) {
+      const rocketColor = 0xFF0000; // Red color for the rocket
+      const rocketHeight = 5;
 
-      // Create building walls (basic cube)
-      const buildingGeometry = new THREE.BoxGeometry(6, buildingHeight, 6);
-      const buildingMaterial = new THREE.MeshBasicMaterial({ color: buildingColor });
-      const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
-      building.position.set(x, buildingHeight / 2, z);
-      scene.add(building);
+      // Create a basic rocket shape using a cylinder and cone
+      const rocketBodyGeometry = new THREE.CylinderGeometry(1, 1, rocketHeight, 32);
+      const rocketBodyMaterial = new THREE.MeshBasicMaterial({ color: rocketColor });
+      const rocketBody = new THREE.Mesh(rocketBodyGeometry, rocketBodyMaterial);
+      rocketBody.position.set(x, rocketHeight / 2, z);
+      scene.add(rocketBody);
+
+      // Rocket's top (cone part)
+      const rocketTopGeometry = new THREE.ConeGeometry(1.5, 2, 32);
+      const rocketTopMaterial = new THREE.MeshBasicMaterial({ color: rocketColor });
+      const rocketTop = new THREE.Mesh(rocketTopGeometry, rocketTopMaterial);
+      rocketTop.position.set(x, rocketHeight + 1, z);
+      scene.add(rocketTop);
+
+      return { body: rocketBody, top: rocketTop };
     }
 
-    // Create a few tall buildings in the scene
-    createTallBuilding(50, -50);
-    createTallBuilding(-50, -50);
-    createTallBuilding(100, 100);
-    createTallBuilding(-100, 100);
+    const rocket = createRocket(0, 0);
+    let isInRocket = false;
+    let closeToRocket = false;
+    let rocketExitTimer;
 
     camera.position.set(0, 2, 5);
     let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
@@ -110,6 +129,23 @@
             camera.position.y -= 0.1; // Move down
           }
           break;
+        case 'KeyY':
+          if (closeToRocket && !isInRocket) {
+            // Interact with rocket
+            interactionMessage.style.visibility = 'hidden'; // Hide message
+            document.body.style.backgroundColor = 'black'; // Turn screen black
+            setTimeout(() => {
+              document.body.style.backgroundColor = ''; // Restore screen
+              isInRocket = true; // Player is now inside the rocket
+              camera.position.set(0, 5, 5); // Position player in the rocket
+            }, 3000);
+          } else if (isInRocket) {
+            // Player exits the rocket
+            isInRocket = false;
+            camera.position.set(0, 2, 5); // Return to original position
+            scene.background = new THREE.Color(0x808080); // Gray terrain
+          }
+          break;
       }
     });
 
@@ -124,28 +160,22 @@
       }
     });
 
-    const players = {};
-
-    socket.on('updatePlayers', (serverPlayers) => {
-      for (let id in serverPlayers) {
-        if (!players[id]) {
-          const cube = new THREE.Mesh(
-            new THREE.BoxGeometry(1, 1, 1),
-            new THREE.MeshBasicMaterial({ color: 0xff0000 })
-          );
-          scene.add(cube);
-          players[id] = cube;
-        }
-        players[id].position.set(
-          serverPlayers[id].x,
-          serverPlayers[id].y,
-          serverPlayers[id].z
-        );
+    function checkProximityToRocket() {
+      const rocketPos = rocket.body.position;
+      const distance = camera.position.distanceTo(rocketPos);
+      if (distance < 10) { // Check if the player is close to the rocket
+        closeToRocket = true;
+        interactionMessage.style.visibility = 'visible'; // Show interaction message
+      } else {
+        closeToRocket = false;
+        interactionMessage.style.visibility = 'hidden'; // Hide interaction message
       }
-    });
+    }
 
     function animate() {
       requestAnimationFrame(animate);
+
+      checkProximityToRocket();
 
       const direction = new THREE.Vector3();
       camera.getWorldDirection(direction);
