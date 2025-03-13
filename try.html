@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simple 3D Game - Minecraft Style</title>
+  <title>Helicopter Landing - Minecraft Style with Sand Castle</title>
   <style>
     body {
       margin: 0;
@@ -20,43 +20,48 @@
 <body>
   <script>
     const socket = io();
-    
+
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
+
+    const helicopter = createHelicopter();
+    helicopter.position.set(0, 50, 0); // Start the helicopter above the ground
+
+    // Create a basic ground
+    createGround(0, 0, 0x00ff00); 
+
+    // Create a sand castle instead of shells
+    createSandCastle(0, 0);
+
+    camera.position.set(0, 2, 5);
+
+    // Landing logic: Move helicopter downward
+    let isLanding = false;
+    let landingSpeed = 0.2;
     
-    let isDay = true;
-    const sun = new THREE.DirectionalLight(0xffffff, 1);
-    sun.position.set(50, 100, 50);
-    scene.add(sun);
+    function createHelicopter() {
+      const helicopterGroup = new THREE.Group();
 
-    const moon = new THREE.PointLight(0xaaaaaa, 1, 200);
-    moon.position.set(-50, 100, -50);
-    moon.visible = false;
-    scene.add(moon);
+      // Helicopter body
+      const bodyGeometry = new THREE.BoxGeometry(5, 1, 10);
+      const bodyMaterial = new THREE.MeshBasicMaterial({ color: 0x555555 });
+      const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+      helicopterGroup.add(body);
 
-    function updateSky() {
-      if (isDay) {
-        scene.background = new THREE.Color(0x87CEEB);
-        sun.visible = true;
-        moon.visible = false;
-      } else {
-        scene.background = new THREE.Color(0x000000);
-        sun.visible = false;
-        moon.visible = true;
-      }
+      // Helicopter rotor
+      const rotorGeometry = new THREE.CylinderGeometry(1, 1, 0.2, 10);
+      const rotorMaterial = new THREE.MeshBasicMaterial({ color: 0x222222 });
+      const rotor = new THREE.Mesh(rotorGeometry, rotorMaterial);
+      rotor.rotation.x = Math.PI / 2; // Rotate the rotor to lie flat
+      rotor.position.set(0, 1, 0); // Position it on top of the body
+      helicopterGroup.add(rotor);
+
+      scene.add(helicopterGroup);
+      return helicopterGroup;
     }
-
-    function toggleDayNight() {
-      isDay = !isDay;
-      updateSky();
-      setTimeout(toggleDayNight, 300000);
-    }
-
-    updateSky();
-    setTimeout(toggleDayNight, 300000);
 
     function createGround(x, z, color) {
       const geometry = new THREE.PlaneGeometry(100, 100);
@@ -67,100 +72,60 @@
       scene.add(plane);
     }
 
-    for (let i = -2; i <= 2; i++) {
-      for (let j = -2; j <= 2; j++) {
-        const isWater = j > 1;
-        const isSand = j === 1;
-        createGround(i * 100, j * 100, isWater ? 0x0000ff : isSand ? 0xFFD700 : 0x00ff00);
-      }
+    // Create a sand castle using cubes
+    function createSandCastle(x, z) {
+      const castleMaterial = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+
+      // Base of the sand castle
+      const baseGeometry = new THREE.BoxGeometry(8, 1, 8);
+      const base = new THREE.Mesh(baseGeometry, castleMaterial);
+      base.position.set(x, 0.5, z);
+      scene.add(base);
+
+      // Towers of the sand castle
+      const towerGeometry = new THREE.BoxGeometry(2, 6, 2);
+      const tower1 = new THREE.Mesh(towerGeometry, castleMaterial);
+      tower1.position.set(x - 3, 3.5, z - 3);
+      scene.add(tower1);
+
+      const tower2 = new THREE.Mesh(towerGeometry, castleMaterial);
+      tower2.position.set(x + 3, 3.5, z - 3);
+      scene.add(tower2);
+
+      const tower3 = new THREE.Mesh(towerGeometry, castleMaterial);
+      tower3.position.set(x - 3, 3.5, z + 3);
+      scene.add(tower3);
+
+      const tower4 = new THREE.Mesh(towerGeometry, castleMaterial);
+      tower4.position.set(x + 3, 3.5, z + 3);
+      scene.add(tower4);
+
+      // Top of the castle
+      const topGeometry = new THREE.BoxGeometry(6, 1, 6);
+      const top = new THREE.Mesh(topGeometry, castleMaterial);
+      top.position.set(x, 6, z);
+      scene.add(top);
     }
-
-    function createShell(x, z) {
-      const geometry = new THREE.SphereGeometry(1, 6, 6);
-      const material = new THREE.MeshBasicMaterial({ color: 0xFFAA88 });
-      const shell = new THREE.Mesh(geometry, material);
-      shell.position.set(x, 0.5, z);
-      scene.add(shell);
-    }
-
-    for (let i = 0; i < 10; i++) {
-      createShell((Math.random() - 0.5) * 200, 100);
-    }
-
-    camera.position.set(0, 2, 5);
-    let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-    let cameraRotationY = 0;
-
-    document.addEventListener('keydown', (event) => {
-      switch (event.code) {
-        case 'KeyW': moveForward = true; break;
-        case 'KeyS': moveBackward = true; break;
-        case 'KeyA': moveLeft = true; break;
-        case 'KeyD': moveRight = true; break;
-        case 'ArrowLeft': cameraRotationY = 0.05; break;
-        case 'ArrowRight': cameraRotationY = -0.05; break;
-      }
-    });
-
-    document.addEventListener('keyup', (event) => {
-      switch (event.code) {
-        case 'KeyW': moveForward = false; break;
-        case 'KeyS': moveBackward = false; break;
-        case 'KeyA': moveLeft = false; break;
-        case 'KeyD': moveRight = false; break;
-        case 'ArrowLeft':
-        case 'ArrowRight': cameraRotationY = 0; break;
-      }
-    });
-
-    const players = {};
-
-    socket.on('updatePlayers', (serverPlayers) => {
-      for (let id in serverPlayers) {
-        if (!players[id]) {
-          const cube = new THREE.Mesh(
-            new THREE.BoxGeometry(1, 1, 1),
-            new THREE.MeshBasicMaterial({ color: 0xff0000 })
-          );
-          scene.add(cube);
-          players[id] = cube;
-        }
-        players[id].position.set(
-          serverPlayers[id].x,
-          serverPlayers[id].y,
-          serverPlayers[id].z
-        );
-      }
-    });
 
     function animate() {
       requestAnimationFrame(animate);
 
-      const direction = new THREE.Vector3();
-      camera.getWorldDirection(direction);
-      direction.y = 0;
-      direction.normalize();
-
-      const rightVector = new THREE.Vector3();
-      camera.getWorldDirection(rightVector);
-      rightVector.y = 0;
-      rightVector.cross(new THREE.Vector3(0, 1, 0)).normalize();
-
-      if (moveForward) camera.position.addScaledVector(direction, 0.1);
-      if (moveBackward) camera.position.addScaledVector(direction, -0.1);
-      if (moveLeft) camera.position.addScaledVector(rightVector, -0.1);
-      if (moveRight) camera.position.addScaledVector(rightVector, 0.1);
-
-      camera.rotation.y += cameraRotationY;
-      
-      socket.emit('move', {
-        x: camera.position.x,
-        y: camera.position.y,
-        z: camera.position.z
-      });
+      // Helicopter landing logic
+      if (isLanding && helicopter.position.y > 0) {
+        helicopter.position.y -= landingSpeed; // Move the helicopter downward
+      } else if (helicopter.position.y <= 0) {
+        isLanding = false; // Stop landing when the helicopter hits the ground
+      }
 
       renderer.render(scene, camera);
     }
+
+    // Start landing the helicopter when 'L' is pressed
+    document.addEventListener('keydown', (event) => {
+      if (event.code === 'KeyL') {
+        isLanding = true;
+      }
+    });
 
     animate();
   </script>
