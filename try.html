@@ -3,156 +3,130 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Movement with Camera Rotation</title>
+  <title>Cookie Clicker Game</title>
   <style>
     body {
-      margin: 0;
-      overflow: hidden;
       font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f5f5f5;
     }
-    canvas {
+    #cookie {
+      width: 200px;
+      height: 200px;
+      background-color: #f7c831;
+      border-radius: 50%;
+      cursor: pointer;
+      margin: 50px auto;
       display: block;
+      box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    #cookie h2 {
+      margin-top: 65px;
+      color: white;
+      font-size: 2rem;
+    }
+    .button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    .button:hover {
+      background-color: #45a049;
+    }
+    .upgrade {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+    }
+    .upgrade div {
+      padding: 10px;
+      background-color: #ffcc00;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .upgrade div:hover {
+      background-color: #ffbb33;
     }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
 </head>
 <body>
+  <h1>Cookie Clicker Game</h1>
+  <div id="cookie">
+    <h2 id="cookieCount">0 Cookies</h2>
+  </div>
+
+  <button class="button" id="clickButton">Click me!</button>
+
+  <div class="upgrade">
+    <div id="upgrade1">
+      <h3>Auto-clicker (Cost: 100 cookies)</h3>
+    </div>
+    <div id="upgrade2">
+      <h3>Cookie Factory (Cost: 500 cookies)</h3>
+    </div>
+  </div>
+
   <script>
-    const socket = io();
+    let cookieCount = 0;
+    let autoClickerEnabled = false;
+    let cookieFactoryEnabled = false;
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+    // Update the cookie count on the screen
+    function updateCookieDisplay() {
+      document.getElementById('cookieCount').innerText = `${cookieCount} Cookies`;
+    }
 
-    // Camera movement variables
-    let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-    let cameraRotationY = 0;
-    let isNearHouse = false;
-
-    // Create a simple ground and house
-    createGround(0, 0, 0x00ff00);
-    const housePosition = { x: 15, z: 0 };
-    const house = createHouse(housePosition.x, housePosition.z);
-
-    camera.position.set(0, 2, 5);
-
-    // Mouse movement for camera rotation
-    let mouseX = 0;
-    let mouseY = 0;
-    let prevMouseX = 0;
-
-    // Handle mouse movement for camera rotation
-    document.addEventListener('mousemove', (event) => {
-      mouseX = (event.clientX / window.innerWidth) * 2 - 1; // Normalize the mouse position (-1 to 1)
-      cameraRotationY = (mouseX - prevMouseX) * Math.PI; // Calculate rotation amount
-      prevMouseX = mouseX;
+    // Handle clicking the cookie to earn cookies
+    document.getElementById('clickButton').addEventListener('click', () => {
+      cookieCount++;
+      updateCookieDisplay();
     });
 
-    // Create ground
-    function createGround(x, z, color) {
-      const geometry = new THREE.PlaneGeometry(100, 100);
-      const material = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
-      const plane = new THREE.Mesh(geometry, material);
-      plane.rotation.x = -Math.PI / 2;
-      plane.position.set(x, 0, z);
-      scene.add(plane);
+    // Auto-clicker logic
+    function autoClicker() {
+      if (autoClickerEnabled) {
+        cookieCount += 1;
+        updateCookieDisplay();
+      }
     }
 
-    // Create a simple house
-    function createHouse(x, z) {
-      const houseGroup = new THREE.Group();
-
-      // Walls of the house
-      const wallGeometry = new THREE.BoxGeometry(10, 6, 10);
-      const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 }); // Brown color
-      const walls = new THREE.Mesh(wallGeometry, wallMaterial);
-      walls.position.set(x, 3, z);
-      scene.add(walls);
-
-      // Roof of the house
-      const roofGeometry = new THREE.ConeGeometry(7, 4, 4);
-      const roofMaterial = new THREE.MeshBasicMaterial({ color: 0xB22222 }); // Firebrick color
-      const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-      roof.position.set(x, 7, z);
-      roof.rotation.y = Math.PI / 4; // Make the roof slanted
-      scene.add(roof);
-
-      // Door of the house
-      const doorGeometry = new THREE.BoxGeometry(2, 4, 1);
-      const doorMaterial = new THREE.MeshBasicMaterial({ color: 0x3e2723 }); // Dark brown
-      const door = new THREE.Mesh(doorGeometry, doorMaterial);
-      door.position.set(x, 2, z + 5);
-      scene.add(door);
-
-      return houseGroup;
+    // Cookie factory logic
+    function cookieFactory() {
+      if (cookieFactoryEnabled) {
+        cookieCount += 5;
+        updateCookieDisplay();
+      }
     }
 
-    // Teleport to the house
-    function checkProximityToHouse() {
-      const distance = Math.sqrt(
-        Math.pow(camera.position.x - housePosition.x, 2) +
-        Math.pow(camera.position.z - housePosition.z, 2)
-      );
-      isNearHouse = distance < 5; // Adjust the range for proximity
-    }
+    // Periodically call auto-clicker and cookie factory functions
+    setInterval(autoClicker, 1000);
+    setInterval(cookieFactory, 5000);
 
-    // Keyboard controls for movement
-    document.addEventListener('keydown', (event) => {
-      if (event.code === 'KeyW') moveForward = true;
-      if (event.code === 'KeyS') moveBackward = true;
-      if (event.code === 'KeyA') moveLeft = true;
-      if (event.code === 'KeyD') moveRight = true;
-      if (event.code === 'KeyY' && isNearHouse) {
-        camera.position.set(housePosition.x, 2, housePosition.z + 5); // Teleport to the house's entrance
+    // Handle purchasing upgrades
+    document.getElementById('upgrade1').addEventListener('click', () => {
+      if (cookieCount >= 100 && !autoClickerEnabled) {
+        cookieCount -= 100;
+        autoClickerEnabled = true;
+        updateCookieDisplay();
+        alert('You bought an Auto-clicker!');
       }
     });
 
-    document.addEventListener('keyup', (event) => {
-      if (event.code === 'KeyW') moveForward = false;
-      if (event.code === 'KeyS') moveBackward = false;
-      if (event.code === 'KeyA') moveLeft = false;
-      if (event.code === 'KeyD') moveRight = false;
+    document.getElementById('upgrade2').addEventListener('click', () => {
+      if (cookieCount >= 500 && !cookieFactoryEnabled) {
+        cookieCount -= 500;
+        cookieFactoryEnabled = true;
+        updateCookieDisplay();
+        alert('You bought a Cookie Factory!');
+      }
     });
-
-    // Update the camera position based on user input
-    function updateCameraPosition() {
-      const direction = new THREE.Vector3();
-      camera.getWorldDirection(direction);
-      direction.y = 0;
-      direction.normalize();
-
-      const rightVector = new THREE.Vector3();
-      camera.getWorldDirection(rightVector);
-      rightVector.y = 0;
-      rightVector.cross(new THREE.Vector3(0, 1, 0)).normalize();
-
-      // Apply movement based on keyboard input
-      if (moveForward) camera.position.addScaledVector(direction, 0.1);
-      if (moveBackward) camera.position.addScaledVector(direction, -0.1);
-      if (moveLeft) camera.position.addScaledVector(rightVector, -0.1);
-      if (moveRight) camera.position.addScaledVector(rightVector, 0.1);
-
-      // Apply rotation based on mouse movement
-      camera.rotation.y += cameraRotationY;
-    }
-
-    // Animate the scene
-    function animate() {
-      requestAnimationFrame(animate);
-
-      // Check if player is near the house
-      checkProximityToHouse();
-
-      // Update the camera position
-      updateCameraPosition();
-
-      renderer.render(scene, camera);
-    }
-
-    animate();
   </script>
 </body>
 </html>
