@@ -3,191 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face Recognition System</title>
+    <title>Face Line Mask</title>
     <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
     <style>
-        /* General reset and font style */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f0f0f0;
+            margin: 0;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             height: 100vh;
-            color: #333;
+            background: #eee;
         }
-        h1 {
-            margin-bottom: 20px;
-            font-size: 2rem;
-        }
-
-        /* Video container styling */
-        #video {
-            width: 640px;
-            height: 480px;
-            border: 2px solid #333;
-            border-radius: 10px;
-            background-color: #000;
-        }
-
-        /* Capture button styling */
-        #captureButton {
-            margin-top: 20px;
-            padding: 10px 20px;
-            font-size: 1rem;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        #captureButton:hover {
-            background-color: #45a049;
-        }
-
-        /* Image container for displaying captured face */
-        #imageContainer {
-            margin-top: 20px;
-            text-align: center;
-        }
-
-        #imageContainer img {
-            max-width: 100%;
-            max-height: 300px;
-            border-radius: 10px;
-            margin-top: 10px;
-        }
-
-        /* Canvas for drawing face detections */
         canvas {
             position: absolute;
-            top: 0;
-            left: 0;
-        }
-
-        /* Alert style */
-        .alert {
-            background-color: #ffcc00;
-            padding: 10px;
-            margin: 20px;
-            border-radius: 5px;
-            font-weight: bold;
-            display: none;
         }
     </style>
 </head>
 <body>
-
-    <h1>Face Recognition System</h1>
-    <div>
-        <video id="video" autoplay muted></video>
-    </div>
-    <button id="captureButton">Capture Face</button>
-    <div id="imageContainer"></div>
-    <div class="alert" id="alert">Face detected successfully!</div>
+    <video id="video" width="640" height="480" autoplay muted></video>
+    <canvas id="overlay"></canvas>
 
     <script>
         const video = document.getElementById('video');
-        const captureButton = document.getElementById('captureButton');
-        const imageContainer = document.getElementById('imageContainer');
-        const alertBox = document.getElementById('alert');
+        const overlay = document.getElementById('overlay');
+        const ctx = overlay.getContext('2d');
 
-        let capturedFaceDescriptor = null;
-
-        // Set up the models to load
-        async function setup() {
+        // Load face-api.js models
+        async function loadModels() {
             await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
             await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
             await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
             startVideo();
         }
 
-        // Start the webcam video feed
-        async function startVideo() {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: "user" }
-            });
-            video.srcObject = stream;
+        // Start the video
+        function startVideo() {
+            navigator.mediaDevices.getUserMedia({ video: {} })
+                .then((stream) => {
+                    video.srcObject = stream;
+                    video.play();
+                });
         }
 
-        // Capture the face and extract the descriptor
-        captureButton.addEventListener('click', async () => {
-            const canvas = faceapi.createCanvasFromMedia(video);
-            document.body.append(canvas);
-            const displaySize = { width: video.width, height: video.height };
-            faceapi.matchDimensions(canvas, displaySize);
-
-            const detections = await faceapi.detectSingleFace(video)
-                .withFaceLandmarks()
-                .withFaceDescriptor();
-
-            if (!detections) {
-                alertBox.innerHTML = 'No face detected! Please try again.';
-                alertBox.style.display = 'block';
-                setTimeout(() => alertBox.style.display = 'none', 2000);
-                return;
-            }
-
-            capturedFaceDescriptor = detections.descriptor;
-
-            // Draw the face and landmarks on the canvas
-            const resizedDetections = faceapi.resizeResults([detections], displaySize);
-            canvas?.clear();
-            canvas?.drawDetections(resizedDetections);
-            canvas?.drawFaceLandmarks(resizedDetections);
-
-            // Display captured face image
-            const img = document.createElement('img');
-            img.src = canvas.toDataURL();
-            imageContainer.innerHTML = '';
-            imageContainer.appendChild(img);
-            alertBox.innerHTML = 'Face captured successfully!';
-            alertBox.style.display = 'block';
-            setTimeout(() => alertBox.style.display = 'none', 2000);
-        });
-
-        // Recognize the captured face
+        // Detect faces and draw lines
         video.addEventListener('play', async () => {
-            const canvas = faceapi.createCanvasFromMedia(video);
-            document.body.append(canvas);
-            const displaySize = { width: video.width, height: video.height };
-            faceapi.matchDimensions(canvas, displaySize);
+            overlay.width = video.width;
+            overlay.height = video.height;
 
-            setInterval(async () => {
-                const detections = await faceapi.detectAllFaces(video)
-                    .withFaceLandmarks()
-                    .withFaceDescriptors();
+            while (true) {
+                const detections = await faceapi.detectAllFaces(video).withFaceLandmarks();
+                ctx.clearRect(0, 0, overlay.width, overlay.height);
+                if (detections.length > 0) {
+                    detections.forEach((detection) => {
+                        const landmarks = detection.landmarks.positions;
 
-                const resizedDetections = faceapi.resizeResults(detections, displaySize);
-                canvas?.clear();
-                canvas?.drawDetections(resizedDetections);
-                canvas?.drawFaceLandmarks(resizedDetections);
+                        // Draw lines from mouth to nose
+                        drawLinesBetweenPoints(landmarks[48], landmarks[33]); // Mouth to Nose
+                        drawLinesBetweenPoints(landmarks[54], landmarks[33]); // Other side of mouth to nose
 
-                if (capturedFaceDescriptor) {
-                    const labeledFaceDescriptors = [new faceapi.LabeledFaceDescriptors('Captured Face', [capturedFaceDescriptor])];
-                    const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6);
-
-                    const results = resizedDetections.map(d => faceMatcher.findBestMatch(d.descriptor));
-                    results.forEach((result, i) => {
-                        const box = resizedDetections[i].detection.box;
-                        const label = result.toString();
-                        new faceapi.draw.DrawTextField([label], box.topLeft).draw(canvas);
+                        // You can add more lines or customize this as needed
                     });
                 }
-            }, 100);
+                await faceapi.tf.nextFrame();
+            }
         });
 
-        // Load models and start the process
-        setup();
-    </script>
+        // Function to draw lines
+        function drawLinesBetweenPoints(point1, point2) {
+            ctx.beginPath();
+            ctx.moveTo(point1.x, point1.y);
+            ctx.lineTo(point2.x, point2.y);
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
 
+        // Load models and start the video
+        loadModels();
+    </script>
 </body>
 </html>
