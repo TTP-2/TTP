@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather Dashboard</title>
+    <title>AI Question Answering</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f1f1f1;
+            background-color: #f4f4f4;
             margin: 0;
             padding: 0;
             display: flex;
@@ -15,88 +15,82 @@
             align-items: center;
             height: 100vh;
         }
-
-        .weather-container {
+        .container {
             background-color: white;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
             text-align: center;
-            width: 300px;
+            width: 400px;
         }
-
         h1 {
-            font-size: 24px;
             margin-bottom: 20px;
         }
-
-        .search input {
+        input[type="text"] {
+            width: 80%;
             padding: 10px;
-            width: 200px;
             font-size: 16px;
-            margin-right: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
         }
-
-        .search button {
-            padding: 10px 15px;
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
             background-color: #3498db;
             color: white;
             border: none;
-            font-size: 16px;
             cursor: pointer;
+            border-radius: 5px;
         }
-
-        .search button:hover {
+        button:hover {
             background-color: #2980b9;
         }
-
-        .weather-info {
+        #answer {
             margin-top: 20px;
             font-size: 18px;
-        }
-
-        .weather-info p {
-            margin: 5px 0;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <div class="weather-container">
-        <h1>Weather Dashboard</h1>
-        <div class="search">
-            <input type="text" id="cityInput" placeholder="Enter city name">
-            <button onclick="getWeather()">Search</button>
-        </div>
-        <div class="weather-info" id="weatherInfo">
-            <p id="cityName"></p>
-            <p id="temperature"></p>
-            <p id="description"></p>
-            <p id="humidity"></p>
-            <p id="windSpeed"></p>
-        </div>
+
+    <div class="container">
+        <h1>AI Question Answering</h1>
+        <input type="text" id="question" placeholder="Ask me anything...">
+        <button onclick="askQuestion()">Ask</button>
+        <div id="answer"></div>
     </div>
+
     <script>
-        const apiKey = 'YOUR_API_KEY';  // Replace with your OpenWeatherMap API key
+        async function askQuestion() {
+            const question = document.getElementById('question').value;
+            if (!question) {
+                alert('Please enter a question!');
+                return;
+            }
+            
+            // Show loading text
+            document.getElementById('answer').textContent = "Thinking...";
 
-        function getWeather() {
-            const city = document.getElementById("cityInput").value;
-            const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
-
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.cod === "404") {
-                        alert("City not found.");
-                    } else {
-                        document.getElementById("cityName").textContent = `Weather in ${data.name}`;
-                        document.getElementById("temperature").textContent = `Temperature: ${data.main.temp}°C`;
-                        document.getElementById("description").textContent = `Description: ${data.weather[0].description}`;
-                        document.getElementById("humidity").textContent = `Humidity: ${data.main.humidity}%`;
-                        document.getElementById("windSpeed").textContent = `Wind Speed: ${data.wind.speed} m/s`;
-                    }
+            const response = await fetch('https://api.openai.com/v1/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer YOUR_API_KEY`,  // Replace with your OpenAI API key
+                },
+                body: JSON.stringify({
+                    model: 'text-davinci-003',  // You can choose another model like GPT-3.5 or GPT-4
+                    prompt: question,
+                    max_tokens: 100
                 })
-                .catch(err => console.log(err));
+            });
+
+            const data = await response.json();
+            const answer = data.choices[0].text.trim();
+            document.getElementById('answer').textContent = answer;
         }
     </script>
+
 </body>
 </html>
