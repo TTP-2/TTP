@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI with Dynamic Learning</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 400px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #answer {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>AI with Dynamic Learning</h1>
+        <input type="text" id="userInput" placeholder="Tell me something!">
+        <button onclick="processInput()">Tell Me</button>
+        <div id="answer"></div>
+    </div>
+
+    <script>
+        // Memory object to store learned facts
+        let memory = {};
+
+        // Function to process user input
+        function processInput() {
+            const userInput = document.getElementById('userInput').value.trim();
+            if (!userInput) {
+                alert("Please enter something!");
+                return;
+            }
+
+            // Check if the input matches the format "X + Y is Z" or similar
+            const mathPattern = /^(\d+)\s*\+\s*(\d+)\s*is\s*(\d+)$/i;
+            const match = userInput.match(mathPattern);
+
+            if (match) {
+                const operand1 = match[1];
+                const operand2 = match[2];
+                const result = match[3];
+                
+                // Store the fact
+                memory[`${operand1} + ${operand2}`] = result;
+                document.getElementById('answer').textContent = `Got it! I'll remember that ${operand1} + ${operand2} is ${result}.`;
+            }
+            else if (userInput.toLowerCase().includes('is')) {
+                // Handle generic "is" statements (like "the sky is blue")
+                const parts = userInput.split(' is ');
+                if (parts.length === 2) {
+                    const fact = parts[0].trim();
+                    const answer = parts[1].trim();
+                    memory[fact] = answer;
+                    document.getElementById('answer').textContent = `Got it! I'll remember that ${fact} is ${answer}.`;
+                }
+            }
+            else if (userInput.toLowerCase().startsWith("what is")) {
+                // Handle question input like "What is 1 + 1?"
+                const question = userInput.slice(8).trim(); // Remove "What is" from the start
+                if (memory[question]) {
+                    document.getElementById('answer').textContent = `${question} is ${memory[question]}.`;
+                } else {
+                    document.getElementById('answer').textContent = "I don't know the answer to that yet!";
+                }
+            } else {
+                document.getElementById('answer').textContent = "I can learn facts like '1 + 1 is 2' or 'The sky is blue'.";
+            }
+
+            document.getElementById('userInput').value = ''; // Clear the input field
+        }
+    </script>
+
+</body>
+</html>
