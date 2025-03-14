@@ -49,13 +49,23 @@
         const expressionDiv = document.getElementById("expression");
 
         async function setupCamera() {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
-            video.srcObject = stream;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+                video.srcObject = stream;
+            } catch (error) {
+                console.error("Error accessing webcam:", error);
+                alert("Please allow camera access or check if your webcam is working.");
+            }
         }
 
         async function loadModels() {
-            await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
-            await faceapi.nets.faceExpressionNet.loadFromUri('/models');
+            try {
+                await faceapi.nets.ssdMobilenetv1.loadFromUri('models');
+                await faceapi.nets.faceExpressionNet.loadFromUri('models');
+            } catch (error) {
+                console.error("Error loading models:", error);
+                alert("Failed to load face detection models. Please check if they are in the 'models' directory.");
+            }
         }
 
         async function detectExpression() {
@@ -69,7 +79,6 @@
             }
         }
 
-        // Load models, setup camera, and start detecting expressions
         window.onload = async () => {
             await loadModels();
             await setupCamera();
