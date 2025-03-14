@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Question Answering</title>
+    <title>AI with Memory</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -56,39 +56,48 @@
 <body>
 
     <div class="container">
-        <h1>AI Question Answering</h1>
-        <input type="text" id="question" placeholder="Ask me anything...">
-        <button onclick="askQuestion()">Ask</button>
+        <h1>AI with Memory</h1>
+        <input type="text" id="userInput" placeholder="Ask me something or teach me!">
+        <button onclick="processInput()">Ask or Teach</button>
         <div id="answer"></div>
     </div>
 
     <script>
-        async function askQuestion() {
-            const question = document.getElementById('question').value;
-            if (!question) {
-                alert('Please enter a question!');
+        // Memory object to store learned facts
+        let memory = {};
+
+        // Function to process user input
+        function processInput() {
+            const userInput = document.getElementById('userInput').value.trim();
+            if (!userInput) {
+                alert("Please enter a question or fact!");
                 return;
             }
-            
-            // Show loading text
-            document.getElementById('answer').textContent = "Thinking...";
 
-            const response = await fetch('https://api.openai.com/v1/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer YOUR_API_KEY`,  // Replace with your OpenAI API key
-                },
-                body: JSON.stringify({
-                    model: 'text-davinci-003',  // You can choose another model like GPT-3.5 or GPT-4
-                    prompt: question,
-                    max_tokens: 100
-                })
-            });
-
-            const data = await response.json();
-            const answer = data.choices[0].text.trim();
-            document.getElementById('answer').textContent = answer;
+            // If the user wants to teach the AI
+            if (userInput.toLowerCase().startsWith("the")) {
+                const parts = userInput.split(" is ");
+                if (parts.length === 2) {
+                    const fact = parts[0].slice(4); // Remove "The " from the start
+                    const answer = parts[1];
+                    memory[fact] = answer;
+                    document.getElementById('answer').textContent = `Got it! I learned that ${fact} is ${answer}.`;
+                } else {
+                    document.getElementById('answer').textContent = "I didn't understand the format. Try: 'The [something] is [something].'";
+                }
+            }
+            // If the user asks a question
+            else if (userInput.toLowerCase().startsWith("what is")) {
+                const question = userInput.slice(8).trim(); // Remove "What is " from the start
+                if (memory[question]) {
+                    document.getElementById('answer').textContent = `${question} is ${memory[question]}.`;
+                } else {
+                    document.getElementById('answer').textContent = "I don't know the answer to that yet!";
+                }
+            } else {
+                document.getElementById('answer').textContent = "You can teach me facts by saying 'The [something] is [something].'";
+            }
+            document.getElementById('userInput').value = ''; // Clear the input field
         }
     </script>
 
