@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometry Wars</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+        }
+        canvas {
+            display: block;
+        }
+        #score {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-size: 20px;
+            font-family: Arial, sans-serif;
+        }
+        #blast {
+            position: absolute;
+            top: 40px;
+            right: 10px;
+            color: white;
+            font-size: 20px;
+            font-family: Arial, sans-serif;
+        }
+        #coordinates {
+            position: absolute;
+            top: 70px;
+            right: 10px;
+            color: white;
+            font-size: 20px;
+            font-family: Arial, sans-serif;
+        }
+        #gameOver {
+            position: absolute;
+            top: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 50px;
+            font-family: Arial, sans-serif;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <div id="blast">Blasts: 3</div>
+    <div id="coordinates">X: 0, Y: 0</div>
+    <div id="gameOver">You Died!</div>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const blastDisplay = document.getElementById('blast');
+        const coordinatesDisplay = document.getElementById('coordinates');
+        const gameOverDisplay = document.getElementById('gameOver');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            size: 50,
+            speed: 5,
+            angle: 0,
+            color: 'white'
+        };
+
+        const bullets = [];
+        const enemies = [];
+        const collectedCubes = [];
+        const bulletSpeed = 7;
+        const bulletSize = 10;
+        let score = 0;
+        let blastCount = 3;
+        let keys = {};
+        let gameOver = false;
+
+        window.addEventListener('keydown', (e) => keys[e.key] = true);
+        window.addEventListener('keyup', (e) => keys[e.key] = false);
+
+        function resetGame() {
+            gameOver = false;
+            score = 0;
+            blastCount = 3;
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+            enemies.length = 0;
+            collectedCubes.length = 0;
+            spawnEnemies();
+            gameOverDisplay.style.display = 'none';
+            blastDisplay.textContent = `Blasts: ${blastCount}`;
+            scoreDisplay.textContent = `Score: ${score}`;
+            update(); // Restart the game loop
+        }
+
+        function movePlayer() {
+            if (keys['ArrowUp']) {
+                player.x += Math.cos(player.angle) * player.speed;
+                player.y += Math.sin(player.angle) * player.speed;
+            }
+            if (keys['ArrowLeft']) player.angle -= 0.1;
+            if (keys['ArrowRight']) player.angle += 0.1;
+        }
+
+        function drawPlayer() {
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            ctx.rotate(player.angle);
+            ctx.fillStyle = player.color;
+            ctx.fillRect(-player.size / 2, -player.size / 2, player.size, player.size);
+            ctx.restore();
+        }
+
+        function drawBullets() {
+            ctx.fillStyle = 'cyan';
+            bullets.forEach((bullet, index) => {
+                bullet.x += bullet.dx;
+                bullet.y += bullet.dy;
+                ctx.fillRect(bullet.x - bulletSize / 2, bullet.y - bulletSize / 2, bulletSize, bulletSize);
+            });
+        }
+
+        function drawEnemies() {
+            ctx.fillStyle = 'red';
+            enemies.forEach(enemy => {
+                ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
+            });
+        }
+
+        function drawCollectedCubes() {
+            ctx.fillStyle = 'yellow';
+            collectedCubes.forEach(cube => {
+                ctx.fillRect(cube.x, cube.y, 10, 10);
+            });
+        }
+
+        function spawnEnemies() {
+            while (enemies.length < 5) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const dx = (Math.random() - 0.5) * 2;
+                const dy = (Math.random() - 0.5) * 2;
+                enemies.push({ x, y, size: 30, dx, dy });
+            }
+        }
+
+        function moveEnemies() {
+            enemies.forEach(enemy => {
+                enemy.x += enemy.dx;
+                enemy.y += enemy.dy;
+
+                // Bounce off the edges of the canvas
+                if (enemy.x <= 0 || enemy.x >= canvas.width - enemy.size) enemy.dx = -enemy.dx;
+                if (enemy.y <= 0 || enemy.y >= canvas.height - enemy.size) enemy.dy = -enemy.dy;
+            });
+        }
+
+        function shootBullet() {
+            const dx = Math.cos(player.angle) * bulletSpeed;
+            const dy = Math.sin(player.angle) * bulletSpeed;
+            bullets.push({ x: player.x, y: player.y, dx, dy, size: bulletSize, color: 'cyan' });
+        }
+
+        function activateBlast() {
+            if (blastCount > 0) {
+                blastCount--;
+                enemies.forEach(enemy => {
+                    // Calculate the angle to the enemy from the player's position
+                    let angle = Math.atan2(enemy.y - player.y, enemy.x - player.y);
+                    
+                    // Create a bullet that moves toward the enemy
+                    bullets.push({
+                        x: player.x,
+                        y: player.y,
+                        dx: Math.cos(angle) * bulletSpeed,
+                        dy: Math.sin(angle) * bulletSpeed,
+                        size: bulletSize,
+                        color: 'cyan',
+                        target: enemy // Add the target enemy to the bullet
+                    });
+                });
+                blastDisplay.textContent = `Blasts: ${blastCount}`;
+            }
+        }
+
+        function checkBulletCollision() {
+            bullets.forEach((bullet, bulletIndex) => {
+                enemies.forEach((enemy, enemyIndex) => {
+                    // Check if the bullet is touching an enemy
+                    if (bullet.x > enemy.x && bullet.x < enemy.x + enemy.size && bullet.y > enemy.y && bullet.y < enemy.y + enemy.size) {
+                        // Enemy shot
+                        enemies.splice(enemyIndex, 1);
+                        bullets.splice(bulletIndex, 1);
+                        score++;
+                        scoreDisplay.textContent = `Score: ${score}`;
+
+                        // Spawn a yellow square that can be collected
+                        collectedCubes.push({ x: enemy.x + enemy.size / 2 - 5, y: enemy.y + enemy.size / 2 - 5 });
+
+                        // Respawn enemies
+                        spawnEnemies();
+                    }
+                });
+            });
+        }
+
+        function checkCubeCollection() {
+            collectedCubes.forEach((cube, cubeIndex) => {
+                // Adjusted the collision check to ensure any part of the player's square intersects with the yellow square
+                if (player.x - player.size / 2 < cube.x + 10 && player.x + player.size / 2 > cube.x &&
+                    player.y - player.size / 2 < cube.y + 10 && player.y + player.size / 2 > cube.y) {
+                    collectedCubes.splice(cubeIndex, 1); // Remove the collected cube
+                    blastCount += 2; // Give 2 more blasts per collection
+                    blastDisplay.textContent = `Blasts: ${blastCount}`;
+                }
+            });
+        }
+
+        function checkPlayerCollision() {
+            enemies.forEach((enemy) => {
+                // Ensure exact collision with the red square (when player square is completely inside the red square)
+                if (player.x + player.size / 2 > enemy.x &&
+                    player.x - player.size / 2 < enemy.x + enemy.size &&
+                    player.y + player.size / 2 > enemy.y &&
+                    player.y - player.size / 2 < enemy.y + enemy.size) {
+                    // Collision detected, end the game
+                    gameOver = true;
+                    gameOverDisplay.style.display = 'block';
+                    setTimeout(resetGame, 3000); // Restart the game after 3 seconds
+                }
+            });
+        }
+
+        function update() {
+            if (gameOver) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            movePlayer();
+            moveEnemies();
+            drawPlayer();
+            drawBullets();
+            drawEnemies();
+            drawCollectedCubes();
+            checkBulletCollision();
+            checkCubeCollection();
+            checkPlayerCollision();
+
+            // Update coordinates display
+            coordinatesDisplay.textContent = `X: ${Math.floor(player.x)}, Y: ${Math.floor(player.y)}`;
+
+            requestAnimationFrame(update);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === ' ') shootBullet();
+            if (e.key === 'b' || e.key === 'B') activateBlast();
+        });
+
+        // Start the game
+        spawnEnemies();
+        update();
+    </script>
+</body>
+</html>
