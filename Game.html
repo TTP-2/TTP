@@ -54,6 +54,7 @@
 
         const bullets = [];
         const enemies = [];
+        const yellowPackets = [];
         const bulletSpeed = 7;
         const bulletSize = 10;
         let score = 0;
@@ -62,6 +63,7 @@
 
         // Sound Effects
         const shootSound = new Audio('sounds/shoot.wav'); // Path to the shoot sound
+        const collectSound = new Audio('sounds/collect.wav'); // Path to the collect sound
 
         window.addEventListener('keydown', (e) => keys[e.key] = true);
         window.addEventListener('keyup', (e) => keys[e.key] = false);
@@ -103,16 +105,16 @@
                         blastDisplay.textContent = `Blast: ${blastCount}`;
 
                         // Create yellow packets when enemy is hit
-                        const yellowPackets = [];
+                        const yellowPacketsTemp = [];
                         for (let i = 0; i < 4; i++) {
-                            yellowPackets.push({ 
+                            yellowPacketsTemp.push({ 
                                 x: enemy.x + Math.random() * 30 - 15, 
                                 y: enemy.y + Math.random() * 30 - 15, 
                                 size: 5, 
                                 color: 'yellow' 
                             });
                         }
-                        collectYellowPackets(yellowPackets);
+                        yellowPackets.push(...yellowPacketsTemp);
 
                         // Play the shoot sound
                         shootSound.play();
@@ -131,6 +133,25 @@
                 ctx.lineTo(enemy.x - enemy.size / 2, enemy.y + enemy.size);
                 ctx.closePath();
                 ctx.fill();
+            });
+        }
+
+        function drawYellowPackets() {
+            yellowPackets.forEach((packet, index) => {
+                ctx.fillStyle = packet.color;
+                ctx.fillRect(packet.x, packet.y, packet.size, packet.size);
+
+                // Check for collision with player
+                if (player.x < packet.x + packet.size && player.x + player.size > packet.x &&
+                    player.y < packet.y + packet.size && player.y + player.size > packet.y) {
+                    // Collect the yellow packet
+                    yellowPackets.splice(index, 1);
+                    blastCount += 2; // Increase blast count by 2
+                    blastDisplay.textContent = `Blast: ${blastCount}`;
+
+                    // Play the collect sound
+                    collectSound.play();
+                }
             });
         }
 
@@ -155,24 +176,11 @@
             if (blastCount > 0) {
                 blastCount--;
                 enemies.forEach(enemy => {
-                    let angle = Math.atan2(enemy.y - player.y, enemy.x - player.x);
+                    let angle = Math.atan2(enemy.y - player.y, enemy.x - player.y);
                     bullets.push({ x: player.x, y: player.y, dx: Math.cos(angle) * bulletSpeed, dy: Math.sin(angle) * bulletSpeed });
                 });
                 blastDisplay.textContent = `Blast: ${blastCount}`;
             }
-        }
-
-        function collectYellowPackets(packets) {
-            packets.forEach(packet => {
-                // Draw the yellow packet
-                ctx.fillStyle = packet.color;
-                ctx.fillRect(packet.x, packet.y, packet.size, packet.size);
-
-                // Simulate collecting the yellow packets
-                setTimeout(() => {
-                    packet = null; // Remove yellow square after it disappears
-                }, 3000); // Disappear after 3 seconds
-            });
         }
 
         function update() {
@@ -181,6 +189,7 @@
             drawPlayer();
             drawBullets();
             drawEnemies();
+            drawYellowPackets();
             requestAnimationFrame(update);
         }
 
