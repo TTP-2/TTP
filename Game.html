@@ -84,6 +84,11 @@
         let keys = {};
         let gameOver = false;
 
+        // Load sounds
+        const shootSound = new Audio('shoot.mp3');
+        const collectSound = new Audio('collect.mp3');
+        const gameOverSound = new Audio('gameover.mp3');
+
         window.addEventListener('keydown', (e) => keys[e.key] = true);
         window.addEventListener('keyup', (e) => keys[e.key] = false);
 
@@ -168,16 +173,14 @@
             const dx = Math.cos(player.angle) * bulletSpeed;
             const dy = Math.sin(player.angle) * bulletSpeed;
             bullets.push({ x: player.x, y: player.y, dx, dy, size: bulletSize, color: 'cyan' });
+            shootSound.play(); // Play shoot sound
         }
 
         function activateBlast() {
             if (blastCount > 0) {
                 blastCount--;
                 enemies.forEach(enemy => {
-                    // Calculate the angle to the enemy from the player's position
                     let angle = Math.atan2(enemy.y - player.y, enemy.x - player.y);
-                    
-                    // Create a bullet that moves toward the enemy
                     bullets.push({
                         x: player.x,
                         y: player.y,
@@ -195,18 +198,17 @@
         function checkBulletCollision() {
             bullets.forEach((bullet, bulletIndex) => {
                 enemies.forEach((enemy, enemyIndex) => {
-                    // Check if the bullet is touching an enemy
                     if (bullet.x > enemy.x && bullet.x < enemy.x + enemy.size && bullet.y > enemy.y && bullet.y < enemy.y + enemy.size) {
-                        // Enemy shot
                         enemies.splice(enemyIndex, 1);
                         bullets.splice(bulletIndex, 1);
                         score++;
                         scoreDisplay.textContent = `Score: ${score}`;
 
-                        // Spawn a yellow square that can be collected
+                        // Play collect sound when the enemy is destroyed
+                        collectSound.play();
+
                         collectedCubes.push({ x: enemy.x + enemy.size / 2 - 5, y: enemy.y + enemy.size / 2 - 5 });
 
-                        // Respawn enemies
                         spawnEnemies();
                     }
                 });
@@ -215,11 +217,10 @@
 
         function checkCubeCollection() {
             collectedCubes.forEach((cube, cubeIndex) => {
-                // Adjusted the collision check to ensure any part of the player's square intersects with the yellow square
                 if (player.x - player.size / 2 < cube.x + 10 && player.x + player.size / 2 > cube.x &&
                     player.y - player.size / 2 < cube.y + 10 && player.y + player.size / 2 > cube.y) {
-                    collectedCubes.splice(cubeIndex, 1); // Remove the collected cube
-                    blastCount += 2; // Give 2 more blasts per collection
+                    collectedCubes.splice(cubeIndex, 1);
+                    blastCount += 2;
                     blastDisplay.textContent = `Blasts: ${blastCount}`;
                 }
             });
@@ -227,15 +228,14 @@
 
         function checkPlayerCollision() {
             enemies.forEach((enemy) => {
-                // Ensure exact collision with the red square (when player square is completely inside the red square)
                 if (player.x + player.size / 2 > enemy.x &&
                     player.x - player.size / 2 < enemy.x + enemy.size &&
                     player.y + player.size / 2 > enemy.y &&
                     player.y - player.size / 2 < enemy.y + enemy.size) {
-                    // Collision detected, end the game
                     gameOver = true;
                     gameOverDisplay.style.display = 'block';
-                    setTimeout(resetGame, 3000); // Restart the game after 3 seconds
+                    gameOverSound.play(); // Play game over sound
+                    setTimeout(resetGame, 3000);
                 }
             });
         }
@@ -254,7 +254,6 @@
             checkCubeCollection();
             checkPlayerCollision();
 
-            // Update coordinates display
             coordinatesDisplay.textContent = `X: ${Math.floor(player.x)}, Y: ${Math.floor(player.y)}`;
 
             requestAnimationFrame(update);
@@ -265,7 +264,6 @@
             if (e.key === 'b' || e.key === 'B') activateBlast();
         });
 
-        // Start the game
         spawnEnemies();
         update();
     </script>
