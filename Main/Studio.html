@@ -12,6 +12,7 @@
             text-align: center;
             margin: 0;
             padding: 0;
+            transition: filter 0.3s ease;
         }
         header {
             background-color: #006666;
@@ -63,6 +64,7 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
             text-align: center;
             width: 300px;
+            z-index: 10;
         }
         .modal input, .modal button {
             width: calc(100% - 20px);
@@ -116,6 +118,9 @@
             margin-left: auto;
             margin-right: auto;
         }
+        .blur-background {
+            backdrop-filter: blur(5px);
+        }
     </style>
     <script>
         function showSignUp() {
@@ -124,10 +129,12 @@
 
         function closeSignUp() {
             document.getElementById("signUpModal").style.display = "none";
+            document.body.classList.remove('blur-background');
         }
 
         function submitSignUp() {
             document.getElementById("signUpModal").style.display = "none";
+            document.body.classList.remove('blur-background');
             let thankYouDiv = document.getElementById("thankYou");
             thankYouDiv.style.display = "block";
             setTimeout(() => {
@@ -143,10 +150,12 @@
 
         function showLogin() {
             document.getElementById("loginModal").style.display = "block";
+            document.body.classList.add('blur-background');
         }
 
         function closeLogin() {
             document.getElementById("loginModal").style.display = "none";
+            document.body.classList.remove('blur-background');
         }
 
         function validateLogin() {
