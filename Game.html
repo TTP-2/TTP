@@ -29,39 +29,17 @@
             font-size: 20px;
             font-family: Arial, sans-serif;
         }
-        #coordinates {
-            position: absolute;
-            top: 70px;
-            right: 10px;
-            color: white;
-            font-size: 20px;
-            font-family: Arial, sans-serif;
-        }
-        #gameOver {
-            position: absolute;
-            top: 150px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: white;
-            font-size: 50px;
-            font-family: Arial, sans-serif;
-            display: none;
-        }
     </style>
 </head>
 <body>
     <div id="score">Score: 0</div>
-    <div id="blast">Blasts: 3</div>
-    <div id="coordinates">X: 0, Y: 0</div>
-    <div id="gameOver">You Died!</div>
+    <div id="blast">Blast: 3</div>
     <canvas id="gameCanvas"></canvas>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreDisplay = document.getElementById('score');
         const blastDisplay = document.getElementById('blast');
-        const coordinatesDisplay = document.getElementById('coordinates');
-        const gameOverDisplay = document.getElementById('gameOver');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
@@ -76,36 +54,17 @@
 
         const bullets = [];
         const enemies = [];
-        const collectedCubes = [];
         const bulletSpeed = 7;
         const bulletSize = 10;
         let score = 0;
         let blastCount = 3;
         let keys = {};
-        let gameOver = false;
 
-        // Load sounds
-        const shootSound = new Audio('shoot.mp3');
-        const collectSound = new Audio('collect.mp3');
-        const gameOverSound = new Audio('gameover.mp3');
+        // Sound Effects
+        const shootSound = new Audio('sounds/shoot.wav'); // Path to the shoot sound
 
         window.addEventListener('keydown', (e) => keys[e.key] = true);
         window.addEventListener('keyup', (e) => keys[e.key] = false);
-
-        function resetGame() {
-            gameOver = false;
-            score = 0;
-            blastCount = 3;
-            player.x = canvas.width / 2;
-            player.y = canvas.height / 2;
-            enemies.length = 0;
-            collectedCubes.length = 0;
-            spawnEnemies();
-            gameOverDisplay.style.display = 'none';
-            blastDisplay.textContent = `Blasts: ${blastCount}`;
-            scoreDisplay.textContent = `Score: ${score}`;
-            update(); // Restart the game loop
-        }
 
         function movePlayer() {
             if (keys['ArrowUp']) {
@@ -137,125 +96,44 @@
         function drawEnemies() {
             ctx.fillStyle = 'red';
             enemies.forEach(enemy => {
-                ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
-            });
-        }
-
-        function drawCollectedCubes() {
-            ctx.fillStyle = 'yellow';
-            collectedCubes.forEach(cube => {
-                ctx.fillRect(cube.x, cube.y, 10, 10);
+                ctx.fillRect(enemy.x, enemy.y, 30, 30);
             });
         }
 
         function spawnEnemies() {
-            while (enemies.length < 5) {
-                const x = Math.random() * canvas.width;
-                const y = Math.random() * canvas.height;
-                const dx = (Math.random() - 0.5) * 2;
-                const dy = (Math.random() - 0.5) * 2;
-                enemies.push({ x, y, size: 30, dx, dy });
-            }
-        }
-
-        function moveEnemies() {
-            enemies.forEach(enemy => {
-                enemy.x += enemy.dx;
-                enemy.y += enemy.dy;
-
-                // Bounce off the edges of the canvas
-                if (enemy.x <= 0 || enemy.x >= canvas.width - enemy.size) enemy.dx = -enemy.dx;
-                if (enemy.y <= 0 || enemy.y >= canvas.height - enemy.size) enemy.dy = -enemy.dy;
-            });
+            setInterval(() => {
+                if (enemies.length < 5) { // Make sure only 5 enemies appear at a time
+                    const x = Math.random() * canvas.width;
+                    const y = Math.random() * canvas.height;
+                    enemies.push({ x, y, size: 30 });
+                }
+            }, 1000);
         }
 
         function shootBullet() {
             const dx = Math.cos(player.angle) * bulletSpeed;
             const dy = Math.sin(player.angle) * bulletSpeed;
             bullets.push({ x: player.x, y: player.y, dx, dy, size: bulletSize, color: 'cyan' });
-            shootSound.play(); // Play shoot sound
+            shootSound.play(); // Play the shoot sound when you shoot a bullet
         }
 
         function activateBlast() {
             if (blastCount > 0) {
                 blastCount--;
                 enemies.forEach(enemy => {
-                    let angle = Math.atan2(enemy.y - player.y, enemy.x - player.y);
-                    bullets.push({
-                        x: player.x,
-                        y: player.y,
-                        dx: Math.cos(angle) * bulletSpeed,
-                        dy: Math.sin(angle) * bulletSpeed,
-                        size: bulletSize,
-                        color: 'cyan',
-                        target: enemy // Add the target enemy to the bullet
-                    });
+                    let angle = Math.atan2(enemy.y - player.y, enemy.x - player.x);
+                    bullets.push({ x: player.x, y: player.y, dx: Math.cos(angle) * bulletSpeed, dy: Math.sin(angle) * bulletSpeed });
                 });
-                blastDisplay.textContent = `Blasts: ${blastCount}`;
+                blastDisplay.textContent = `Blast: ${blastCount}`;
             }
         }
 
-        function checkBulletCollision() {
-            bullets.forEach((bullet, bulletIndex) => {
-                enemies.forEach((enemy, enemyIndex) => {
-                    if (bullet.x > enemy.x && bullet.x < enemy.x + enemy.size && bullet.y > enemy.y && bullet.y < enemy.y + enemy.size) {
-                        enemies.splice(enemyIndex, 1);
-                        bullets.splice(bulletIndex, 1);
-                        score++;
-                        scoreDisplay.textContent = `Score: ${score}`;
-
-                        // Play collect sound when the enemy is destroyed
-                        collectSound.play();
-
-                        collectedCubes.push({ x: enemy.x + enemy.size / 2 - 5, y: enemy.y + enemy.size / 2 - 5 });
-
-                        spawnEnemies();
-                    }
-                });
-            });
-        }
-
-        function checkCubeCollection() {
-            collectedCubes.forEach((cube, cubeIndex) => {
-                if (player.x - player.size / 2 < cube.x + 10 && player.x + player.size / 2 > cube.x &&
-                    player.y - player.size / 2 < cube.y + 10 && player.y + player.size / 2 > cube.y) {
-                    collectedCubes.splice(cubeIndex, 1);
-                    blastCount += 2;
-                    blastDisplay.textContent = `Blasts: ${blastCount}`;
-                }
-            });
-        }
-
-        function checkPlayerCollision() {
-            enemies.forEach((enemy) => {
-                if (player.x + player.size / 2 > enemy.x &&
-                    player.x - player.size / 2 < enemy.x + enemy.size &&
-                    player.y + player.size / 2 > enemy.y &&
-                    player.y - player.size / 2 < enemy.y + enemy.size) {
-                    gameOver = true;
-                    gameOverDisplay.style.display = 'block';
-                    gameOverSound.play(); // Play game over sound
-                    setTimeout(resetGame, 3000);
-                }
-            });
-        }
-
         function update() {
-            if (gameOver) return;
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             movePlayer();
-            moveEnemies();
             drawPlayer();
             drawBullets();
             drawEnemies();
-            drawCollectedCubes();
-            checkBulletCollision();
-            checkCubeCollection();
-            checkPlayerCollision();
-
-            coordinatesDisplay.textContent = `X: ${Math.floor(player.x)}, Y: ${Math.floor(player.y)}`;
-
             requestAnimationFrame(update);
         }
 
