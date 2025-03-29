@@ -1,18 +1,224 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>TTP</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTP Studios</title>
     <style>
-        video {
-            width: 400px;
-            height: 300px;
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #008080;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #006666;
+            padding: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            position: relative;
+        }
+        .auth-buttons {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+        }
+        .auth-buttons button {
+            background-color: #009999;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin-left: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .content {
+            padding: 20px;
+        }
+        .section {
+            margin: 20px auto;
+            max-width: 800px;
+            background-color: #009999;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        footer {
+            background-color: #006666;
+            padding: 10px;
+            margin-top: 20px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #004d4d;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            width: 300px;
+        }
+        .modal input, .modal button {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .modal button {
+            background-color: #009999;
+            color: white;
+            cursor: pointer;
+        }
+        .thank-you {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: black;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 1s;
+        }
+        .chatbox {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: #004d4d;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .chatbox input, .chatbox button {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
     </style>
+    <script>
+        function showSignUp() {
+            document.getElementById("signUpModal").style.display = "block";
+        }
+
+        function closeSignUp() {
+            document.getElementById("signUpModal").style.display = "none";
+        }
+
+        function submitSignUp() {
+            document.getElementById("signUpModal").style.display = "none";
+            let thankYouDiv = document.getElementById("thankYou");
+            thankYouDiv.style.display = "block";
+            setTimeout(() => {
+                thankYouDiv.style.opacity = 1;
+            }, 10);
+            setTimeout(() => {
+                thankYouDiv.style.opacity = 0;
+            }, 2500);
+            setTimeout(() => {
+                thankYouDiv.style.display = "none";
+            }, 3000);
+        }
+
+        function showLogin() {
+            document.getElementById("loginModal").style.display = "block";
+        }
+
+        function closeLogin() {
+            document.getElementById("loginModal").style.display = "none";
+        }
+
+        function validateLogin() {
+            let email = document.getElementById("loginEmail").value;
+            let password = document.getElementById("loginPassword").value;
+            let emailInput = document.getElementById("loginEmail");
+
+            // Basic email validation
+            if (email === "test@example.com" && password === "password123") {
+                emailInput.style.borderColor = "green";
+                alert("Login Successful!");
+                closeLogin();
+                showChatbox();
+            } else {
+                emailInput.style.borderColor = "red";
+            }
+        }
+
+        function showChatbox() {
+            document.getElementById("chatbox").style.display = "block";
+        }
+    </script>
 </head>
 <body>
-<h1>TTP studios</h1>
-<video controls autoplay>
-    <source src="videos/video.mp4" type="video/mp4">
-</video>
+    <header>
+        TTP Studios
+        <div class="auth-buttons">
+            <button onclick="showSignUp()">Sign Up</button>
+            <button onclick="showLogin()">Login</button>
+        </div>
+    </header>
+    <div class="content">
+        <div class="section">
+            <h2>About Us</h2>
+            <p>Welcome to TTP Studios! We specialize in creating amazing games and high-quality audio experiences. Our team is passionate about crafting engaging content for everyone to enjoy.</p>
+        </div>
+        <div class="section">
+            <h2>Our Work</h2>
+            <p>From thrilling games to immersive audio tracks, we are dedicated to bringing creativity to life. We also develop advanced robots and AI systems, pushing the boundaries of technology and innovation. Stay tuned for our latest projects!</p>
+        </div>
+    </div>
+
+    <!-- Sign Up Modal -->
+    <div id="signUpModal" class="modal">
+        <h2>Sign Up</h2>
+        <input type="email" placeholder="Enter your email">
+        <input type="password" placeholder="Enter your password">
+        <button onclick="submitSignUp()">Submit</button>
+        <button onclick="closeSignUp()">Close</button>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <h2>Login</h2>
+        <input id="loginEmail" type="email" placeholder="Enter your email">
+        <input id="loginPassword" type="password" placeholder="Enter your password">
+        <button onclick="validateLogin()">Login</button>
+        <button onclick="closeLogin()">Close</button>
+    </div>
+
+    <!-- Thank You Message -->
+    <div id="thankYou" class="thank-you">Thanks!</div>
+
+    <!-- AI Chatbox -->
+    <div id="chatbox" class="chatbox">
+        <h3>AI Chatbox</h3>
+        <div>
+            <input type="text" placeholder="Ask me anything..." />
+            <button>Send</button>
+        </div>
+    </div>
+
+    <footer>&copy; 2025 TTP Studios. All Rights Reserved.</footer>
 </body>
 </html>
