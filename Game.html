@@ -90,13 +90,33 @@
                 bullet.x += bullet.dx;
                 bullet.y += bullet.dy;
                 ctx.fillRect(bullet.x - bulletSize / 2, bullet.y - bulletSize / 2, bulletSize, bulletSize);
+
+                // Check for collision with enemies
+                enemies.forEach((enemy, enemyIndex) => {
+                    if (bullet.x < enemy.x + enemy.size && bullet.x + bullet.size > enemy.x &&
+                        bullet.y < enemy.y + enemy.size && bullet.y + bullet.size > enemy.y) {
+                        // Bullet hits enemy, remove the enemy
+                        enemies.splice(enemyIndex, 1);
+                        score++;
+                        scoreDisplay.textContent = `Score: ${score}`;
+                        blastCount++; // Increase blast count
+                        blastDisplay.textContent = `Blast: ${blastCount}`;
+
+                        // Create a new yellow square (optional)
+                        const yellowSquare = { x: enemy.x, y: enemy.y, size: 5, color: 'yellow' };
+                        collectYellow(yellowSquare);
+
+                        // Play the sound
+                        shootSound.play();
+                    }
+                });
             });
         }
 
         function drawEnemies() {
             ctx.fillStyle = 'red';
             enemies.forEach(enemy => {
-                ctx.fillRect(enemy.x, enemy.y, 30, 30);
+                ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
             });
         }
 
@@ -126,6 +146,16 @@
                 });
                 blastDisplay.textContent = `Blast: ${blastCount}`;
             }
+        }
+
+        function collectYellow(yellow) {
+            ctx.fillStyle = yellow.color;
+            ctx.fillRect(yellow.x, yellow.y, yellow.size, yellow.size);
+
+            // Simulate collecting the yellow squares
+            setTimeout(() => {
+                yellow = null; // Remove yellow square after it disappears
+            }, 3000); // Disappear after 3 seconds
         }
 
         function update() {
