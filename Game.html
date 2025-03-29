@@ -102,11 +102,19 @@
                         blastCount++; // Increase blast count
                         blastDisplay.textContent = `Blast: ${blastCount}`;
 
-                        // Create a new yellow square (optional)
-                        const yellowSquare = { x: enemy.x, y: enemy.y, size: 5, color: 'yellow' };
-                        collectYellow(yellowSquare);
+                        // Create yellow packets when enemy is hit
+                        const yellowPackets = [];
+                        for (let i = 0; i < 4; i++) {
+                            yellowPackets.push({ 
+                                x: enemy.x + Math.random() * 30 - 15, 
+                                y: enemy.y + Math.random() * 30 - 15, 
+                                size: 5, 
+                                color: 'yellow' 
+                            });
+                        }
+                        collectYellowPackets(yellowPackets);
 
-                        // Play the sound
+                        // Play the shoot sound
                         shootSound.play();
                     }
                 });
@@ -114,9 +122,15 @@
         }
 
         function drawEnemies() {
-            ctx.fillStyle = 'red';
             enemies.forEach(enemy => {
-                ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
+                // Draw the enemy spaceship instead of a red square
+                ctx.fillStyle = 'red';
+                ctx.beginPath();
+                ctx.moveTo(enemy.x, enemy.y);
+                ctx.lineTo(enemy.x + enemy.size / 2, enemy.y + enemy.size);
+                ctx.lineTo(enemy.x - enemy.size / 2, enemy.y + enemy.size);
+                ctx.closePath();
+                ctx.fill();
             });
         }
 
@@ -148,14 +162,17 @@
             }
         }
 
-        function collectYellow(yellow) {
-            ctx.fillStyle = yellow.color;
-            ctx.fillRect(yellow.x, yellow.y, yellow.size, yellow.size);
+        function collectYellowPackets(packets) {
+            packets.forEach(packet => {
+                // Draw the yellow packet
+                ctx.fillStyle = packet.color;
+                ctx.fillRect(packet.x, packet.y, packet.size, packet.size);
 
-            // Simulate collecting the yellow squares
-            setTimeout(() => {
-                yellow = null; // Remove yellow square after it disappears
-            }, 3000); // Disappear after 3 seconds
+                // Simulate collecting the yellow packets
+                setTimeout(() => {
+                    packet = null; // Remove yellow square after it disappears
+                }, 3000); // Disappear after 3 seconds
+            });
         }
 
         function update() {
