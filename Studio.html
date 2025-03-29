@@ -121,6 +121,13 @@
         .blur-background {
             backdrop-filter: blur(5px);
         }
+        .error-border {
+            border-color: red;
+        }
+        .disabled {
+            background-color: #bfbfbf;
+            cursor: not-allowed;
+        }
     </style>
     <script>
         function showSignUp() {
@@ -133,6 +140,8 @@
         }
 
         function submitSignUp() {
+            const email = document.getElementById("signUpEmail").value;
+            localStorage.setItem("email", email);  // Save email to localStorage
             document.getElementById("signUpModal").style.display = "none";
             document.body.classList.remove('blur-background');
             let thankYouDiv = document.getElementById("thankYou");
@@ -159,18 +168,22 @@
         }
 
         function validateLogin() {
+            const storedEmail = localStorage.getItem("email"); // Retrieve email from localStorage
             let email = document.getElementById("loginEmail").value;
             let password = document.getElementById("loginPassword").value;
             let emailInput = document.getElementById("loginEmail");
+            let loginButton = document.getElementById("loginButton");
 
-            // Basic email validation
-            if (email === "test@example.com" && password === "password123") {
+            // Basic login validation
+            if (email === storedEmail && password === "password123") {
                 emailInput.style.borderColor = "green";
+                loginButton.disabled = false;
                 alert("Login Successful!");
                 closeLogin();
                 showChatbox();
             } else {
                 emailInput.style.borderColor = "red";
+                loginButton.disabled = true;  // Disable login button if invalid credentials
             }
         }
 
@@ -201,7 +214,7 @@
     <!-- Sign Up Modal -->
     <div id="signUpModal" class="modal">
         <h2>Sign Up</h2>
-        <input type="email" placeholder="Enter your email">
+        <input id="signUpEmail" type="email" placeholder="Enter your email">
         <input type="password" placeholder="Enter your password">
         <button onclick="submitSignUp()">Submit</button>
         <button onclick="closeSignUp()">Close</button>
@@ -212,7 +225,7 @@
         <h2>Login</h2>
         <input id="loginEmail" type="email" placeholder="Enter your email">
         <input id="loginPassword" type="password" placeholder="Enter your password">
-        <button onclick="validateLogin()">Login</button>
+        <button id="loginButton" onclick="validateLogin()" class="disabled" disabled>Login</button>
         <button onclick="closeLogin()">Close</button>
     </div>
 
