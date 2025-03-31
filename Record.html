@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text-to-Speech with Download Feature</title>
+    <title>Text-to-Speech with Download</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -47,20 +47,20 @@
     </style>
 </head>
 <body>
-    <h1>Text-to-Speech with Download Feature</h1>
+    <h1>Text-to-Speech with Download</h1>
     <textarea id="textArea" placeholder="Type some text here..."></textarea>
     <button id="speakButton">Read Aloud</button>
     <button id="downloadButton">Download Audio</button>
 
     <script>
-        let audioURL = "";
+        let recordedAudioBlob = null;
+        let mediaRecorder;
 
-        // Function to handle speech synthesis and simulate recording
         document.getElementById('speakButton').addEventListener('click', function() {
             const text = document.getElementById('textArea').value;
             if (text !== "") {
                 const speech = new SpeechSynthesisUtterance(text);
-                
+
                 // Set pitch and rate for the robot-like voice
                 speech.pitch = 1; // Neutral pitch
                 speech.rate = 0.8; // Slow rate
@@ -72,31 +72,40 @@
                     speech.voice = robotVoice;
                 }
 
-                // Play speech synthesis
+                // Set up the audio context for recording
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const mediaStreamDestination = audioContext.createMediaStreamDestination();
+                
+                // Set up the media recorder to capture the audio
+                mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
+
+                // Collect audio data and store it
+                mediaRecorder.ondataavailable = function(event) {
+                    recordedAudioBlob = event.data;
+                    // Show the download button after recording
+                    document.getElementById('downloadButton').style.display = 'inline-block';
+                };
+
+                // Start recording
+                mediaRecorder.start();
+
+                // Speak the text aloud
                 window.speechSynthesis.speak(speech);
 
-                // Simulate recording and create an audio download link
-                audioURL = generateAudioLink(text);
-                document.getElementById('downloadButton').style.display = 'inline-block';
+                // Stop recording after speech ends
+                speech.onend = function() {
+                    mediaRecorder.stop();
+                };
             } else {
                 alert("Please enter some text to read aloud.");
             }
         });
 
-        // Function to generate audio URL for downloading (simulated)
-        function generateAudioLink(text) {
-            const encodedText = encodeURIComponent(text);
-            const audioLink = `https://api.voicerss.org/?key=YOUR_API_KEY_HERE&hl=en-us&src=${encodedText}&r=-2&c=mp3`;
-
-            return audioLink;
-        }
-
-        // Set up the download button functionality
         document.getElementById('downloadButton').addEventListener('click', function() {
-            if (audioURL) {
+            if (recordedAudioBlob) {
                 const link = document.createElement('a');
-                link.href = audioURL;
-                link.download = 'text-to-speech.mp3';
+                link.href = URL.createObjectURL(recordedAudioBlob);
+                link.download = 'speech_output.ogg'; // Save as .ogg
                 link.click();
             }
         });
