@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text-to-Speech with Download</title>
+    <title>Voice Recorder with Download</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,103 +11,96 @@
             padding: 0;
             background-color: #f4f4f4;
         }
-        #textArea {
-            width: 100%;
-            height: 200px;
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            background-color: #fff;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-        }
-        #speakButton {
-            padding: 10px 20px;
-            background-color: #009688;
-            color: white;
-            border: none;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        #speakButton:hover {
-            background-color: #00796b;
-        }
-        #downloadButton {
+        #recordButton, #stopButton, #downloadButton {
             padding: 10px 20px;
             background-color: #4CAF50;
             color: white;
             border: none;
             cursor: pointer;
             margin-top: 10px;
+        }
+        #recordButton:hover, #stopButton:hover, #downloadButton:hover {
+            background-color: #45a049;
+        }
+        #stopButton {
+            background-color: #f44336;
+        }
+        #stopButton:hover {
+            background-color: #e53935;
+        }
+        #downloadButton {
+            background-color: #2196F3;
             display: none;
         }
         #downloadButton:hover {
-            background-color: #45a049;
+            background-color: #1e88e5;
         }
     </style>
 </head>
 <body>
-    <h1>Text-to-Speech with Download</h1>
-    <textarea id="textArea" placeholder="Type some text here..."></textarea>
-    <button id="speakButton">Read Aloud</button>
-    <button id="downloadButton">Download Audio</button>
+    <h1>Voice Recorder</h1>
+    <button id="recordButton">Start Recording</button>
+    <button id="stopButton" style="display: none;">Stop Recording</button>
+    <button id="downloadButton" style="display: none;">Download Audio</button>
 
     <script>
-        let recordedAudioBlob = null;
         let mediaRecorder;
+        let audioChunks = [];
+        let audioBlob;
+        let audioUrl;
+        let audio;
 
-        document.getElementById('speakButton').addEventListener('click', function() {
-            const text = document.getElementById('textArea').value;
-            if (text !== "") {
-                const speech = new SpeechSynthesisUtterance(text);
+        // Get the elements for the buttons
+        const recordButton = document.getElementById('recordButton');
+        const stopButton = document.getElementById('stopButton');
+        const downloadButton = document.getElementById('downloadButton');
 
-                // Set pitch and rate for the robot-like voice
-                speech.pitch = 1; // Neutral pitch
-                speech.rate = 0.8; // Slow rate
+        // Start recording
+        recordButton.addEventListener('click', function() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function(stream) {
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.start();
 
-                // Choose voice (example: try for a friendly robot-like voice)
-                const voices = window.speechSynthesis.getVoices();
-                let robotVoice = voices.find(voice => voice.name.includes("Google") || voice.name.includes("male") || voice.name.includes("neutral"));
-                if (robotVoice) {
-                    speech.voice = robotVoice;
-                }
+                    // Display the stop button
+                    recordButton.style.display = 'none';
+                    stopButton.style.display = 'inline-block';
 
-                // Set up the audio context for recording
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const mediaStreamDestination = audioContext.createMediaStreamDestination();
-                
-                // Set up the media recorder to capture the audio
-                mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
+                    // Collect the audio data while recording
+                    mediaRecorder.ondataavailable = function(event) {
+                        audioChunks.push(event.data);
+                    };
 
-                // Collect audio data and store it
-                mediaRecorder.ondataavailable = function(event) {
-                    recordedAudioBlob = event.data;
-                    // Show the download button after recording
-                    document.getElementById('downloadButton').style.display = 'inline-block';
-                };
+                    // When the recording stops, create a downloadable link
+                    mediaRecorder.onstop = function() {
+                        audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        audioUrl = URL.createObjectURL(audioBlob);
+                        audio = new Audio(audioUrl);
 
-                // Start recording
-                mediaRecorder.start();
-
-                // Speak the text aloud
-                window.speechSynthesis.speak(speech);
-
-                // Stop recording after speech ends
-                speech.onend = function() {
-                    mediaRecorder.stop();
-                };
-            } else {
-                alert("Please enter some text to read aloud.");
-            }
+                        // Show the download button
+                        downloadButton.style.display = 'inline-block';
+                    };
+                })
+                .catch(function(error) {
+                    console.log('Error accessing microphone:', error);
+                });
         });
 
-        document.getElementById('downloadButton').addEventListener('click', function() {
-            if (recordedAudioBlob) {
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(recordedAudioBlob);
-                link.download = 'speech_output.ogg'; // Save as .ogg
-                link.click();
-            }
+        // Stop recording
+        stopButton.addEventListener('click', function() {
+            mediaRecorder.stop();
+
+            // Hide the stop button and show the record button again
+            stopButton.style.display = 'none';
+            recordButton.style.display = 'inline-block';
+        });
+
+        // Download the recorded audio
+        downloadButton.addEventListener('click', function() {
+            const link = document.createElement('a');
+            link.href = audioUrl;
+            link.download = 'recorded_audio.wav';  // Name of the downloaded file
+            link.click();
         });
     </script>
 </body>
