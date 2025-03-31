@@ -1,134 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text-to-Speech Recorder with Headphones</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 0;
-            background-color: #f4f4f4;
-        }
-        #textArea {
-            width: 100%;
-            height: 150px;
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            background-color: #fff;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-        }
-        #recordButton, #downloadButton {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        #recordButton:hover, #downloadButton:hover {
-            background-color: #45a049;
-        }
-        #downloadButton {
-            display: none;
-            background-color: #2196F3;
-        }
-        #downloadButton:hover {
-            background-color: #1e88e5;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messaging App</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f7f7f7;
+    }
+
+    .chat-container {
+      width: 100%;
+      max-width: 500px;
+      margin: 50px auto;
+      padding: 20px;
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .messages {
+      max-height: 400px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+    }
+
+    .message {
+      background-color: #e1f5fe;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 5px;
+    }
+
+    .message-input {
+      display: flex;
+      gap: 10px;
+    }
+
+    #messageInput {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    #sendButton {
+      padding: 10px;
+      background-color: #009688;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #sendButton:hover {
+      background-color: #00796b;
+    }
+  </style>
 </head>
 <body>
-    <h1>Text-to-Speech Recorder with Headphones</h1>
-    <textarea id="textArea" placeholder="Type some text here..."></textarea>
-    <button id="recordButton">Start Recording</button>
-    <button id="downloadButton">Download Audio</button>
+  <div class="chat-container">
+    <div class="header">
+      <h2>Messaging App</h2>
+    </div>
+    <div id="messageList" class="messages"></div>
+    <div class="message-input">
+      <input type="text" id="messageInput" placeholder="Type a message..." />
+      <button id="sendButton">Send</button>
+    </div>
+  </div>
 
-    <script>
-        let mediaRecorder;
-        let audioChunks = [];
-        let audioBlob;
-        let audioUrl;
+  <script>
+    // Function to load messages from localStorage and display them
+    function loadMessages() {
+      const messages = JSON.parse(localStorage.getItem('messages')) || [];
+      const messageList = document.getElementById('messageList');
+      messageList.innerHTML = ''; // Clear previous messages
+      
+      messages.forEach(message => {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message');
+        messageDiv.textContent = message;
+        messageList.appendChild(messageDiv);
+      });
+    }
 
-        // Elements for buttons
-        const recordButton = document.getElementById('recordButton');
-        const downloadButton = document.getElementById('downloadButton');
-        const textArea = document.getElementById('textArea');
+    // Function to send a new message
+    function sendMessage() {
+      const messageInput = document.getElementById('messageInput');
+      const newMessage = messageInput.value.trim();
 
-        // Function to handle start recording
-        recordButton.addEventListener('click', function() {
-            const text = textArea.value;
+      if (newMessage === '') {
+        return;
+      }
 
-            if (text !== "") {
-                // Start recording audio when the button is pressed
-                navigator.mediaDevices.getUserMedia({ audio: true })
-                    .then(function(stream) {
-                        // Ensure the correct audio source is being used by forcing microphone capture
-                        const audioTracks = stream.getAudioTracks();
-                        if (audioTracks.length === 0) {
-                            alert("No microphone detected.");
-                            return;
-                        }
+      // Retrieve existing messages from localStorage or create an empty array
+      const messages = JSON.parse(localStorage.getItem('messages')) || [];
 
-                        // Set up MediaRecorder to record audio
-                        mediaRecorder = new MediaRecorder(stream);
-                        mediaRecorder.start();
+      // Add the new message to the array
+      messages.push(newMessage);
 
-                        // Collect the audio data while recording
-                        mediaRecorder.ondataavailable = function(event) {
-                            audioChunks.push(event.data);
-                        };
+      // Save the updated message list back to localStorage
+      localStorage.setItem('messages', JSON.stringify(messages));
 
-                        // Stop recording after the speech has finished
-                        mediaRecorder.onstop = function() {
-                            audioBlob = new Blob(audioChunks, { type: 'audio/ogg' });
-                            audioUrl = URL.createObjectURL(audioBlob);
+      // Clear the input field
+      messageInput.value = '';
 
-                            // Show the download button
-                            downloadButton.style.display = 'inline-block';
-                        };
+      // Reload the messages to update the UI
+      loadMessages();
+    }
 
-                        // Use SpeechSynthesis API to read aloud
-                        const speech = new SpeechSynthesisUtterance(text);
-                        speech.pitch = 1;  // Set pitch
-                        speech.rate = 1;   // Set speed
+    // Add event listener to the send button
+    document.getElementById('sendButton').addEventListener('click', sendMessage);
 
-                        // Select voice (optional)
-                        const voices = window.speechSynthesis.getVoices();
-                        const selectedVoice = voices.find(voice => voice.name.includes("Google") || voice.name.includes("male"));
-                        if (selectedVoice) {
-                            speech.voice = selectedVoice;
-                        }
-
-                        // Play the speech and stop recording once done
-                        window.speechSynthesis.speak(speech);
-                        speech.onend = function() {
-                            mediaRecorder.stop();  // Stop recording after speech ends
-                        };
-
-                        // Update button states
-                        recordButton.style.display = 'none'; // Hide record button while speaking
-                    })
-                    .catch(function(error) {
-                        console.log("Error accessing microphone:", error);
-                    });
-            } else {
-                alert("Please enter some text to read aloud.");
-            }
-        });
-
-        // Function to download the recorded audio
-        downloadButton.addEventListener('click', function() {
-            if (audioBlob) {
-                const link = document.createElement('a');
-                link.href = audioUrl;
-                link.download = 'recorded_speech.ogg';  // Download as .ogg file
-                link.click();
-            }
-        });
-    </script>
+    // Load existing messages when the page is loaded
+    window.onload = loadMessages;
+  </script>
 </body>
 </html>
