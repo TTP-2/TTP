@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text-to-Speech with Download Feature</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        #textArea {
+            width: 100%;
+            height: 200px;
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        #speakButton {
+            padding: 10px 20px;
+            background-color: #009688;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        #speakButton:hover {
+            background-color: #00796b;
+        }
+        #downloadButton {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            display: none;
+        }
+        #downloadButton:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Text-to-Speech with Download Feature</h1>
+    <textarea id="textArea" placeholder="Type some text here..."></textarea>
+    <button id="speakButton">Read Aloud</button>
+    <button id="downloadButton">Download Audio</button>
+
+    <script>
+        let audioURL = "";
+
+        // Function to handle speech synthesis and simulate recording
+        document.getElementById('speakButton').addEventListener('click', function() {
+            const text = document.getElementById('textArea').value;
+            if (text !== "") {
+                const speech = new SpeechSynthesisUtterance(text);
+                
+                // Set pitch and rate for the robot-like voice
+                speech.pitch = 1; // Neutral pitch
+                speech.rate = 0.8; // Slow rate
+
+                // Choose voice (example: try for a friendly robot-like voice)
+                const voices = window.speechSynthesis.getVoices();
+                let robotVoice = voices.find(voice => voice.name.includes("Google") || voice.name.includes("male") || voice.name.includes("neutral"));
+                if (robotVoice) {
+                    speech.voice = robotVoice;
+                }
+
+                // Play speech synthesis
+                window.speechSynthesis.speak(speech);
+
+                // Simulate recording and create an audio download link
+                audioURL = generateAudioLink(text);
+                document.getElementById('downloadButton').style.display = 'inline-block';
+            } else {
+                alert("Please enter some text to read aloud.");
+            }
+        });
+
+        // Function to generate audio URL for downloading (simulated)
+        function generateAudioLink(text) {
+            const encodedText = encodeURIComponent(text);
+            const audioLink = `https://api.voicerss.org/?key=YOUR_API_KEY_HERE&hl=en-us&src=${encodedText}&r=-2&c=mp3`;
+
+            return audioLink;
+        }
+
+        // Set up the download button functionality
+        document.getElementById('downloadButton').addEventListener('click', function() {
+            if (audioURL) {
+                const link = document.createElement('a');
+                link.href = audioURL;
+                link.download = 'text-to-speech.mp3';
+                link.click();
+            }
+        });
+    </script>
+</body>
+</html>
