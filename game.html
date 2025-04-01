@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brawlhalla-like Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #87CEEB;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background-color: #ccc;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+// Set up canvas and context
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Set canvas size
+canvas.width = 800;
+canvas.height = 600;
+
+// Game variables
+const player1 = {
+    x: 100,
+    y: canvas.height - 120,
+    width: 50,
+    height: 50,
+    color: 'red',
+    speed: 5,
+    dx: 0,
+    dy: 0,
+    jumpPower: -12,
+    grounded: false,
+    attack: false,
+    attackRange: 60
+};
+
+const player2 = {
+    x: canvas.width - 150,
+    y: canvas.height - 120,
+    width: 50,
+    height: 50,
+    color: 'blue',
+    speed: 5,
+    dx: 0,
+    dy: 0,
+    jumpPower: -12,
+    grounded: false,
+    attack: false,
+    attackRange: 60
+};
+
+const gravity = 0.8;
+const platforms = [
+    { x: 0, y: canvas.height - 50, width: canvas.width, height: 50 } // ground
+];
+
+// Handle keyboard input
+const keys = {
+    right1: false,
+    left1: false,
+    up1: false,
+    attack1: false,
+    right2: false,
+    left2: false,
+    up2: false,
+    attack2: false
+};
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') keys.right1 = true;
+    if (e.key === 'ArrowLeft') keys.left1 = true;
+    if (e.key === ' ' && player1.grounded) keys.up1 = true;
+    if (e.key === 'f') keys.attack1 = true;
+    if (e.key === 'd') keys.right2 = true;
+    if (e.key === 'a') keys.left2 = true;
+    if (e.key === 'w' && player2.grounded) keys.up2 = true;
+    if (e.key === 'p') keys.attack2 = true;
+});
+
+document.addEventListener('keyup', (e) => {
+    if (e.key === 'ArrowRight') keys.right1 = false;
+    if (e.key === 'ArrowLeft') keys.left1 = false;
+    if (e.key === ' ') keys.up1 = false;
+    if (e.key === 'f') keys.attack1 = false;
+    if (e.key === 'd') keys.right2 = false;
+    if (e.key === 'a') keys.left2 = false;
+    if (e.key === 'w') keys.up2 = false;
+    if (e.key === 'p') keys.attack2 = false;
+});
+
+// Movement functions
+function movePlayer(player, keys, dx) {
+    if (keys.right1 || keys.right2) player.dx = player.speed;
+    if (keys.left1 || keys.left2) player.dx = -player.speed;
+    if (!keys.right1 && !keys.left1 && !keys.right2 && !keys.left2) player.dx = 0;
+
+    player.x += player.dx;
+
+    if (keys.up1 || keys.up2) {
+        if (player.grounded) {
+            player.dy = player.jumpPower;
+            player.grounded = false;
+        }
+    }
+
+    player.y += player.dy;
+
+    // Apply gravity
+    if (!player.grounded) player.dy += gravity;
+
+    // Prevent falling through the floor
+    if (player.y + player.height > canvas.height - 50) {
+        player.y = canvas.height - 50 - player.height;
+        player.dy = 0;
+        player.grounded = true;
+    }
+}
+
+// Attack detection
+function attack(player, opponent) {
+    if (player.attack) {
+        const attackX = player.x + (player.color === 'red' ? player.width : -player.attackRange);
+        if (
+            attackX > opponent.x && attackX < opponent.x + opponent.width &&
+            player.y + player.height > opponent.y && player.y < opponent.y + opponent.height
+        ) {
+            console.log(player.color + ' hit ' + opponent.color);
+            // You can add health, knockback, or other effects here
+        }
+    }
+}
+
+// Draw player and platforms
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw platforms
+    ctx.fillStyle = 'green';
+    platforms.forEach(p => {
+        ctx.fillRect(p.x, p.y, p.width, p.height);
+    });
+
+    // Draw players
+    ctx.fillStyle = player1.color;
+    ctx.fillRect(player1.x, player1.y, player1.width, player1.height);
+    ctx.fillStyle = player2.color;
+    ctx.fillRect(player2.x, player2.y, player2.width, player2.height);
+}
+
+// Game loop
+function gameLoop() {
+    movePlayer(player1, keys, player1.dx);
+    movePlayer(player2, keys, player2.dx);
+    attack(player1, player2);
+    attack(player2, player1);
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+// Start the game loop
+gameLoop();
+
+</script>
+
+</body>
+</html>
