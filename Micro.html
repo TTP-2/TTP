@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Activated Hand</title>
+    <title>Voice Activated Face</title>
     <style>
         body {
             background-color: teal;
@@ -12,6 +12,8 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            flex-direction: column;
+            text-align: center;
         }
         .face {
             position: relative;
@@ -44,56 +46,10 @@
             border-radius: 0 0 30px 30px;
             transform: scaleX(1);
         }
-        .hand {
-            position: absolute;
-            bottom: -40px;
-            left: 50%;
-            width: 30px;
-            height: 80px;
-            background-color: black;
-            border-radius: 10px;
-            transform: translateX(-50%);
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            animation: none;
-        }
-        .hand .finger {
-            width: 6px;
-            height: 20px;
-            background-color: black;
-            margin: 2px;
-            border-radius: 5px;
-        }
-        .hand .thumb {
-            width: 8px;
-            height: 20px;
-            background-color: black;
-            margin: 2px;
-            border-radius: 5px;
-            transform: rotate(-20deg);
-        }
-        /* Wave animation */
-        @keyframes wave {
-            0% {
-                transform: rotate(0deg);
-            }
-            25% {
-                transform: rotate(15deg);
-            }
-            50% {
-                transform: rotate(0deg);
-            }
-            75% {
-                transform: rotate(-15deg);
-            }
-            100% {
-                transform: rotate(0deg);
-            }
-        }
-        /* Apply the waving animation */
-        .wave {
-            animation: wave 1s ease-in-out infinite;
+        #response-text {
+            font-size: 24px;
+            color: white;
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -102,14 +58,8 @@
         <div class="eye left-eye"></div>
         <div class="eye right-eye"></div>
         <div class="mouth" id="mouth"></div>
-        <div class="hand" id="hand">
-            <div class="finger"></div>
-            <div class="finger"></div>
-            <div class="finger"></div>
-            <div class="finger"></div>
-            <div class="thumb"></div>
-        </div>
     </div>
+    <div id="response-text">Say "Hey micro" to interact!</div>
 
     <script>
         // Check for browser support
@@ -132,25 +82,24 @@
             console.log("Heard: ", transcript);
 
             const mouth = document.getElementById("mouth");
-            const hand = document.getElementById("hand");
+            const responseText = document.getElementById("response-text");
 
-            // If the user says "hey micro", make the face surprised and hand wave
+            // If the user says "hey micro", change the mouth and show response in text
             if (transcript.includes("hey micro")) {
-                // Change the mouth to surprised
-                mouth.style.borderRadius = "0"; // Straight mouth for surprise
-                mouth.style.width = "80px"; // Wider mouth for surprise
-                mouth.style.height = "40px"; // Taller mouth for surprise
+                // Change the mouth to a smile (you can make it any shape you'd like)
+                mouth.style.borderRadius = "0 0 30px 30px"; // Smile shape
+                mouth.style.width = "60px"; // Normal width for smile
+                mouth.style.height = "30px"; // Normal height for smile
                 
-                // Make the hand wave
-                hand.classList.add("wave");
+                // Display "How can I help you?" in text
+                responseText.innerHTML = "How can I help you?";
             } else {
-                // Default to smile and no waving
+                // Default to smile and reset text
                 mouth.style.borderRadius = "0 0 30px 30px"; // Smile
                 mouth.style.width = "60px"; // Normal width for smile
                 mouth.style.height = "30px"; // Normal height for smile
                 
-                // Stop the hand from waving
-                hand.classList.remove("wave");
+                responseText.innerHTML = "Say 'Hey micro' to interact!";
             }
         }
 
