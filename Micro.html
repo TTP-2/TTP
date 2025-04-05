@@ -46,11 +46,6 @@
             border-radius: 0 0 30px 30px;
             transform: scaleX(1);
         }
-        #response-text {
-            font-size: 24px;
-            color: white;
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
@@ -59,7 +54,6 @@
         <div class="eye right-eye"></div>
         <div class="mouth" id="mouth"></div>
     </div>
-    <div id="response-text">Say "Hey micro" to interact!</div>
 
     <script>
         // Check for browser support
@@ -82,7 +76,6 @@
             console.log("Heard: ", transcript);
 
             const mouth = document.getElementById("mouth");
-            const responseText = document.getElementById("response-text");
 
             // If the user says "hey micro", change the mouth and show response in text
             if (transcript.includes("hey micro")) {
@@ -90,16 +83,6 @@
                 mouth.style.borderRadius = "0 0 30px 30px"; // Smile shape
                 mouth.style.width = "60px"; // Normal width for smile
                 mouth.style.height = "30px"; // Normal height for smile
-                
-                // Display "How can I help you?" in text
-                responseText.innerHTML = "How can I help you?";
-            } else {
-                // Default to smile and reset text
-                mouth.style.borderRadius = "0 0 30px 30px"; // Smile
-                mouth.style.width = "60px"; // Normal width for smile
-                mouth.style.height = "30px"; // Normal height for smile
-                
-                responseText.innerHTML = "Say 'Hey micro' to interact!";
             }
         }
 
