@@ -63,6 +63,7 @@
         const recognition = new SpeechRecognition();
         recognition.lang = 'en-US'; // Set the language for speech recognition
         recognition.interimResults = true; // Show intermediate results
+        recognition.continuous = true; // Keep the mic listening all the time
 
         // Start listening when the page loads
         recognition.start();
@@ -74,15 +75,22 @@
 
             const mouth = document.getElementById("mouth");
 
-            if (transcript.includes("smile")) {
-                mouth.style.borderRadius = "30px 30px 0 0";  // Smile
-            } else if (transcript.includes("frown")) {
-                mouth.style.borderRadius = "0 0 30px 30px";  // Frown
+            // If the user says "hey micro", make the face surprised
+            if (transcript.includes("hey micro")) {
+                // Make the mouth surprised
+                mouth.style.borderRadius = "0"; // Straight mouth for surprise
+                mouth.style.width = "80px"; // Wider mouth for surprise
+                mouth.style.height = "40px"; // Taller mouth for surprise
+            } else {
+                // Default to smile
+                mouth.style.borderRadius = "0 0 30px 30px"; // Smile
+                mouth.style.width = "60px"; // Normal width for smile
+                mouth.style.height = "30px"; // Normal height for smile
             }
         }
 
         recognition.onspeechend = function() {
-            recognition.stop(); // Stop recognition after the speech ends
+            recognition.start(); // Restart recognition to keep listening
         }
 
         recognition.onerror = function(event) {
