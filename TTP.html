@@ -24,22 +24,16 @@
       font-weight: bold;
     }
 
-    #timer {
-      font-size: 20px;
-      margin-top: 10px;
-      color: red;
-    }
-
     #buttons-container {
       display: flex;
       flex-direction: column;
       gap: 20px;
       justify-content: center;
-      align-items: flex-start; /* Align buttons to the right */
+      align-items: flex-start;
       position: absolute;
       bottom: 10px;
-      right: 10%; /* Move buttons more to the right */
-      width: 80%; /* Make the buttons container 80% of the screen width */
+      right: 10%;
+      width: 80%;
     }
 
     .button-row {
@@ -59,28 +53,15 @@
       transition: background-color 0.3s;
     }
 
-    /* Different button colors */
-    .button1 {
-      background-color: #4CAF50; /* Green */
-    }
-
-    .button2 {
-      background-color: #FF5733; /* Red */
-    }
-
-    .button3 {
-      background-color: #007BFF; /* Blue */
-    }
-
-    .button4 {
-      background-color: #FFC107; /* Yellow */
-    }
+    .button1 { background-color: #4CAF50; } /* Green */
+    .button2 { background-color: #FF5733; } /* Red */
+    .button3 { background-color: #007BFF; } /* Blue */
+    .button4 { background-color: #FFC107; } /* Yellow */
 
     .answer-button:hover {
       opacity: 0.8;
     }
 
-    /* Button for the top-left corner */
     #menu-button {
       position: absolute;
       top: 10px;
@@ -97,14 +78,58 @@
     #menu-button:hover {
       background-color: #555;
     }
+
+    /* Timer in the top-right corner */
+    #timer {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: black;
+      color: white;
+      padding: 10px 20px;
+      font-size: 20px;
+      border-radius: 5px;
+    }
+
+    /* Sidebar styles */
+    #sidebar {
+      position: fixed;
+      top: 0;
+      left: -250px; /* Hidden by default */
+      height: 100%;
+      width: 250px;
+      background-color: #333;
+      color: white;
+      transition: 0.3s;
+      padding: 20px;
+    }
+
+    #sidebar a {
+      color: white;
+      font-size: 18px;
+      text-decoration: none;
+      display: block;
+      margin: 10px 0;
+    }
+
+    #sidebar a:hover {
+      background-color: #555;
+      padding: 10px;
+    }
+
+    #sidebar.open {
+      left: 0; /* Slide in the sidebar */
+    }
   </style>
 </head>
 <body>
-  <button id="menu-button">...</button>
+
+  <button id="menu-button" onclick="toggleSidebar()">...</button>
 
   <div id="question-container">
     <p id="question">What is 2 + 2?</p>
   </div>
+  
   <div id="timer">Time left: <span id="time">10</span> seconds</div>
 
   <div id="buttons-container">
@@ -116,6 +141,11 @@
       <button class="answer-button button3" onclick="checkAnswer(2)">5</button>
       <button class="answer-button button4" onclick="checkAnswer(3)">6</button>
     </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <a href="#" onclick="alert('Buy button clicked!')">Buy</a>
   </div>
 
   <script>
@@ -204,6 +234,12 @@
 
     // Initialize the game
     loadQuestion();
+
+    // Toggle sidebar visibility
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('open');
+    }
   </script>
 </body>
 </html>
