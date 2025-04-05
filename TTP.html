@@ -35,11 +35,11 @@
       flex-direction: column;
       gap: 20px;
       justify-content: center;
-      align-items: center;
+      align-items: flex-start; /* Align buttons to the right */
       position: absolute;
-      bottom: 10px; /* Position buttons close to the bottom */
-      width: 100%;
-      padding: 0 20px;
+      bottom: 10px;
+      right: 10%; /* Move buttons more to the right */
+      width: 80%; /* Make the buttons container 80% of the screen width */
     }
 
     .button-row {
@@ -55,7 +55,7 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      width: 48%; /* Button width */
+      width: 48%;
       transition: background-color 0.3s;
     }
 
@@ -79,9 +79,29 @@
     .answer-button:hover {
       opacity: 0.8;
     }
+
+    /* Button for the top-left corner */
+    #menu-button {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      padding: 10px 20px;
+      font-size: 18px;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #menu-button:hover {
+      background-color: #555;
+    }
   </style>
 </head>
 <body>
+  <button id="menu-button">...</button>
+
   <div id="question-container">
     <p id="question">What is 2 + 2?</p>
   </div>
