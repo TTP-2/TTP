@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TTP - AI Projects</title>
     <style>
-        /* General Reset and Styles */
         * {
             margin: 0;
             padding: 0;
@@ -16,10 +15,9 @@
             background-color: #e0f7f7;
             color: #333;
             line-height: 1.6;
-            padding-bottom: 80px; /* Adjust for footer */
+            padding-bottom: 120px; /* More space for audio */
         }
 
-        /* Header Styling */
         header {
             background-color: #004d4d;
             color: white;
@@ -27,9 +25,82 @@
             padding: 30px 20px;
             font-size: 32px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
 
-        /* Navigation Bar */
+        .top-right {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .top-right button {
+            background: linear-gradient(to right, #00cccc, #008080);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease, background 0.3s ease;
+        }
+        .top-right button:hover {
+            background: linear-gradient(to right, #00b3b3, #006666);
+            transform: scale(1.05);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+        .close {
+            float: right;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .modal-content input {
+            display: block;
+            margin: 15px auto;
+            padding: 10px;
+            width: 80%;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .modal-content button {
+            background: linear-gradient(to right, #00cccc, #008080);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        .modal-content button:hover {
+            background: linear-gradient(to right, #00b3b3, #006666);
+        }
+
         nav {
             display: flex;
             justify-content: center;
@@ -49,7 +120,6 @@
             border-radius: 5px;
         }
 
-        /* Container for Content */
         .container {
             padding: 40px;
             text-align: center;
@@ -57,20 +127,6 @@
             margin: 0 auto;
         }
 
-        /* Section Headings */
-        h2 {
-            font-size: 28px;
-            color: #004d4d;
-            margin-bottom: 20px;
-        }
-        p {
-            font-size: 18px;
-            color: #666;
-            line-height: 1.8;
-            margin-bottom: 40px;
-        }
-
-        /* Footer Styling */
         footer {
             background-color: #008080;
             color: white;
@@ -82,11 +138,21 @@
             box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
         }
 
+        .audio-player {
+            position: fixed;
+            bottom: 70px;
+            width: 100%;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
     <header>
-        Welcome to TTP
+        <div class="top-right">
+            <button onclick="document.getElementById('signupModal').style.display='block'">Sign Up</button>
+            <button>Login</button>
+        </div>
+        <span id="welcomeText">Welcome to TTP</span>
     </header>
     <nav>
         <a href="#home">Home</a>
@@ -101,8 +167,35 @@
         <p>Coming soon! Stay tuned for updates on our AI innovations.</p>
     </div>
 
+    <div id="signupModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('signupModal').style.display='none'">&times;</span>
+            <h2>Sign Up</h2>
+            <input type="text" id="usernameInput" placeholder="Username">
+            <input type="email" placeholder="Email">
+            <input type="password" placeholder="Password">
+            <button onclick="submitSignup()">Submit</button>
+        </div>
+    </div>
+
+    <div class="audio-player">
+        <audio controls>
+            <source src="sound/example.wav" type="audio/wav">
+        </audio>
+    </div>
+
     <footer>
         &copy; 2025 TTP - All Rights Reserved
     </footer>
+
+    <script>
+        function submitSignup() {
+            const username = document.getElementById('usernameInput').value;
+            if (username.trim()) {
+                document.getElementById('welcomeText').textContent = 'Welcome to TTP ' + username;
+                document.getElementById('signupModal').style.display = 'none';
+            }
+        }
+    </script>
 </body>
 </html>
