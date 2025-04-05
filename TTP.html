@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Question with Timer and Answer Buttons</title>
+  <style>
+    body {
+      background-color: white;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-family: Arial, sans-serif;
+      position: relative;
+    }
+
+    #question-container {
+      margin-top: 20px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    #timer {
+      font-size: 20px;
+      margin-top: 10px;
+      color: red;
+    }
+
+    #buttons-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      justify-content: center;
+      align-items: center;
+      position: absolute;
+      bottom: 10px; /* Position buttons close to the bottom */
+      width: 100%;
+      padding: 0 20px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 20px;
+      width: 100%;
+    }
+
+    .answer-button {
+      color: white;
+      padding: 20px;
+      font-size: 18px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 48%; /* Button width */
+      transition: background-color 0.3s;
+    }
+
+    /* Different button colors */
+    .button1 {
+      background-color: #4CAF50; /* Green */
+    }
+
+    .button2 {
+      background-color: #FF5733; /* Red */
+    }
+
+    .button3 {
+      background-color: #007BFF; /* Blue */
+    }
+
+    .button4 {
+      background-color: #FFC107; /* Yellow */
+    }
+
+    .answer-button:hover {
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div id="question-container">
+    <p id="question">What is 2 + 2?</p>
+  </div>
+  <div id="timer">Time left: <span id="time">10</span> seconds</div>
+
+  <div id="buttons-container">
+    <div class="button-row">
+      <button class="answer-button button1" onclick="checkAnswer(0)">3</button>
+      <button class="answer-button button2" onclick="checkAnswer(1)">4</button>
+    </div>
+    <div class="button-row">
+      <button class="answer-button button3" onclick="checkAnswer(2)">5</button>
+      <button class="answer-button button4" onclick="checkAnswer(3)">6</button>
+    </div>
+  </div>
+
+  <script>
+    // Array of questions and answers
+    const questions = [
+      {
+        question: "What is 2 + 2?",
+        choices: ["3", "4", "5", "6"],
+        correct: 1
+      },
+      {
+        question: "What is the capital of France?",
+        choices: ["Berlin", "Madrid", "Paris", "Rome"],
+        correct: 2
+      },
+      {
+        question: "Which planet is known as the Red Planet?",
+        choices: ["Earth", "Mars", "Jupiter", "Saturn"],
+        correct: 1
+      },
+      {
+        question: "What is the largest ocean on Earth?",
+        choices: ["Atlantic Ocean", "Indian Ocean", "Southern Ocean", "Pacific Ocean"],
+        correct: 3
+      }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let timeLeft = 10;
+    let timerInterval;
+
+    // Load the next question
+    function loadQuestion() {
+      const questionData = questions[currentQuestion];
+      document.getElementById('question').textContent = questionData.question;
+      document.getElementById('timer').style.display = "block";
+      document.getElementById('time').textContent = timeLeft;
+      startTimer();
+    }
+
+    // Start a countdown timer
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById('time').textContent = timeLeft;
+        if (timeLeft === 0) {
+          clearInterval(timerInterval);
+          alert("Time's up!");
+          loadNextQuestion();
+        }
+      }, 1000);
+    }
+
+    // Check the selected answer
+    function checkAnswer(choice) {
+      clearInterval(timerInterval); // Stop the timer when an answer is chosen
+      const questionData = questions[currentQuestion];
+      const timeTaken = 10 - timeLeft; // Calculate time taken
+
+      if (choice === questionData.correct) {
+        // Points awarded based on how quick the answer was
+        let points = Math.max(10 - timeTaken, 1); // Max 10 points, min 1 point
+        score += points;
+        alert(`Correct! You earned ${points} points.`);
+      } else {
+        alert("Incorrect!");
+      }
+
+      document.getElementById('score').textContent = `Score: ${score}`;
+      loadNextQuestion();
+    }
+
+    // Load the next question
+    function loadNextQuestion() {
+      currentQuestion++;
+
+      if (currentQuestion < questions.length) {
+        // Reset timer and load next question
+        timeLeft = 10;
+        loadQuestion();
+      } else {
+        alert("Game Over! Your final score is " + score);
+      }
+    }
+
+    // Initialize the game
+    loadQuestion();
+  </script>
+</body>
+</html>
