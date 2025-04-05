@@ -3,105 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Face</title>
+    <title>Voice Activated Face</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background-color: teal;
             height: 100vh;
             margin: 0;
-            background-color: #008080; /* Teal background */
-            overflow: hidden;
-        }
-
-        .container {
             display: flex;
             justify-content: center;
             align-items: center;
-            flex-direction: column;
         }
-
-        .ai-face {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            background-color: transparent;
+        .face {
             position: relative;
-            margin-bottom: 20px;
+            width: 200px;
+            height: 200px;
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: all 0.5s ease;
         }
-
         .eye {
+            position: absolute;
+            top: 85px;
             width: 20px;
             height: 20px;
-            background-color: #333; /* Black eyes */
+            background-color: black;
             border-radius: 50%;
-            position: absolute;
-            transition: all 0.3s ease;
         }
-
-        #left-eye {
-            left: 40px;
-            top: 50px;
+        .left-eye {
+            left: 60px;
         }
-
-        #right-eye {
-            right: 40px;
-            top: 50px;
+        .right-eye {
+            right: 60px;
         }
-
         .mouth {
+            position: absolute;
+            bottom: 20px;
             width: 60px;
             height: 30px;
-            background-color: #333;
+            background-color: black;
             border-radius: 0 0 30px 30px;
-            position: absolute;
-            bottom: 30px;
-            transition: transform 0.2s ease;
-        }
-
-        audio {
-            display: none;
+            transform: scaleX(1);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="ai-face">
-            <div class="eye" id="left-eye"></div>
-            <div class="eye" id="right-eye"></div>
-            <div class="mouth" id="mouth"></div>
-        </div>
+    <div class="face">
+        <div class="eye left-eye"></div>
+        <div class="eye right-eye"></div>
+        <div class="mouth" id="mouth"></div>
     </div>
 
-    <audio id="greetingAudio" src="sound/greeting.wav" type="audio/wav"></audio>
-
     <script>
-        const audio = document.getElementById("greetingAudio");
-        const mouth = document.getElementById("mouth");
-
-        function animateMouth() {
-            let talking = true;
-            const interval = setInterval(() => {
-                if (!talking) return;
-                mouth.style.transform = `scaleY(${1 + Math.random()})`;
-            }, 100);
-
-            audio.addEventListener("ended", () => {
-                clearInterval(interval);
-                mouth.style.transform = "scaleY(1)";
-                talking = false;
-            });
-
-            audio.play();
+        // Check for browser support
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Your browser does not support SpeechRecognition.");
         }
 
-        window.onload = animateMouth;
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US'; // Set the language for speech recognition
+        recognition.interimResults = true; // Show intermediate results
+
+        // Start listening when the page loads
+        recognition.start();
+
+        // Process the voice input
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript.toLowerCase();
+            console.log("Heard: ", transcript);
+
+            const mouth = document.getElementById("mouth");
+
+            if (transcript.includes("smile")) {
+                mouth.style.borderRadius = "30px 30px 0 0";  // Smile
+            } else if (transcript.includes("frown")) {
+                mouth.style.borderRadius = "0 0 30px 30px";  // Frown
+            }
+        }
+
+        recognition.onspeechend = function() {
+            recognition.stop(); // Stop recognition after the speech ends
+        }
+
+        recognition.onerror = function(event) {
+            console.log("Speech recognition error:", event.error);
+        }
     </script>
 </body>
 </html>
