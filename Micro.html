@@ -23,7 +23,6 @@
             flex-direction: column;
         }
 
-        /* AI Face */
         .ai-face {
             width: 150px;
             height: 150px;
@@ -59,22 +58,50 @@
         .mouth {
             width: 60px;
             height: 30px;
-            background-color: #333; /* Black mouth */
+            background-color: #333;
             border-radius: 0 0 30px 30px;
             position: absolute;
             bottom: 30px;
-            transition: all 0.3s ease;
+            transition: transform 0.2s ease;
+        }
+
+        audio {
+            display: none;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- AI Face -->
         <div class="ai-face">
             <div class="eye" id="left-eye"></div>
             <div class="eye" id="right-eye"></div>
             <div class="mouth" id="mouth"></div>
         </div>
     </div>
+
+    <audio id="greetingAudio" src="greeting.wav"></audio>
+
+    <script>
+        const audio = document.getElementById("greetingAudio");
+        const mouth = document.getElementById("mouth");
+
+        function animateMouth() {
+            let talking = true;
+            const interval = setInterval(() => {
+                if (!talking) return;
+                mouth.style.transform = `scaleY(${1 + Math.random()})`;
+            }, 100);
+
+            audio.addEventListener("ended", () => {
+                clearInterval(interval);
+                mouth.style.transform = "scaleY(1)";
+                talking = false;
+            });
+
+            audio.play();
+        }
+
+        window.onload = animateMouth;
+    </script>
 </body>
 </html>
