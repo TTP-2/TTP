@@ -1,154 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Bird Clone</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #70c5ce;
-        }
-        canvas {
-            border: 1px solid #000;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Math Solver by Picture</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.1/math.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      background: linear-gradient(to right, #e0f7f7, #ccf2f2);
+      margin: 0;
+      padding: 20px;
+      color: #034f4f;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      color: #007d7d;
+    }
+
+    input[type="file"], button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin: 10px;
+      transition: background 0.3s;
+    }
+
+    input[type="file"] {
+      background-color: #ffffff;
+      color: #007d7d;
+      border: 2px solid #00b3b3;
+    }
+
+    button {
+      background-color: #00b3b3;
+      color: white;
+    }
+
+    button:hover {
+      background-color: #008c8c;
+    }
+
+    #preview {
+      max-width: 90%;
+      max-height: 300px;
+      margin: 20px 0;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      margin-top: 30px;
+      color: #005555;
+    }
+
+    p {
+      font-size: 1.2rem;
+      color: #003333;
+      background-color: #ffffff;
+      padding: 10px 15px;
+      display: inline-block;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      min-width: 100px;
+    }
+  </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="320" height="480"></canvas>
-    <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
+  <h1>📸 Math Solver by Picture</h1>
+  <input type="file" accept="image/*" id="imageInput" />
+  <button onclick="solveImage()">Solve Equation</button>
+  <div>
+    <img id="preview" />
+  </div>
+  <h2>📖 Detected Equation:</h2>
+  <p id="equation">...</p>
+  <h2>✅ Answer:</h2>
+  <p id="answer">...</p>
 
-        // Pop sound
-        const popSound = new Audio('sound/pop.wav'); // Make sure this file is in the "sound" folder
+  <script>
+    const imageInput = document.getElementById("imageInput");
+    const preview = document.getElementById("preview");
+    const equationText = document.getElementById("equation");
+    const answerText = document.getElementById("answer");
 
-        const bird = {
-            x: 50,
-            y: 150,
-            width: 20,
-            height: 20,
-            gravity: 0.3, // Reduced gravity for easier gameplay
-            lift: -8, // Reduced lift for easier flight control
-            velocity: 0,
-            draw() {
-                ctx.fillStyle = "yellow";
-                ctx.fillRect(this.x, this.y, this.width, this.height);
-            },
-            update() {
-                this.velocity += this.gravity;
-                this.y += this.velocity;
-            },
-            flap() {
-                this.velocity = this.lift;
-                popSound.play(); // Play pop sound when the bird flaps
-            }
+    imageInput.addEventListener("change", () => {
+      const file = imageInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          preview.src = e.target.result;
         };
+        reader.readAsDataURL(file);
+      }
+    });
 
-        const pipes = [];
-        const pipeWidth = 50;
-        let pipeGap = 300; // Initial gap size of 300px
-        const pipeSpeed = 1.5; // Slowed down the pipes for easier navigation
-        let score = 0; // Initialize score
+    function solveImage() {
+      if (!imageInput.files[0]) {
+        alert("Please select an image first.");
+        return;
+      }
 
-        function generatePipe() {
-            // Create straight pipes with fixed gap in the middle
-            pipes.push({
-                x: canvas.width,
-                y: 0, // top pipe starts from the top
-                width: pipeWidth,
-                height: canvas.height - pipeGap // bottom pipe height will be fixed
-            });
-        }
+      equationText.textContent = "Reading...";
+      answerText.textContent = "...";
 
-        function updatePipes() {
-            for (let i = 0; i < pipes.length; i++) {
-                pipes[i].x -= pipeSpeed;
-                if (pipes[i].x + pipeWidth < 0) {
-                    pipes.splice(i, 1);
-                    score++; // Increase score when a pipe passes
-                }
-            }
-        }
+      Tesseract.recognize(imageInput.files[0], 'eng')
+        .then(result => {
+          const rawText = result.data.text;
+          const cleaned = rawText.replace(/\s/g, "");
+          equationText.textContent = cleaned;
 
-        function drawPipes() {
-            ctx.fillStyle = "green";
-            for (let pipe of pipes) {
-                ctx.fillRect(pipe.x, pipe.y, pipe.width, pipe.height); // top pipe
-                ctx.fillRect(pipe.x, pipe.height + pipeGap, pipe.width, canvas.height - pipe.height - pipeGap); // bottom pipe
-            }
-        }
-
-        function checkCollision() {
-            if (bird.y + bird.height > canvas.height || bird.y < 0) {
-                resetGame();
-            }
-
-            for (let pipe of pipes) {
-                if (bird.x + bird.width > pipe.x && bird.x < pipe.x + pipe.width) {
-                    if (bird.y < pipe.height || bird.y + bird.height > pipe.height + pipeGap) {
-                        resetGame();
-                    }
-                }
-            }
-        }
-
-        function resetGame() {
-            bird.y = 150;
-            bird.velocity = 0;
-            pipes.length = 0;
-            score = 0; // Reset score on game over
-        }
-
-        function drawScore() {
-            ctx.fillStyle = "black";
-            ctx.font = "24px Arial";
-            ctx.fillText("Score: " + score, 10, 30); // Display score at top-left corner
-        }
-
-        // Update pipe gap based on the score
-        function updatePipeGap() {
-            if (score >= 50 && score < 100) {
-                pipeGap = 250; // After score reaches 50, gap is 250px
-            } else if (score >= 100 && score < 150) {
-                pipeGap = 200; // After score reaches 100, gap is 200px
-            } else if (score >= 150) {
-                pipeGap = 150; // After score reaches 150, gap is 150px
-            }
-        }
-
-        let gameLoop;
-        function game() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            bird.update();
-            bird.draw();
-            updatePipes();
-            drawPipes();
-            drawScore(); // Draw the score on each frame
-            checkCollision();
-            updatePipeGap(); // Check and update the pipe gap based on the score
-
-            if (Math.random() < 0.02) {
-                generatePipe();
-            }
-
-            gameLoop = requestAnimationFrame(game);
-        }
-
-        // Make the bird flap when spacebar is pressed
-        window.addEventListener("keydown", (event) => {
-            if (event.code === "Space") {
-                bird.flap();
-            }
+          try {
+            const answer = math.evaluate(cleaned);
+            answerText.textContent = answer;
+          } catch (err) {
+            answerText.textContent = "Couldn't solve the equation.";
+          }
         });
-
-        game();
-    </script>
+    }
+  </script>
 </body>
 </html>
