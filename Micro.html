@@ -59,7 +59,7 @@
         <div class="eye right-eye"></div>
         <div class="mouth" id="mouth"></div>
     </div>
-    <div id="response-text"></div>
+    <div id="response-text">Hi!</div>
 
     <script>
         // Check for browser support
@@ -85,30 +85,21 @@
             const responseText = document.getElementById("response-text");
 
             // Define expressions
-            if (transcript.includes("hi")) {
-                // Smile expression
+            if (transcript.includes("micro")) {
+                // Display "How can I help you today?" when 'micro' is heard
+                responseText.innerHTML = "How can I help you today?";
+                mouth.style.borderRadius = "0 0 30px 30px"; // Smile shape
+                mouth.style.width = "60px"; // Normal width for smile
+                mouth.style.height = "30px"; // Normal height for smile
+            } else if (transcript.includes("i'm good")) {
+                // Display "Good" when 'I'm good' is heard
+                responseText.innerHTML = "Good";
+            } else {
+                // Default smile expression
                 mouth.style.borderRadius = "0 0 30px 30px"; // Smile shape
                 mouth.style.width = "60px"; // Normal width for smile
                 mouth.style.height = "30px"; // Normal height for smile
                 responseText.innerHTML = "Hi!";
-            } else if (transcript.includes("surprised")) {
-                // Surprised expression
-                mouth.style.borderRadius = "50%"; // Open mouth
-                mouth.style.width = "70px"; // Larger width for surprised
-                mouth.style.height = "70px"; // Larger height for surprised
-                responseText.innerHTML = "Wow!";
-            } else if (transcript.includes("sad")) {
-                // Sad expression
-                mouth.style.borderRadius = "0 0 30px 30px"; // Frown shape
-                mouth.style.width = "60px"; // Normal width for frown
-                mouth.style.height = "20px"; // Smaller height for frown
-                responseText.innerHTML = "I'm sad!";
-            } else {
-                // Default smile expression
-                mouth.style.borderRadius = "0 0 30px 30px"; // Smile
-                mouth.style.width = "60px"; // Normal width for smile
-                mouth.style.height = "30px"; // Normal height for smile
-                responseText.innerHTML = "How can I help you?";
             }
         }
 
