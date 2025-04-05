@@ -1,266 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Question with Timer and Answer Buttons</title>
-  <style>
-    body {
-      background-color: white;
-      margin: 0;
-      padding: 0;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      font-family: Arial, sans-serif;
-      position: relative;
-    }
-
-    #question-container {
-      margin-top: 20px;
-      font-size: 24px;
-      font-weight: bold;
-    }
-
-    #buttons-container {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      justify-content: center;
-      align-items: flex-start;
-      position: absolute;
-      bottom: 10px;
-      right: 10%;
-      width: 80%;
-    }
-
-    .button-row {
-      display: flex;
-      gap: 20px;
-      width: 100%;
-    }
-
-    .answer-button {
-      color: white;
-      padding: 20px;
-      font-size: 18px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      width: 48%;
-      transition: background-color 0.3s;
-    }
-
-    .button1 { background-color: #4CAF50; } /* Green */
-    .button2 { background-color: #FF5733; } /* Red */
-    .button3 { background-color: #007BFF; } /* Blue */
-    .button4 { background-color: #FFC107; } /* Yellow */
-
-    .answer-button:hover {
-      opacity: 0.8;
-    }
-
-    #menu-button {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      padding: 10px 20px;
-      font-size: 18px;
-      background-color: #333;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    #menu-button:hover {
-      background-color: #555;
-    }
-
-    /* Timer in the top-right corner */
-    #timer {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      color: black;
-      padding: 10px 20px;
-      font-size: 20px;
-      border-radius: 5px;
-    }
-
-    /* Sidebar styles */
-    #sidebar {
-      position: fixed;
-      top: 0;
-      left: -250px; /* Hidden by default */
-      height: 100%;
-      width: 250px;
-      background-color: #333;
-      color: white;
-      transition: 0.3s;
-      padding: 20px;
-    }
-
-    #sidebar a, #sidebar button {
-      color: white;
-      font-size: 18px;
-      text-decoration: none;
-      display: block;
-      margin: 10px 0;
-      padding: 10px;
-      background-color: #555;
-      border: none;
-      border-radius: 5px;
-    }
-
-    #sidebar a:hover, #sidebar button:hover {
-      background-color: #777;
-    }
-
-    #sidebar.open {
-      left: 0; /* Slide in the sidebar */
-    }
-
-    /* Close button (X) in the sidebar */
-    #close-sidebar {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      font-size: 24px;
-      background: transparent;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird Clone</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #70c5ce;
+        }
+        canvas {
+            border: 1px solid #000;
+        }
+    </style>
 </head>
 <body>
+    <canvas id="gameCanvas" width="320" height="480"></canvas>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
 
-  <button id="menu-button" onclick="toggleSidebar()">...</button>
+        // Pop sound (using the sound/pop.wav file)
+        const popSound = new Audio('sound/pop.wav'); // Make sure this file is in the "sound" folder
 
-  <div id="question-container">
-    <p id="question">What is 2 + 2?</p>
-  </div>
+        const bird = {
+            x: 50,
+            y: 150,
+            width: 20,
+            height: 20,
+            gravity: 0.3, // Reduced gravity for easier gameplay
+            lift: -8, // Reduced lift for easier flight control
+            velocity: 0,
+            draw() {
+                ctx.fillStyle = "yellow";
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            },
+            update() {
+                this.velocity += this.gravity;
+                this.y += this.velocity;
+            },
+            flap() {
+                this.velocity = this.lift;
+                popSound.play(); // Play pop sound when the bird flaps
+            }
+        };
 
-  <div id="timer">Time left: <span id="time">10</span> seconds</div>
+        const pipes = [];
+        const pipeWidth = 50;
+        const pipeGap = 200; // Increased the gap between pipes to make the hole bigger
+        const pipeSpeed = 1.5; // Slowed down the pipes for easier navigation
+        let score = 0; // Initialize score
 
-  <div id="buttons-container">
-    <div class="button-row">
-      <button class="answer-button button1" onclick="checkAnswer(0)">3</button>
-      <button class="answer-button button2" onclick="checkAnswer(1)">4</button>
-    </div>
-    <div class="button-row">
-      <button class="answer-button button3" onclick="checkAnswer(2)">5</button>
-      <button class="answer-button button4" onclick="checkAnswer(3)">6</button>
-    </div>
-  </div>
-
-  <!-- Sidebar (Shop) -->
-  <div id="sidebar">
-    <button id="close-sidebar" onclick="toggleSidebar()">X</button>
-    <a href="#" onclick="buyTime()">Buy More Time</a>
-  </div>
-
-  <script>
-    // Array of questions and answers
-    const questions = [
-      {
-        question: "What is 2 + 2?",
-        choices: ["3", "4", "5", "6"],
-        correct: 1
-      },
-      {
-        question: "What is the capital of France?",
-        choices: ["Berlin", "Madrid", "Paris", "Rome"],
-        correct: 2
-      },
-      {
-        question: "Which planet is known as the Red Planet?",
-        choices: ["Earth", "Mars", "Jupiter", "Saturn"],
-        correct: 1
-      },
-      {
-        question: "What is the largest ocean on Earth?",
-        choices: ["Atlantic Ocean", "Indian Ocean", "Southern Ocean", "Pacific Ocean"],
-        correct: 3
-      }
-    ];
-
-    let currentQuestion = 0;
-    let score = 0;
-    let timeLeft = 10;
-    let timerInterval;
-
-    // Load the next question
-    function loadQuestion() {
-      const questionData = questions[currentQuestion];
-      document.getElementById('question').textContent = questionData.question;
-      document.getElementById('timer').style.display = "block";
-      document.getElementById('time').textContent = timeLeft;
-      startTimer();
-    }
-
-    // Start a countdown timer
-    function startTimer() {
-      timerInterval = setInterval(() => {
-        timeLeft--;
-        document.getElementById('time').textContent = timeLeft;
-        if (timeLeft === 0) {
-          clearInterval(timerInterval);
-          alert("Time's up!");
-          loadNextQuestion();
+        function generatePipe() {
+            const pipeHeight = Math.floor(Math.random() * (canvas.height - pipeGap));
+            pipes.push({
+                x: canvas.width,
+                y: pipeHeight,
+                width: pipeWidth,
+                height: canvas.height - pipeHeight - pipeGap
+            });
         }
-      }, 1000);
-    }
 
-    // Check the selected answer
-    function checkAnswer(choice) {
-      clearInterval(timerInterval); // Stop the timer when an answer is chosen
-      const questionData = questions[currentQuestion];
-      const timeTaken = 10 - timeLeft; // Calculate time taken
+        function updatePipes() {
+            for (let i = 0; i < pipes.length; i++) {
+                pipes[i].x -= pipeSpeed;
+                if (pipes[i].x + pipeWidth < 0) {
+                    pipes.splice(i, 1);
+                    score++; // Increase score when a pipe passes
+                }
+            }
+        }
 
-      if (choice === questionData.correct) {
-        // Points awarded based on how quick the answer was
-        let points = Math.max(10 - timeTaken, 1); // Max 10 points, min 1 point
-        score += points;
-        alert(`Correct! You earned ${points} points.`);
-      } else {
-        alert("Incorrect!");
-      }
+        function drawPipes() {
+            ctx.fillStyle = "green";
+            for (let pipe of pipes) {
+                ctx.fillRect(pipe.x, 0, pipe.width, pipe.y); // top pipe
+                ctx.fillRect(pipe.x, pipe.y + pipeGap, pipe.width, canvas.height - pipe.y - pipeGap); // bottom pipe
+            }
+        }
 
-      document.getElementById('score').textContent = `Score: ${score}`;
-      loadNextQuestion();
-    }
+        function checkCollision() {
+            if (bird.y + bird.height > canvas.height || bird.y < 0) {
+                resetGame();
+            }
 
-    // Load the next question
-    function loadNextQuestion() {
-      currentQuestion++;
+            for (let pipe of pipes) {
+                if (bird.x + bird.width > pipe.x && bird.x < pipe.x + pipe.width) {
+                    if (bird.y < pipe.y || bird.y + bird.height > pipe.y + pipeGap) {
+                        resetGame();
+                    }
+                }
+            }
+        }
 
-      if (currentQuestion < questions.length) {
-        // Reset timer and load next question
-        timeLeft = 10;
-        loadQuestion();
-      } else {
-        alert("Game Over! Your final score is " + score);
-      }
-    }
+        function resetGame() {
+            bird.y = 150;
+            bird.velocity = 0;
+            pipes.length = 0;
+            score = 0; // Reset score on game over
+        }
 
-    // Initialize the game
-    loadQuestion();
+        function drawScore() {
+            ctx.fillStyle = "black";
+            ctx.font = "24px Arial";
+            ctx.fillText("Score: " + score, 10, 30); // Display score at top-left corner
+        }
 
-    // Toggle sidebar visibility
-    function toggleSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      sidebar.classList.toggle('open');
-    }
+        let gameLoop;
+        function game() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Buy more time when button is clicked
-    function buyTime() {
-      timeLeft += 5; // Add 5 seconds
-      alert("You have bought 5 more seconds!");
-    }
-  </script>
+            bird.update();
+            bird.draw();
+            updatePipes();
+            drawPipes();
+            drawScore(); // Draw the score on each frame
+            checkCollision();
+
+            if (Math.random() < 0.02) {
+                generatePipe();
+            }
+
+            gameLoop = requestAnimationFrame(game);
+        }
+
+        // Make the bird flap when spacebar is pressed
+        window.addEventListener("keydown", (event) => {
+            if (event.code === "Space") {
+                bird.flap();
+            }
+        });
+
+        game();
+    </script>
 </body>
 </html>
