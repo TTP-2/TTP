@@ -25,7 +25,7 @@
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        // Pop sound (using the sound/pop.wav file)
+        // Pop sound
         const popSound = new Audio('sound/pop.wav'); // Make sure this file is in the "sound" folder
 
         const bird = {
@@ -52,17 +52,17 @@
 
         const pipes = [];
         const pipeWidth = 50;
-        const pipeGap = 200; // Increased the gap between pipes to make the hole bigger
+        let pipeGap = 300; // Initial gap size of 300px
         const pipeSpeed = 1.5; // Slowed down the pipes for easier navigation
         let score = 0; // Initialize score
 
         function generatePipe() {
-            const pipeHeight = Math.floor(Math.random() * (canvas.height - pipeGap));
+            // Create straight pipes with fixed gap in the middle
             pipes.push({
                 x: canvas.width,
-                y: pipeHeight,
+                y: 0, // top pipe starts from the top
                 width: pipeWidth,
-                height: canvas.height - pipeHeight - pipeGap
+                height: canvas.height - pipeGap // bottom pipe height will be fixed
             });
         }
 
@@ -79,8 +79,8 @@
         function drawPipes() {
             ctx.fillStyle = "green";
             for (let pipe of pipes) {
-                ctx.fillRect(pipe.x, 0, pipe.width, pipe.y); // top pipe
-                ctx.fillRect(pipe.x, pipe.y + pipeGap, pipe.width, canvas.height - pipe.y - pipeGap); // bottom pipe
+                ctx.fillRect(pipe.x, pipe.y, pipe.width, pipe.height); // top pipe
+                ctx.fillRect(pipe.x, pipe.height + pipeGap, pipe.width, canvas.height - pipe.height - pipeGap); // bottom pipe
             }
         }
 
@@ -91,7 +91,7 @@
 
             for (let pipe of pipes) {
                 if (bird.x + bird.width > pipe.x && bird.x < pipe.x + pipe.width) {
-                    if (bird.y < pipe.y || bird.y + bird.height > pipe.y + pipeGap) {
+                    if (bird.y < pipe.height || bird.y + bird.height > pipe.height + pipeGap) {
                         resetGame();
                     }
                 }
@@ -111,6 +111,17 @@
             ctx.fillText("Score: " + score, 10, 30); // Display score at top-left corner
         }
 
+        // Update pipe gap based on the score
+        function updatePipeGap() {
+            if (score >= 50 && score < 100) {
+                pipeGap = 250; // After score reaches 50, gap is 250px
+            } else if (score >= 100 && score < 150) {
+                pipeGap = 200; // After score reaches 100, gap is 200px
+            } else if (score >= 150) {
+                pipeGap = 150; // After score reaches 150, gap is 150px
+            }
+        }
+
         let gameLoop;
         function game() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -121,6 +132,7 @@
             drawPipes();
             drawScore(); // Draw the score on each frame
             checkCollision();
+            updatePipeGap(); // Check and update the pipe gap based on the score
 
             if (Math.random() < 0.02) {
                 generatePipe();
