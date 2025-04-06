@@ -4,71 +4,85 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Math Solver by Picture</title>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.1/math.min.js"></script>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      text-align: center;
-      background: linear-gradient(to right, #e0f7f7, #ccf2f2);
+      background: linear-gradient(to bottom right, #e0f7f7, #ccf2f2);
       margin: 0;
-      padding: 20px;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
       color: #034f4f;
     }
 
     h1 {
-      font-size: 2.5rem;
-      margin-bottom: 20px;
+      font-size: 3rem;
+      margin: 30px 0 10px;
       color: #007d7d;
     }
 
     input[type="file"], button {
-      padding: 12px 20px;
-      border: none;
-      border-radius: 8px;
+      padding: 14px 24px;
       font-size: 1rem;
-      cursor: pointer;
-      margin: 10px;
-      transition: background 0.3s;
+      margin: 12px;
+      border-radius: 10px;
+      border: none;
+      transition: 0.3s;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     }
 
     input[type="file"] {
-      background-color: #ffffff;
-      color: #007d7d;
+      background: #ffffff;
       border: 2px solid #00b3b3;
+      color: #007d7d;
+    }
+
+    input[type="file"]:hover {
+      background-color: #f0fdfd;
     }
 
     button {
       background-color: #00b3b3;
-      color: white;
+      color: #fff;
     }
 
     button:hover {
-      background-color: #008c8c;
+      background-color: #009a9a;
     }
 
     #preview {
-      max-width: 90%;
-      max-height: 300px;
+      max-width: 95%;
+      max-height: 320px;
       margin: 20px 0;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
 
     h2 {
-      margin-top: 30px;
+      margin: 20px 0 10px;
+      font-size: 1.5rem;
       color: #005555;
     }
 
     p {
-      font-size: 1.2rem;
+      font-size: 1.25rem;
+      padding: 12px 20px;
+      background: #fff;
       color: #003333;
-      background-color: #ffffff;
-      padding: 10px 15px;
+      border-radius: 10px;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+      min-width: 200px;
       display: inline-block;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      min-width: 100px;
+      word-break: break-word;
     }
   </style>
 </head>
@@ -110,10 +124,16 @@
       equationText.textContent = "Reading...";
       answerText.textContent = "...";
 
-      Tesseract.recognize(imageInput.files[0], 'eng')
+      Tesseract.recognize(imageInput.files[0], 'eng', { logger: m => console.log(m) })
         .then(result => {
-          const rawText = result.data.text;
-          const cleaned = rawText.replace(/\s/g, "");
+          let rawText = result.data.text;
+
+          // Clean and normalize the equation
+          let cleaned = rawText.replace(/\s/g, "")
+                               .replace(/dividedby/gi, "/")
+                               .replace(/divided/gi, "/")
+                               .replace(/x/gi, "*");
+
           equationText.textContent = cleaned;
 
           try {
@@ -122,6 +142,11 @@
           } catch (err) {
             answerText.textContent = "Couldn't solve the equation.";
           }
+        })
+        .catch(error => {
+          equationText.textContent = "Error reading image.";
+          answerText.textContent = "...";
+          console.error(error);
         });
     }
   </script>
