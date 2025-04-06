@@ -1,154 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Math Solver by Picture</title>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.1/math.min.js"></script>
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(to bottom right, #e0f7f7, #ccf2f2);
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      min-height: 100vh;
-      color: #034f4f;
-    }
-
-    h1 {
-      font-size: 3rem;
-      margin: 30px 0 10px;
-      color: #007d7d;
-    }
-
-    input[type="file"], button {
-      padding: 14px 24px;
-      font-size: 1rem;
-      margin: 12px;
-      border-radius: 10px;
-      border: none;
-      transition: 0.3s;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-    }
-
-    input[type="file"] {
-      background: #ffffff;
-      border: 2px solid #00b3b3;
-      color: #007d7d;
-    }
-
-    input[type="file"]:hover {
-      background-color: #f0fdfd;
-    }
-
-    button {
-      background-color: #00b3b3;
-      color: #fff;
-    }
-
-    button:hover {
-      background-color: #009a9a;
-    }
-
-    #preview {
-      max-width: 95%;
-      max-height: 320px;
-      margin: 20px 0;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-
-    h2 {
-      margin: 20px 0 10px;
-      font-size: 1.5rem;
-      color: #005555;
-    }
-
-    p {
-      font-size: 1.25rem;
-      padding: 12px 20px;
-      background: #fff;
-      color: #003333;
-      border-radius: 10px;
-      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-      min-width: 200px;
-      display: inline-block;
-      word-break: break-word;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Detection</title>
+    <style>
+        #video {
+            width: 100%;
+            height: auto;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+    </style>
 </head>
 <body>
-  <h1>📸 Math Solver by Picture</h1>
-  <input type="file" accept="image/*" id="imageInput" />
-  <button onclick="solveImage()">Solve Equation</button>
-  <div>
-    <img id="preview" />
-  </div>
-  <h2>📖 Detected Equation:</h2>
-  <p id="equation">...</p>
-  <h2>✅ Answer:</h2>
-  <p id="answer">...</p>
+    <h1>Face Detection in Webcam Feed</h1>
+    <video id="video" autoplay></video>
+    <canvas id="canvas"></canvas>
 
-  <script>
-    const imageInput = document.getElementById("imageInput");
-    const preview = document.getElementById("preview");
-    const equationText = document.getElementById("equation");
-    const answerText = document.getElementById("answer");
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+    <script>
+        async function setup() {
+            // Load models for face-api.js
+            await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
+            await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+            await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
 
-    imageInput.addEventListener("change", () => {
-      const file = imageInput.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = e => {
-          preview.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      }
-    });
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const displaySize = { width: video.width, height: video.height };
+            faceapi.matchDimensions(canvas, displaySize);
 
-    function solveImage() {
-      if (!imageInput.files[0]) {
-        alert("Please select an image first.");
-        return;
-      }
+            // Get the webcam stream
+            const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+            video.srcObject = stream;
 
-      equationText.textContent = "Reading...";
-      answerText.textContent = "...";
+            // Detect faces and draw bounding box
+            video.onplay = () => {
+                setInterval(async () => {
+                    const detections = await faceapi.detectAllFaces(video).withFaceLandmarks().withFaceDescriptors();
+                    canvas?.clear();
+                    faceapi.draw.drawDetections(canvas, detections);
+                    faceapi.draw.drawFaceLandmarks(canvas, detections);
+                }, 100);
+            };
+        }
 
-      Tesseract.recognize(imageInput.files[0], 'eng', { logger: m => console.log(m) })
-        .then(result => {
-          let rawText = result.data.text;
-
-          // Clean and normalize the equation
-          let cleaned = rawText.replace(/\s/g, "")
-                               .replace(/dividedby/gi, "/")
-                               .replace(/divided/gi, "/")
-                               .replace(/x/gi, "*");
-
-          equationText.textContent = cleaned;
-
-          try {
-            const answer = math.evaluate(cleaned);
-            answerText.textContent = answer;
-          } catch (err) {
-            answerText.textContent = "Couldn't solve the equation.";
-          }
-        })
-        .catch(error => {
-          equationText.textContent = "Error reading image.";
-          answerText.textContent = "...";
-          console.error(error);
-        });
-    }
-  </script>
+        setup();
+    </script>
 </body>
 </html>
