@@ -1,116 +1,138 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face Detection</title>
-    <style>
-        #video {
-            width: 100%;
-            height: auto;<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face Detection using Webcam</title>
-    <style>
-        #video {
-            width: 100%;
-            height: auto;
-        }
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TTP Square Game</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: #f0fbfb;
+    }
+
+    h1 {
+      color: #008080;
+      margin-bottom: 20px;
+    }
+
+    #gameCanvas {
+      border: 4px solid #008080;
+      border-radius: 12px;
+      background-color: white;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      background-color: #00cccc;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background-color: #008080;
+    }
+  </style>
 </head>
 <body>
-    <h1>Face Detection in Webcam Feed</h1>
-    <video id="video" autoplay></video>
-    <canvas id="canvas"></canvas>
+  <h1>TTP Square Game</h1>
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
+  <button onclick="resetGame()">Reset Game</button>
 
-    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
-    <script>
-        async function setup() {
-            // Load face-api.js models (make sure you have the correct models hosted)
-            await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
-            await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
-            await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
 
-            // Access the webcam
-            const video = document.getElementById('video');
-            const canvas = document.getElementById('canvas');
-            const displaySize = { width: video.width, height: video.height };
-            faceapi.matchDimensions(canvas, displaySize);
+    const squareSize = 30;
+    let squareX = (canvas.width - squareSize) / 2;
+    const squareY = canvas.height - squareSize - 10;
+    let rightPressed = false;
+    let leftPressed = false;
+    const speed = 8; // Adjusted speed for faster movement
 
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
-                video.srcObject = stream;
+    const staticSquareX = canvas.width - 100;
+    const staticSquareY = canvas.height - squareSize - 10;
+    let staticSquareMoved = false;
 
-                video.onplay = () => {
-                    // Detect faces every 100ms
-                    setInterval(async () => {
-                        const detections = await faceapi.detectAllFaces(video).withFaceLandmarks().withFaceDescriptors();
-                        canvas?.clear();
-                        faceapi.draw.drawDetections(canvas, detections);
-                        faceapi.draw.drawFaceLandmarks(canvas, detections);
-                    }, 100);
-                };
-            } catch (err) {
-                console.error('Error accessing webcam: ', err);
-            }
-        }
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
 
-        setup();
-    </script>
-</body>
-</html>
+    function keyDownHandler(e) {
+      if (e.key === "Right" || e.key === "ArrowRight") {
+        rightPressed = true;
+      } else if (e.key === "Left" || e.key === "ArrowLeft") {
+        leftPressed = true;
+      }
+    }
 
-        }
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
-    </style>
-</head>
-<body>
-    <h1>Face Detection in Webcam Feed</h1>
-    <video id="video" autoplay></video>
-    <canvas id="canvas"></canvas>
+    function keyUpHandler(e) {
+      if (e.key === "Right" || e.key === "ArrowRight") {
+        rightPressed = false;
+      } else if (e.key === "Left" || e.key === "ArrowLeft") {
+        leftPressed = false;
+      }
+    }
 
-    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
-    <script>
-        async function setup() {
-            // Load models for face-api.js
-            await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
-            await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
-            await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+    function drawSquare() {
+      ctx.beginPath();
+      ctx.rect(squareX, squareY, squareSize, squareSize);
+      ctx.fillStyle = '#00cccc';
+      ctx.fill();
+      ctx.closePath();
+    }
 
-            const video = document.getElementById('video');
-            const canvas = document.getElementById('canvas');
-            const displaySize = { width: video.width, height: video.height };
-            faceapi.matchDimensions(canvas, displaySize);
+    function drawStaticSquare() {
+      ctx.beginPath();
+      ctx.rect(staticSquareX, staticSquareY, squareSize, squareSize);
+      ctx.fillStyle = '#008080';
+      ctx.fill();
+      ctx.closePath();
+    }
 
-            // Get the webcam stream
-            const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
-            video.srcObject = stream;
+    function handleCollision() {
+      if (squareX + squareSize > staticSquareX && squareX < staticSquareX + squareSize && !staticSquareMoved) {
+        staticSquareMoved = true;
+      }
+    }
 
-            // Detect faces and draw bounding box
-            video.onplay = () => {
-                setInterval(async () => {
-                    const detections = await faceapi.detectAllFaces(video).withFaceLandmarks().withFaceDescriptors();
-                    canvas?.clear();
-                    faceapi.draw.drawDetections(canvas, detections);
-                    faceapi.draw.drawFaceLandmarks(canvas, detections);
-                }, 100);
-            };
-        }
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawSquare();
+      drawStaticSquare();
+      handleCollision();
 
-        setup();
-    </script>
+      if (staticSquareMoved) {
+        staticSquareX -= 50; // Push the static square to the side
+      }
+
+      if (rightPressed && squareX < canvas.width - squareSize) {
+        squareX += speed;
+      } else if (leftPressed && squareX > 0) {
+        squareX -= speed;
+      }
+
+      requestAnimationFrame(draw); // Smooth animation
+    }
+
+    function resetGame() {
+      squareX = (canvas.width - squareSize) / 2;
+      staticSquareMoved = false;
+      staticSquareX = canvas.width - 100;
+      requestAnimationFrame(draw); // Restart smooth animation
+    }
+
+    requestAnimationFrame(draw); // Start smooth animation
+  </script>
 </body>
 </html>
