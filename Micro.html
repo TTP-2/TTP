@@ -2,177 +2,178 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Messaging Website</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Chatbox</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #e6f2f3;
+    * {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
-    header {
-      background-color: teal;
-      color: white;
-      padding: 15px;
-      text-align: center;
-      font-size: 24px;
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #e9ecef;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
     }
-    #chat-container {
+
+    .chat-container {
+      width: 400px;
+      max-width: 90%;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
       display: flex;
       flex-direction: column;
-      height: 90vh;
+      height: 500px;
+      justify-content: space-between;
     }
-    #messages {
+
+    .chat-box {
       flex: 1;
-      padding: 20px;
       overflow-y: auto;
-      background-color: #fff;
-      border-top: 2px solid teal;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+      margin-bottom: 20px;
+      font-size: 16px;
+      color: #333;
     }
-    .message {
-      margin-bottom: 10px;
-      padding: 8px 12px;
-      background-color: #dcf8c6;
-      border-radius: 10px;
-      max-width: 60%;
+
+    .chat-box div {
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 8px;
+      background-color: #f1f1f1;
+      max-width: 80%;
+      word-wrap: break-word;
+      line-height: 1.5;
     }
-    .my-message {
-      background-color: #d1e7ff;
+
+    .chat-box .user {
+      background-color: #007bff;
+      color: white;
+      align-self: flex-start;
+    }
+
+    .chat-box .ai {
+      background-color: #28a745;
+      color: white;
       align-self: flex-end;
     }
-    .image-message {
-      margin-bottom: 10px;
-      padding: 8px;
-      border-radius: 10px;
-      background-color: #fff3cd;
-      max-width: 60%;
-    }
-    #input-area {
+
+    .input-container {
       display: flex;
-      padding: 10px;
-      background-color: #f0f0f0;
-      transition: background-color 0.3s;
+      gap: 10px;
     }
-    #message-input {
-      padding: 10px;
-      margin-right: 10px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+
+    .input-container input {
       flex: 1;
+      padding: 10px;
+      border-radius: 25px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+      transition: border-color 0.3s ease;
     }
-    #send-button {
+
+    .input-container input:focus {
+      border-color: #007bff;
+      outline: none;
+    }
+
+    .input-container button {
       padding: 10px 20px;
-      background-color: teal;
+      background-color: #007bff;
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 16px;
+      border-radius: 25px;
       cursor: pointer;
+      transition: background-color 0.3s ease;
     }
-    canvas {
-      max-width: 100%;
-      border-radius: 8px;
+
+    .input-container button:hover {
+      background-color: #0056b3;
+    }
+
+    .input-container button:active {
+      background-color: #004085;
     }
   </style>
 </head>
 <body>
 
-  <header>TTP Chat</header>
-
-  <div id="chat-container">
-    <div id="messages"></div>
-
-    <div id="input-area">
-      <input type="text" id="message-input" placeholder="Type a shape description..." />
-      <button id="send-button">Send</button>
-    </div>
+<div class="chat-container">
+  <div class="chat-box" id="chat-box"></div>
+  <div class="input-container">
+    <input type="text" id="user-input" placeholder="Ask something..." onkeydown="checkEnter(event)">
+    <button onclick="getAnswer()">Ask</button>
   </div>
+</div>
 
-  <script>
-    const sendButton = document.getElementById('send-button');
-    const messageInput = document.getElementById('message-input');
-    const messagesDiv = document.getElementById('messages');
-    const inputArea = document.getElementById('input-area');
+<script>
+  // Function to check if Enter key was pressed
+  function checkEnter(event) {
+    if (event.key === "Enter") {
+      getAnswer();
+    }
+  }
 
-    let inputDarkness = 240;
+  // Function to retrieve the knowledge from localStorage or set it
+  function getAnswer() {
+    const userInput = document.getElementById("user-input").value;
+    if (!userInput) return;
 
-    function darkenInputArea() {
-      inputDarkness -= 10;
-      if (inputDarkness < 0) inputDarkness = 0;
-      inputArea.style.backgroundColor = `rgb(${inputDarkness}, ${inputDarkness}, ${inputDarkness})`;
+    appendMessage('User: ' + userInput, 'user');
+    document.getElementById("user-input").value = '';
+
+    // If the input is asking about a subject
+    if (userInput.toLowerCase().startsWith("what is")) {
+      const subject = userInput.replace(/what is\s+/i, '').trim(); // Remove "What is" part
+      const subjectInfo = localStorage.getItem(subject.toLowerCase());
+
+      if (subjectInfo) {
+        appendMessage("AI: " + subjectInfo, 'ai');
+      } else {
+        appendMessage("AI: I don't know about " + subject + " yet. You can teach me by stating it directly.", 'ai');
+      }
+      return;
     }
 
-    function sendMessage() {
-      const text = messageInput.value.trim();
-
-      if (text) {
-        generateImage(text);
-        messageInput.value = '';
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        darkenInputArea();
-      }
+    // If the input is teaching the AI a subject (no special keyword needed)
+    const subjectInfo = userInput.split(" is ");
+    if (subjectInfo.length === 2) {
+      const subject = subjectInfo[0].trim();
+      const info = subjectInfo[1].trim();
+      storeKnowledge(subject, info);
+      appendMessage("AI: I will remember that about " + subject, 'ai');
+      return;
     }
 
-    function generateImage(prompt) {
-      const imageContainer = document.createElement('div');
-      imageContainer.classList.add('image-message', 'my-message');
+    // Default response if input doesn't match anything
+    appendMessage("AI: I didn't understand that. Try asking 'What is [subject]?' or teach me with '[subject] is [info]'", 'ai');
+  }
 
-      const canvas = document.createElement('canvas');
-      canvas.width = 300;
-      canvas.height = 200;
-      const ctx = canvas.getContext('2d');
+  // Function to store knowledge in localStorage
+  function storeKnowledge(subject, info) {
+    localStorage.setItem(subject.toLowerCase(), info);
+  }
 
-      // Default drawing settings
-      let shape = 'circle';
-      let color = 'black';
-      let size = 20;
-
-      // Simple parsing for shapes
-      if (prompt.includes("circle")) shape = 'circle';
-      if (prompt.includes("square")) shape = 'square';
-      if (prompt.includes("triangle")) shape = 'triangle';
-
-      // Simple parsing for colors
-      if (prompt.includes("red")) color = 'red';
-      if (prompt.includes("blue")) color = 'blue';
-      if (prompt.includes("green")) color = 'green';
-
-      // Simple parsing for size
-      if (prompt.includes("small")) size = 10;
-      if (prompt.includes("large")) size = 30;
-
-      // Draw the selected shape
-      ctx.fillStyle = color;
-      if (shape === 'circle') {
-        ctx.beginPath();
-        ctx.arc(canvas.width / 2, canvas.height / 2, size, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (shape === 'square') {
-        ctx.fillRect((canvas.width - size) / 2, (canvas.height - size) / 2, size, size);
-      } else if (shape === 'triangle') {
-        ctx.beginPath();
-        ctx.moveTo(canvas.width / 2, (canvas.height - size) / 2);
-        ctx.lineTo((canvas.width - size) / 2, (canvas.height + size) / 2);
-        ctx.lineTo((canvas.width + size) / 2, (canvas.height + size) / 2);
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      imageContainer.innerHTML = `<div><strong>"${prompt}"</strong></div>`;
-      imageContainer.appendChild(canvas);
-      messagesDiv.appendChild(imageContainer);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-
-    sendButton.addEventListener('click', sendMessage);
-
-    messageInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        sendMessage();
-      }
-    });
-  </script>
+  // Function to append a message to the chatbox
+  function appendMessage(message, sender) {
+    const chatBox = document.getElementById("chat-box");
+    const newMessage = document.createElement("div");
+    newMessage.className = sender;
+    newMessage.textContent = message;
+    chatBox.appendChild(newMessage);
+    chatBox.scrollTop = chatBox.scrollHeight; // Scroll to bottom
+  }
+</script>
 
 </body>
 </html>
