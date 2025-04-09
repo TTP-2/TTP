@@ -70,6 +70,7 @@
       max-width: 80%;
       word-wrap: break-word;
       line-height: 1.5;
+      position: relative;
     }
 
     .chat-box .user {
@@ -146,6 +147,29 @@
 
     .delete-btn:hover {
       background-color: #c82333;
+    }
+
+    .memory-item {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px;
+      background-color: #f1f1f1;
+      margin-bottom: 5px;
+      border-radius: 8px;
+    }
+
+    /* Delete text styling */
+    .delete-text {
+      display: none;
+      color: red;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .memory-item:hover .delete-text {
+      display: block;
     }
 
   </style>
@@ -243,11 +267,23 @@
       memoryContent = 'No conversations stored yet.';
     } else {
       conversation.forEach((entry, index) => {
-        memoryContent += `<strong>User:</strong> ${entry.user}<br><strong>AI:</strong> ${entry.ai}<br><br>`;
+        memoryContent += `
+          <div class="memory-item">
+            <div><strong>User:</strong> ${entry.user} <br><strong>AI:</strong> ${entry.ai}</div>
+            <span class="delete-text" onclick="deleteMemory(${index})">Delete</span>
+          </div>`;
       });
     }
 
     memoryBox.innerHTML = memoryContent;
+  }
+
+  // Function to delete individual memory (conversation entry)
+  function deleteMemory(index) {
+    let conversation = JSON.parse(localStorage.getItem("conversation")) || [];
+    conversation.splice(index, 1);  // Remove the specific conversation entry
+    localStorage.setItem("conversation", JSON.stringify(conversation));
+    showMemory();  // Refresh the memory display
   }
 
   // Function to clear only the memory text (not the stored data)
