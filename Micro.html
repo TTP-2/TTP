@@ -34,6 +34,22 @@
       justify-content: space-between;
     }
 
+    .memory-btn {
+      align-self: flex-end;
+      background-color: #28a745;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .memory-btn:hover {
+      background-color: #218838;
+    }
+
     .chat-box {
       flex: 1;
       overflow-y: auto;
@@ -104,15 +120,47 @@
     .input-container button:active {
       background-color: #004085;
     }
+
+    .memory-box {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f1f1f1;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      max-height: 150px;
+      overflow-y: auto;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .delete-btn {
+      background-color: #dc3545;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      margin-left: 10px;
+      font-size: 12px;
+    }
+
+    .delete-btn:hover {
+      background-color: #c82333;
+    }
+
   </style>
 </head>
 <body>
 
 <div class="chat-container">
+  <button class="memory-btn" onclick="showMemory()">Memory</button>
   <div class="chat-box" id="chat-box"></div>
   <div class="input-container">
     <input type="text" id="user-input" placeholder="Ask something..." onkeydown="checkEnter(event)">
     <button onclick="getAnswer()">Ask</button>
+  </div>
+  <div class="memory-box" id="memory-box" style="display: none;">
+    <button onclick="clearMemory()">Clear Memory Text</button>
   </div>
 </div>
 
@@ -132,31 +180,33 @@
     appendMessage('User: ' + userInput, 'user');
     document.getElementById("user-input").value = '';
 
+    let aiResponse = '';
+
     // If the input is asking about a subject
     if (userInput.toLowerCase().startsWith("what is")) {
       const subject = userInput.replace(/what is\s+/i, '').trim(); // Remove "What is" part
       const subjectInfo = localStorage.getItem(subject.toLowerCase());
 
       if (subjectInfo) {
-        appendMessage("AI: " + subjectInfo, 'ai');
+        aiResponse = "AI: " + subjectInfo;
       } else {
-        appendMessage("AI: I don't know about " + subject + " yet. You can teach me by stating it directly.", 'ai');
+        aiResponse = "AI: I don't know about " + subject + " yet. You can teach me by saying '[subject] is [info]'.";
       }
-      return;
+    } else {
+      // If the input is teaching the AI a subject (no special keyword needed)
+      const subjectInfo = userInput.split(" is ");
+      if (subjectInfo.length === 2) {
+        const subject = subjectInfo[0].trim();
+        const info = subjectInfo[1].trim();
+        storeKnowledge(subject, info);
+        aiResponse = "AI: I will remember that " + subject + " is " + info;
+      } else {
+        aiResponse = "AI: I didn't understand that. Try asking 'What is [subject]?' or teach me with '[subject] is [info]'";
+      }
     }
 
-    // If the input is teaching the AI a subject (no special keyword needed)
-    const subjectInfo = userInput.split(" is ");
-    if (subjectInfo.length === 2) {
-      const subject = subjectInfo[0].trim();
-      const info = subjectInfo[1].trim();
-      storeKnowledge(subject, info);
-      appendMessage("AI: I will remember that about " + subject, 'ai');
-      return;
-    }
-
-    // Default response if input doesn't match anything
-    appendMessage("AI: I didn't understand that. Try asking 'What is [subject]?' or teach me with '[subject] is [info]'", 'ai');
+    appendMessage(aiResponse, 'ai');
+    saveConversation(userInput, aiResponse);  // Save conversation
   }
 
   // Function to store knowledge in localStorage
@@ -172,6 +222,38 @@
     newMessage.textContent = message;
     chatBox.appendChild(newMessage);
     chatBox.scrollTop = chatBox.scrollHeight; // Scroll to bottom
+  }
+
+  // Function to save the conversation to localStorage
+  function saveConversation(userMessage, aiMessage) {
+    let conversation = JSON.parse(localStorage.getItem("conversation")) || [];
+    conversation.push({ user: userMessage, ai: aiMessage });
+    localStorage.setItem("conversation", JSON.stringify(conversation));
+  }
+
+  // Function to show memory (list of user and AI conversations)
+  function showMemory() {
+    const memoryBox = document.getElementById("memory-box");
+    memoryBox.style.display = 'block';
+
+    let memoryContent = '<strong>Stored Conversations:</strong><br>';
+    const conversation = JSON.parse(localStorage.getItem("conversation")) || [];
+
+    if (conversation.length === 0) {
+      memoryContent = 'No conversations stored yet.';
+    } else {
+      conversation.forEach((entry, index) => {
+        memoryContent += `<strong>User:</strong> ${entry.user}<br><strong>AI:</strong> ${entry.ai}<br><br>`;
+      });
+    }
+
+    memoryBox.innerHTML = memoryContent;
+  }
+
+  // Function to clear only the memory text (not the stored data)
+  function clearMemory() {
+    const memoryBox = document.getElementById("memory-box");
+    memoryBox.innerHTML = '<button onclick="clearMemory()">Clear Memory Text</button>';  // Reset memory box content
   }
 </script>
 
