@@ -231,6 +231,7 @@
 
     appendMessage(aiResponse, 'ai');
     saveConversation(userInput, aiResponse);  // Save conversation
+    showMemory(); // Update memory after every interaction
   }
 
   // Function to store knowledge in localStorage
