@@ -1,16 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Neutral AI Chatbox</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Micro AI</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"/>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Arial', sans-serif;
@@ -19,7 +15,6 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
-      margin: 0;
     }
 
     .chat-container {
@@ -27,7 +22,7 @@
       max-width: 90%;
       background: #fff;
       border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       padding: 20px;
       display: flex;
       flex-direction: column;
@@ -51,11 +46,9 @@
       margin-bottom: 15px;
       padding: 10px;
       border-radius: 8px;
-      background-color: #f1f1f1;
       max-width: 80%;
       word-wrap: break-word;
       line-height: 1.5;
-      position: relative;
     }
 
     .chat-box .user {
@@ -82,12 +75,6 @@
       border-radius: 25px;
       border: 1px solid #ddd;
       font-size: 16px;
-      transition: border-color 0.3s ease;
-    }
-
-    .input-container input:focus {
-      border-color: #007bff;
-      outline: none;
     }
 
     .input-container button {
@@ -97,15 +84,6 @@
       border: none;
       border-radius: 25px;
       cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-
-    .input-container button:hover {
-      background-color: #0056b3;
-    }
-
-    .input-container button:active {
-      background-color: #004085;
     }
 
     .memory-box {
@@ -120,23 +98,7 @@
       color: #333;
     }
 
-    .delete-btn {
-      background-color: #dc3545;
-      color: white;
-      padding: 5px 10px;
-      border: none;
-      border-radius: 25px;
-      cursor: pointer;
-      margin-left: 10px;
-      font-size: 12px;
-    }
-
-    .delete-btn:hover {
-      background-color: #c82333;
-    }
-
     .memory-item {
-      position: relative;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -146,7 +108,6 @@
       border-radius: 8px;
     }
 
-    /* Settings panel */
     .settings-panel {
       position: fixed;
       top: 0;
@@ -159,6 +120,7 @@
       display: none;
       flex-direction: column;
       gap: 20px;
+      z-index: 999;
     }
 
     .settings-panel.active {
@@ -176,10 +138,7 @@
       padding: 10px;
       font-size: 20px;
       cursor: pointer;
-    }
-
-    .settings-btn:hover {
-      background-color: #0056b3;
+      z-index: 1000;
     }
 
     .toggle-label {
@@ -187,26 +146,27 @@
       margin-right: 10px;
     }
 
-    .toggle-switch {
-      cursor: pointer;
-    }
-
-    /* Close Button for Settings */
-    .close-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background-color: transparent;
+    .clear-memory {
+      background-color: #dc3545;
+      color: white;
       border: none;
-      font-size: 20px;
+      border-radius: 25px;
+      padding: 8px 16px;
+      font-size: 14px;
       cursor: pointer;
-      color: #007bff;
+      transition: background-color 0.3s ease;
+      margin-bottom: 10px;
+      display: inline-block;
     }
 
-    .close-btn:hover {
-      color: #0056b3;
+    .clear-memory:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
     }
 
+    .clear-memory:hover:enabled {
+      background-color: #c82333;
+    }
   </style>
 </head>
 <body>
@@ -218,59 +178,68 @@
     <button onclick="getAnswer()">Ask</button>
   </div>
   <div class="memory-box" id="memory-box" style="display: none;">
-    <button onclick="clearMemory()">Clear Memory Text</button>
+    <button class="clear-memory" id="clear-memory-btn" onclick="clearMemory()">Clear Memory Text</button>
   </div>
 </div>
 
-<!-- Settings Button -->
 <button class="settings-btn" onclick="toggleSettings()">
   <i class="fas fa-cogs"></i>
 </button>
 
-<!-- Settings Panel -->
 <div class="settings-panel" id="settings-panel">
-  <button class="close-btn" onclick="toggleSettings()">X</button>
   <h3>Settings</h3>
   <div>
     <label class="toggle-label" for="light-dark-toggle">Light/Dark Mode:</label>
-    <input type="checkbox" id="light-dark-toggle" class="toggle-switch" onchange="toggleTheme()">
+    <input type="checkbox" id="light-dark-toggle" onchange="toggleTheme()">
   </div>
   <div>
     <label class="toggle-label" for="color-blind-toggle">Color Blind Mode:</label>
-    <input type="checkbox" id="color-blind-toggle" class="toggle-switch" onchange="toggleColorBlindMode()">
+    <input type="checkbox" id="color-blind-toggle" onchange="toggleColorBlind()">
+  </div>
+  <div>
+    <label class="toggle-label" for="personality-select">Personality:</label>
+    <select id="personality-select" onchange="setPersonality()">
+      <option value="neutral">Neutral</option>
+      <option value="friendly">Friendly</option>
+      <option value="funny">Funny</option>
+      <option value="serious">Serious</option>
+      <option value="smart">Smart</option>
+    </select>
   </div>
 </div>
 
 <script>
-  // Function to check if Enter key was pressed
+  let currentPersonality = localStorage.getItem("aiPersonality") || "neutral";
+
   function checkEnter(event) {
     if (event.key === "Enter") {
       getAnswer();
     }
   }
 
-  // Function to retrieve the knowledge from localStorage or set it
   function getAnswer() {
-    const userInput = document.getElementById("user-input").value;
+    const input = document.getElementById("user-input");
+    const userInput = input.value;
     if (!userInput) return;
 
     appendMessage('User: ' + userInput, 'user');
-    document.getElementById("user-input").value = '';
+    input.value = '';
 
     let aiResponse = '';
 
-    // If the input is asking about a subject
+    // Handle "What is" question format
     if (userInput.toLowerCase().startsWith("what is")) {
-      const subject = userInput.replace(/what is\s+/i, '').trim(); // Remove "What is" part
-      const subjectInfo = localStorage.getItem(subject.toLowerCase());
+      const subject = userInput.replace(/what is\s+/i, '').trim();
+      const info = localStorage.getItem(subject.toLowerCase());
 
-      if (subjectInfo) {
-        aiResponse = "AI: " + subject + " is " + subjectInfo + ".";
+      if (info) {
+        aiResponse = "AI: " + subject + " is " + info + ".";
       } else {
         aiResponse = "AI: I don't know about " + subject + " yet. You can teach me by saying '[subject] is [info]'.";
       }
-    } else {
-      // If the input is teaching the AI a subject
+    } 
+    // Handle teaching format "[subject] is [info]"
+    else {
       const subjectInfo = userInput.split(" is ");
       if (subjectInfo.length === 2) {
         const subject = subjectInfo[0].trim();
@@ -282,114 +251,99 @@
       }
     }
 
-    appendMessage(aiResponse, 'ai');
-    saveConversation(userInput, aiResponse);  // Save conversation
-    showMemory(); // Update memory after every interaction
+    appendMessage(getStyledResponse(aiResponse), 'ai');
+    saveConversation(userInput, aiResponse);
+    showMemory();
   }
 
-  // Function to store knowledge in localStorage
   function storeKnowledge(subject, info) {
     localStorage.setItem(subject.toLowerCase(), info);
   }
 
-  // Function to append a message to the chatbox
   function appendMessage(message, sender) {
     const chatBox = document.getElementById("chat-box");
     const newMessage = document.createElement("div");
     newMessage.className = sender;
     newMessage.textContent = message;
     chatBox.appendChild(newMessage);
-    chatBox.scrollTop = chatBox.scrollHeight; // Scroll to bottom
+    chatBox.scrollTop = chatBox.scrollHeight;
   }
 
-  // Function to save the conversation to localStorage
   function saveConversation(userMessage, aiMessage) {
     let conversation = JSON.parse(localStorage.getItem("conversation")) || [];
     conversation.push({ user: userMessage, ai: aiMessage });
     localStorage.setItem("conversation", JSON.stringify(conversation));
   }
 
-  // Function to show memory (list of user and AI conversations)
   function showMemory() {
     const memoryBox = document.getElementById("memory-box");
+    const clearBtn = document.getElementById("clear-memory-btn");
     memoryBox.style.display = 'block';
 
-    let memoryContent = '<strong>Stored Conversations:</strong><br>';
     const conversation = JSON.parse(localStorage.getItem("conversation")) || [];
+    clearBtn.disabled = conversation.length === 0;
+
+    let content = '<button class="clear-memory" id="clear-memory-btn" onclick="clearMemory()" ' + (conversation.length === 0 ? 'disabled' : '') + '>Clear Memory Text</button>';
 
     if (conversation.length === 0) {
-      memoryContent = 'No conversations stored yet.';
+      content += '<p>No conversations stored yet.</p>';
     } else {
-      conversation.forEach((entry, index) => {
-        memoryContent += `
-          <div class="memory-item">
-            <div><strong>User:</strong> ${entry.user} <br><strong>AI:</strong> ${entry.ai}</div>
-          </div>`;
+      conversation.forEach(entry => {
+        content += `<div class="memory-item"><div><strong>User:</strong> ${entry.user}<br><strong>AI:</strong> ${entry.ai}</div></div>`;
       });
     }
 
-    memoryBox.innerHTML = memoryContent;
+    memoryBox.innerHTML = content;
   }
 
-  // Function to clear only the memory text (not the stored data)
   function clearMemory() {
-    const memoryBox = document.getElementById("memory-box");
-    memoryBox.innerHTML = '<button onclick="clearMemory()">Clear Memory Text</button>';  // Reset memory box content
+    localStorage.removeItem("conversation");
+    showMemory();
   }
 
-  // Toggle Settings Panel visibility
   function toggleSettings() {
-    const settingsPanel = document.getElementById("settings-panel");
-    settingsPanel.classList.toggle("active");
+    document.getElementById("settings-panel").classList.toggle("active");
   }
 
-  // Toggle Light/Dark Mode
   function toggleTheme() {
-    const isChecked = document.getElementById("light-dark-toggle").checked;
-    const label = document.querySelector('.toggle-label');
-    if (isChecked) {
-      document.body.style.backgroundColor = "#333";
-      document.body.style.color = "#fff";
-      document.querySelector('.chat-container').style.backgroundColor = "#444";
-      document.querySelector('.chat-box').style.backgroundColor = "#555";
-    } else {
-      document.body.style.backgroundColor = "#e9ecef";
-      document.body.style.color = "#333";
-      document.querySelector('.chat-container').style.backgroundColor = "#fff";
-      document.querySelector('.chat-box').style.backgroundColor = "#f9f9f9";
-    }
-    label.style.color = "#333";  // Ensure label stays black in both modes
+    const darkMode = document.getElementById("light-dark-toggle").checked;
+    document.body.style.backgroundColor = darkMode ? "#000" : "#e9ecef";
+    document.body.style.color = darkMode ? "#fff" : "#333";
+    document.querySelector('.chat-container').style.backgroundColor = darkMode ? "#222" : "#fff";
+    document.querySelector('.chat-box').style.backgroundColor = darkMode ? "#333" : "#f9f9f9";
   }
 
-  // Toggle Color Blind Mode
-  function toggleColorBlindMode() {
-    const isChecked = document.getElementById("color-blind-toggle").checked;
-    if (isChecked) {
-      // Apply higher contrast colors for color blind users
-      document.body.style.backgroundColor = "#f0f0f0";
-      document.body.style.color = "#111";
-      document.querySelector('.chat-container').style.backgroundColor = "#f8f9fa";
-      document.querySelector('.chat-box').style.backgroundColor = "#fff";
-      document.querySelectorAll('.chat-box .user').forEach((element) => {
-        element.style.backgroundColor = "#FFD700"; // Bright yellow
-      });
-      document.querySelectorAll('.chat-box .ai').forEach((element) => {
-        element.style.backgroundColor = "#FF6347"; // Bright red
-      });
-    } else {
-      // Revert back to normal colors
-      document.body.style.backgroundColor = "#e9ecef";
-      document.body.style.color = "#333";
-      document.querySelector('.chat-container').style.backgroundColor = "#fff";
-      document.querySelector('.chat-box').style.backgroundColor = "#f9f9f9";
-      document.querySelectorAll('.chat-box .user').forEach((element) => {
-        element.style.backgroundColor = "#007bff";
-      });
-      document.querySelectorAll('.chat-box .ai').forEach((element) => {
-        element.style.backgroundColor = "#28a745";
-      });
+  function toggleColorBlind() {
+    const colorBlind = document.getElementById("color-blind-toggle").checked;
+    document.querySelectorAll('.user').forEach(el => el.style.backgroundColor = colorBlind ? "#ff9900" : "#007bff");
+    document.querySelectorAll('.ai').forEach(el => el.style.backgroundColor = colorBlind ? "#00ccff" : "#28a745");
+  }
+
+  function setPersonality() {
+    const select = document.getElementById("personality-select");
+    currentPersonality = select.value;
+    localStorage.setItem("aiPersonality", currentPersonality);
+  }
+
+  function getStyledResponse(base) {
+    switch (currentPersonality) {
+      case "friendly":
+        return "😊 " + base + " Let me know if you need more help!";
+      case "funny":
+        return base + " 😂 That’s what I call brain power!";
+      case "serious":
+        return "Here is your answer. " + base;
+      case "smart":
+        return "As an advanced AI, I can tell you: " + base;
+      default:
+        return base;
     }
   }
+
+  window.onload = function () {
+    document.getElementById("personality-select").value = currentPersonality;
+    showMemory();
+  };
 </script>
 
 </body>
