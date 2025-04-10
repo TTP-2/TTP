@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Micro AI</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neutral AI Chatbox</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       font-family: 'Arial', sans-serif;
@@ -15,12 +19,7 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }
-
-    body.dark-theme {
-      background-color: #121212;
-      color: white;
+      margin: 0;
     }
 
     .chat-container {
@@ -28,18 +27,12 @@
       max-width: 90%;
       background: #fff;
       border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       padding: 20px;
       display: flex;
       flex-direction: column;
       height: 500px;
       justify-content: space-between;
-      transition: background-color 0.3s ease, border-color 0.3s ease;
-    }
-
-    .chat-container.dark-theme {
-      background-color: #333;
-      border-color: #444;
     }
 
     .chat-box {
@@ -52,12 +45,29 @@
       margin-bottom: 20px;
       font-size: 16px;
       color: #333;
-      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
-    .chat-box.dark-theme {
-      background-color: #222;
+    .chat-box div {
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 8px;
+      background-color: #f1f1f1;
+      max-width: 80%;
+      word-wrap: break-word;
+      line-height: 1.5;
+      position: relative;
+    }
+
+    .chat-box .user {
+      background-color: #007bff;
       color: white;
+      align-self: flex-start;
+    }
+
+    .chat-box .ai {
+      background-color: #28a745;
+      color: white;
+      align-self: flex-end;
     }
 
     .input-container {
@@ -72,6 +82,12 @@
       border-radius: 25px;
       border: 1px solid #ddd;
       font-size: 16px;
+      transition: border-color 0.3s ease;
+    }
+
+    .input-container input:focus {
+      border-color: #007bff;
+      outline: none;
     }
 
     .input-container button {
@@ -81,6 +97,15 @@
       border: none;
       border-radius: 25px;
       cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .input-container button:hover {
+      background-color: #0056b3;
+    }
+
+    .input-container button:active {
+      background-color: #004085;
     }
 
     .memory-box {
@@ -95,7 +120,23 @@
       color: #333;
     }
 
+    .delete-btn {
+      background-color: #dc3545;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      margin-left: 10px;
+      font-size: 12px;
+    }
+
+    .delete-btn:hover {
+      background-color: #c82333;
+    }
+
     .memory-item {
+      position: relative;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -105,76 +146,6 @@
       border-radius: 8px;
     }
 
-    .settings-panel {
-      position: fixed;
-      top: 0;
-      right: 0;
-      width: 300px;
-      height: 100vh;
-      background-color: #fff;
-      box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
-      padding: 20px;
-      display: none;
-      flex-direction: column;
-      gap: 20px;
-      z-index: 999;
-    }
-
-    .settings-panel.active {
-      display: flex;
-    }
-
-    .settings-btn {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      padding: 10px;
-      font-size: 20px;
-      cursor: pointer;
-      z-index: 1000;
-    }
-
-    .toggle-label {
-      font-size: 16px;
-      margin-right: 10px;
-      color: #333;
-      transition: color 0.3s ease;
-    }
-
-    .toggle-label.dark-theme {
-      color: white;
-    }
-
-    h3 {
-      font-size: 24px;
-      margin-bottom: 20px;
-      color: #333;
-      transition: color 0.3s ease;
-    }
-
-    h3.dark-theme {
-      color: white;
-    }
-
-    #reset-settings {
-      background-color: #f8d7da;
-      color: #721c24;
-      padding: 10px 20px;
-      border-radius: 5px;
-      border: none;
-    }
-
-    #reset-settings:hover {
-      background-color: #f5c6cb;
-    }
-    
-    #user-input {
-      border: none;
-    }
   </style>
 </head>
 <body>
@@ -186,56 +157,40 @@
     <button onclick="getAnswer()">Ask</button>
   </div>
   <div class="memory-box" id="memory-box" style="display: none;">
-    <button class="clear-memory" id="clear-memory-btn" onclick="clearMemory()">Clear Memory Text</button>
-  </div>
-</div>
-
-<button class="settings-btn" onclick="toggleSettings()">
-  <i class="fas fa-cogs"></i>
-</button>
-
-<div class="settings-panel" id="settings-panel">
-  <h3>Settings</h3>
-  <div>
-    <label class="toggle-label" for="username-input">Set Username:</label>
-    <input type="text" id="username-input" placeholder="Enter your name" oninput="saveUsername()">
-  </div>
-  <div>
-    <button id="reset-settings" onclick="resetSettings()">Reset to Default</button>
+    <button onclick="clearMemory()">Clear Memory Text</button>
   </div>
 </div>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function() {
-    loadSettings();
-  });
-
+  // Function to check if Enter key was pressed
   function checkEnter(event) {
     if (event.key === "Enter") {
       getAnswer();
     }
   }
 
+  // Function to retrieve the knowledge from localStorage or set it
   function getAnswer() {
-    const input = document.getElementById("user-input");
-    const userInput = input.value;
+    const userInput = document.getElementById("user-input").value;
     if (!userInput) return;
 
     appendMessage('User: ' + userInput, 'user');
-    input.value = '';
+    document.getElementById("user-input").value = '';
 
     let aiResponse = '';
 
+    // If the input is asking about a subject
     if (userInput.toLowerCase().startsWith("what is")) {
-      const subject = userInput.replace(/what is\s+/i, '').trim();
-      const info = localStorage.getItem(subject.toLowerCase());
+      const subject = userInput.replace(/what is\s+/i, '').trim(); // Remove "What is" part
+      const subjectInfo = localStorage.getItem(subject.toLowerCase());
 
-      if (info) {
-        aiResponse = "AI: " + subject + " is " + info + ".";
+      if (subjectInfo) {
+        aiResponse = "AI: " + subjectInfo; // Return only the info
       } else {
         aiResponse = "AI: I don't know about " + subject + " yet. You can teach me by saying '[subject] is [info]'.";
       }
     } else {
+      // If the input is teaching the AI a subject
       const subjectInfo = userInput.split(" is ");
       if (subjectInfo.length === 2) {
         const subject = subjectInfo[0].trim();
@@ -248,88 +203,58 @@
     }
 
     appendMessage(aiResponse, 'ai');
-    saveConversation(userInput, aiResponse);
-    showMemory();
+    saveConversation(userInput, aiResponse);  // Save conversation
+    showMemory(); // Update memory after every interaction
   }
 
+  // Function to store knowledge in localStorage
   function storeKnowledge(subject, info) {
     localStorage.setItem(subject.toLowerCase(), info);
   }
 
+  // Function to append a message to the chatbox
   function appendMessage(message, sender) {
     const chatBox = document.getElementById("chat-box");
     const newMessage = document.createElement("div");
     newMessage.className = sender;
     newMessage.textContent = message;
     chatBox.appendChild(newMessage);
-    chatBox.scrollTop = chatBox.scrollHeight;
+    chatBox.scrollTop = chatBox.scrollHeight; // Scroll to bottom
   }
 
+  // Function to save the conversation to localStorage
   function saveConversation(userMessage, aiMessage) {
     let conversation = JSON.parse(localStorage.getItem("conversation")) || [];
     conversation.push({ user: userMessage, ai: aiMessage });
     localStorage.setItem("conversation", JSON.stringify(conversation));
   }
 
+  // Function to show memory (list of user and AI conversations)
   function showMemory() {
     const memoryBox = document.getElementById("memory-box");
+    memoryBox.style.display = 'block';
+
+    let memoryContent = '<strong>Stored Conversations:</strong><br>';
     const conversation = JSON.parse(localStorage.getItem("conversation")) || [];
-    memoryBox.innerHTML = '';
-    conversation.forEach((msg, index) => {
-      const memoryItem = document.createElement("div");
-      memoryItem.className = "memory-item";
-      memoryItem.innerHTML = `<span>User: ${msg.user}</span><span>AI: ${msg.ai}</span>`;
-      memoryBox.appendChild(memoryItem);
-    });
-    memoryBox.style.display = conversation.length > 0 ? 'block' : 'none';
-  }
 
-  function clearMemory() {
-    localStorage.removeItem("conversation");
-    showMemory();
-  }
-
-  function toggleSettings() {
-    const settingsPanel = document.getElementById("settings-panel");
-    settingsPanel.classList.toggle("active");
-  }
-
-  function saveUsername() {
-    const usernameInput = document.getElementById("username-input");
-    const username = usernameInput.value;
-    localStorage.setItem("username", username);
-  }
-
-  function resetSettings() {
-    localStorage.removeItem("darkMode");
-    localStorage.removeItem("conversation");
-    localStorage.removeItem("username");
-
-    document.getElementById("light-dark-toggle").checked = false;
-    document.getElementById("username-input").value = '';
-
-    loadSettings();
-  }
-
-  function loadSettings() {
-    const darkMode = localStorage.getItem("darkMode") === "true";
-    document.getElementById("light-dark-toggle").checked = darkMode;
-
-    if (darkMode) {
-      document.body.classList.add("dark-theme");
-      const chatBoxes = document.querySelectorAll(".chat-box, .memory-box");
-      chatBoxes.forEach(box => {
-        box.style.color = "white";
+    if (conversation.length === 0) {
+      memoryContent = 'No conversations stored yet.';
+    } else {
+      conversation.forEach((entry, index) => {
+        memoryContent += `
+          <div class="memory-item">
+            <div><strong>User:</strong> ${entry.user} <br><strong>AI:</strong> ${entry.ai}</div>
+          </div>`;
       });
     }
 
-    const labels = document.querySelectorAll(".toggle-label");
-    const headings = document.querySelectorAll("h3");
-    labels.forEach(label => label.classList.toggle("dark-theme", darkMode));
-    headings.forEach(heading => heading.classList.toggle("dark-theme", darkMode));
+    memoryBox.innerHTML = memoryContent;
+  }
 
-    const savedUsername = localStorage.getItem("username");
-    document.getElementById("username-input").value = savedUsername || '';
+  // Function to clear only the memory text (not the stored data)
+  function clearMemory() {
+    const memoryBox = document.getElementById("memory-box");
+    memoryBox.innerHTML = '<button onclick="clearMemory()">Clear Memory Text</button>';  // Reset memory box content
   }
 </script>
 
