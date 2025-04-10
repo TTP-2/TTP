@@ -145,7 +145,10 @@
       margin-bottom: 5px;
       border-radius: 8px;
     }
-
+    
+    p {
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -155,6 +158,7 @@
   <div class="input-container">
     <input type="text" id="user-input" placeholder="Ask something..." onkeydown="checkEnter(event)">
     <button onclick="getAnswer()">Ask</button>
+    <br>
     <p>Don't risk puting any valuable information in</p>
   </div>
   <div class="memory-box" id="memory-box" style="display: none;">
