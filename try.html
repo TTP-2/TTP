@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Micro AI</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #e9ecef;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    body.dark-theme {
+      background-color: #121212;
+      color: white;
+    }
+
+    .chat-container {
+      width: 400px;
+      max-width: 90%;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: 500px;
+      justify-content: space-between;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .chat-container.dark-theme {
+      background-color: #333;
+      border-color: #444;
+    }
+
+    .chat-box {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+      margin-bottom: 20px;
+      font-size: 16px;
+      color: #333;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .chat-box.dark-theme {
+      background-color: #222;
+      color: white;
+    }
+
+    .input-container {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .input-container input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 25px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+    }
+
+    .input-container button {
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+    }
+
+    .memory-box {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f1f1f1;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      max-height: 150px;
+      overflow-y: auto;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .memory-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px;
+      background-color: #f1f1f1;
+      margin-bottom: 5px;
+      border-radius: 8px;
+    }
+
+    .light-green-box {
+      background-color: #d4edda;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #c3e6cb;
+    }
+
+  </style>
+</head>
+<body>
+
+<div class="chat-container">
+  <div class="chat-box" id="chat-box"></div>
+  <div class="input-container">
+    <input type="text" id="user-input" placeholder="Ask something..." onkeydown="checkEnter(event)">
+    <button onclick="getAnswer()">Ask</button>
+  </div>
+  <div class="memory-box" id="memory-box" style="display: none;">
+    <button class="clear-memory" id="clear-memory-btn" onclick="clearMemory()">Clear Memory Text</button>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    loadSettings();
+  });
+
+  function checkEnter(event) {
+    if (event.key === "Enter") {
+      getAnswer();
+    }
+  }
+
+  function getAnswer() {
+    const input = document.getElementById("user-input");
+    const userInput = input.value;
+    if (!userInput) return;
+
+    appendMessage(userInput); // Appends the user input as a new div
+    input.value = ''; // Clears the input field
+  }
+
+  function appendMessage(message) {
+    const chatBox = document.getElementById("chat-box");
+
+    const newMessage = document.createElement("div");
+    newMessage.classList.add("light-green-box");
+    newMessage.textContent = message;
+
+    chatBox.appendChild(newMessage); // Adds the new message to the chat box
+    chatBox.scrollTop = chatBox.scrollHeight; // Scrolls the chat box to the bottom
+  }
+
+  function saveConversation(userMessage) {
+    let conversation = JSON.parse(localStorage.getItem("conversation")) || [];
+    conversation.push({ user: userMessage });
+    localStorage.setItem("conversation", JSON.stringify(conversation));
+  }
+
+  function showMemory() {
+    const memoryBox = document.getElementById("memory-box");
+    const conversation = JSON.parse(localStorage.getItem("conversation")) || [];
+    memoryBox.innerHTML = '';
+    conversation.forEach((msg, index) => {
+      const memoryItem = document.createElement("div");
+      memoryItem.className = "memory-item";
+      memoryItem.innerHTML = `<span>User: ${msg.user}</span>`;
+      memoryBox.appendChild(memoryItem);
+    });
+    memoryBox.style.display = conversation.length > 0 ? 'block' : 'none';
+  }
+
+  function clearMemory() {
+    localStorage.removeItem("conversation");
+    showMemory();
+  }
+
+  function loadSettings() {
+    const savedUsername = localStorage.getItem("username");
+  }
+</script>
+
+</body>
+</html>
