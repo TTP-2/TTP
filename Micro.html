@@ -15,6 +15,12 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    body.dark-theme {
+      background-color: #121212;
+      color: white;
     }
 
     .chat-container {
@@ -28,6 +34,12 @@
       flex-direction: column;
       height: 500px;
       justify-content: space-between;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .chat-container.dark-theme {
+      background-color: #333;
+      border-color: #444;
     }
 
     .chat-box {
@@ -40,27 +52,12 @@
       margin-bottom: 20px;
       font-size: 16px;
       color: #333;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
-    .chat-box div {
-      margin-bottom: 15px;
-      padding: 10px;
-      border-radius: 8px;
-      max-width: 80%;
-      word-wrap: break-word;
-      line-height: 1.5;
-    }
-
-    .chat-box .user {
-      background-color: #007bff;
+    .chat-box.dark-theme {
+      background-color: #222;
       color: white;
-      align-self: flex-start;
-    }
-
-    .chat-box .ai {
-      background-color: #28a745;
-      color: white;
-      align-self: flex-end;
     }
 
     .input-container {
@@ -144,28 +141,39 @@
     .toggle-label {
       font-size: 16px;
       margin-right: 10px;
+      color: #333;
+      transition: color 0.3s ease;
     }
 
-    .clear-memory {
-      background-color: #dc3545;
+    .toggle-label.dark-theme {
       color: white;
+    }
+
+    h3 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #333;
+      transition: color 0.3s ease;
+    }
+
+    h3.dark-theme {
+      color: white;
+    }
+
+    #reset-settings {
+      background-color: #f8d7da;
+      color: #721c24;
+      padding: 10px 20px;
+      border-radius: 5px;
       border: none;
-      border-radius: 25px;
-      padding: 8px 16px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      margin-bottom: 10px;
-      display: inline-block;
     }
 
-    .clear-memory:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
+    #reset-settings:hover {
+      background-color: #f5c6cb;
     }
-
-    .clear-memory:hover:enabled {
-      background-color: #c82333;
+    
+    #user-input {
+      border: none;
     }
   </style>
 </head>
@@ -189,27 +197,18 @@
 <div class="settings-panel" id="settings-panel">
   <h3>Settings</h3>
   <div>
-    <label class="toggle-label" for="light-dark-toggle">Light/Dark Mode:</label>
-    <input type="checkbox" id="light-dark-toggle" onchange="toggleTheme()">
+    <label class="toggle-label" for="username-input">Set Username:</label>
+    <input type="text" id="username-input" placeholder="Enter your name" oninput="saveUsername()">
   </div>
   <div>
-    <label class="toggle-label" for="color-blind-toggle">Color Blind Mode:</label>
-    <input type="checkbox" id="color-blind-toggle" onchange="toggleColorBlind()">
-  </div>
-  <div>
-    <label class="toggle-label" for="personality-select">Personality:</label>
-    <select id="personality-select" onchange="setPersonality()">
-      <option value="neutral">Neutral</option>
-      <option value="friendly">Friendly</option>
-      <option value="funny">Funny</option>
-      <option value="serious">Serious</option>
-      <option value="smart">Smart</option>
-    </select>
+    <button id="reset-settings" onclick="resetSettings()">Reset to Default</button>
   </div>
 </div>
 
 <script>
-  let currentPersonality = localStorage.getItem("aiPersonality") || "neutral";
+  document.addEventListener("DOMContentLoaded", function() {
+    loadSettings();
+  });
 
   function checkEnter(event) {
     if (event.key === "Enter") {
@@ -227,7 +226,6 @@
 
     let aiResponse = '';
 
-    // Handle "What is" question format
     if (userInput.toLowerCase().startsWith("what is")) {
       const subject = userInput.replace(/what is\s+/i, '').trim();
       const info = localStorage.getItem(subject.toLowerCase());
@@ -237,9 +235,7 @@
       } else {
         aiResponse = "AI: I don't know about " + subject + " yet. You can teach me by saying '[subject] is [info]'.";
       }
-    } 
-    // Handle teaching format "[subject] is [info]"
-    else {
+    } else {
       const subjectInfo = userInput.split(" is ");
       if (subjectInfo.length === 2) {
         const subject = subjectInfo[0].trim();
@@ -251,7 +247,7 @@
       }
     }
 
-    appendMessage(getStyledResponse(aiResponse), 'ai');
+    appendMessage(aiResponse, 'ai');
     saveConversation(userInput, aiResponse);
     showMemory();
   }
@@ -277,23 +273,15 @@
 
   function showMemory() {
     const memoryBox = document.getElementById("memory-box");
-    const clearBtn = document.getElementById("clear-memory-btn");
-    memoryBox.style.display = 'block';
-
     const conversation = JSON.parse(localStorage.getItem("conversation")) || [];
-    clearBtn.disabled = conversation.length === 0;
-
-    let content = '<button class="clear-memory" id="clear-memory-btn" onclick="clearMemory()" ' + (conversation.length === 0 ? 'disabled' : '') + '>Clear Memory Text</button>';
-
-    if (conversation.length === 0) {
-      content += '<p>No conversations stored yet.</p>';
-    } else {
-      conversation.forEach(entry => {
-        content += `<div class="memory-item"><div><strong>User:</strong> ${entry.user}<br><strong>AI:</strong> ${entry.ai}</div></div>`;
-      });
-    }
-
-    memoryBox.innerHTML = content;
+    memoryBox.innerHTML = '';
+    conversation.forEach((msg, index) => {
+      const memoryItem = document.createElement("div");
+      memoryItem.className = "memory-item";
+      memoryItem.innerHTML = `<span>User: ${msg.user}</span><span>AI: ${msg.ai}</span>`;
+      memoryBox.appendChild(memoryItem);
+    });
+    memoryBox.style.display = conversation.length > 0 ? 'block' : 'none';
   }
 
   function clearMemory() {
@@ -302,48 +290,47 @@
   }
 
   function toggleSettings() {
-    document.getElementById("settings-panel").classList.toggle("active");
+    const settingsPanel = document.getElementById("settings-panel");
+    settingsPanel.classList.toggle("active");
   }
 
-  function toggleTheme() {
-    const darkMode = document.getElementById("light-dark-toggle").checked;
-    document.body.style.backgroundColor = darkMode ? "#000" : "#e9ecef";
-    document.body.style.color = darkMode ? "#fff" : "#333";
-    document.querySelector('.chat-container').style.backgroundColor = darkMode ? "#222" : "#fff";
-    document.querySelector('.chat-box').style.backgroundColor = darkMode ? "#333" : "#f9f9f9";
+  function saveUsername() {
+    const usernameInput = document.getElementById("username-input");
+    const username = usernameInput.value;
+    localStorage.setItem("username", username);
   }
 
-  function toggleColorBlind() {
-    const colorBlind = document.getElementById("color-blind-toggle").checked;
-    document.querySelectorAll('.user').forEach(el => el.style.backgroundColor = colorBlind ? "#ff9900" : "#007bff");
-    document.querySelectorAll('.ai').forEach(el => el.style.backgroundColor = colorBlind ? "#00ccff" : "#28a745");
+  function resetSettings() {
+    localStorage.removeItem("darkMode");
+    localStorage.removeItem("conversation");
+    localStorage.removeItem("username");
+
+    document.getElementById("light-dark-toggle").checked = false;
+    document.getElementById("username-input").value = '';
+
+    loadSettings();
   }
 
-  function setPersonality() {
-    const select = document.getElementById("personality-select");
-    currentPersonality = select.value;
-    localStorage.setItem("aiPersonality", currentPersonality);
-  }
+  function loadSettings() {
+    const darkMode = localStorage.getItem("darkMode") === "true";
+    document.getElementById("light-dark-toggle").checked = darkMode;
 
-  function getStyledResponse(base) {
-    switch (currentPersonality) {
-      case "friendly":
-        return "😊 " + base + " Let me know if you need more help!";
-      case "funny":
-        return base + " 😂 That’s what I call brain power!";
-      case "serious":
-        return "Here is your answer. " + base;
-      case "smart":
-        return "As an advanced AI, I can tell you: " + base;
-      default:
-        return base;
+    if (darkMode) {
+      document.body.classList.add("dark-theme");
+      const chatBoxes = document.querySelectorAll(".chat-box, .memory-box");
+      chatBoxes.forEach(box => {
+        box.style.color = "white";
+      });
     }
-  }
 
-  window.onload = function () {
-    document.getElementById("personality-select").value = currentPersonality;
-    showMemory();
-  };
+    const labels = document.querySelectorAll(".toggle-label");
+    const headings = document.querySelectorAll("h3");
+    labels.forEach(label => label.classList.toggle("dark-theme", darkMode));
+    headings.forEach(heading => heading.classList.toggle("dark-theme", darkMode));
+
+    const savedUsername = localStorage.getItem("username");
+    document.getElementById("username-input").value = savedUsername || '';
+  }
 </script>
 
 </body>
