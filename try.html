@@ -4,13 +4,11 @@
   <title>Online HTML Editor</title>
 </head>
 <body>
-  <button id="button">Background color</button>
-
+  <h1>Keydown</h1>
   <script>
-    const button = document.getElementById('button');
-    button.onclick = () => {
-      document.body.style.backgroundColor = "lightblue";
-    };
+    document.addEventlistener('keydown', () => {
+      document.body.style.backgroundColor = 'blue';
+    });
   </script>
 </body>
 </html>
