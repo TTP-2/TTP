@@ -75,10 +75,12 @@
 <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 <script>
-  const map = L.map('map').setView([20, 0], 2);
+  const map = L.map('map', {
+    maxZoom: 25 // Allow zooming in very far
+  }).setView([20, 0], 2);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18,
+    maxZoom: 25,
     attribution: ''
   }).addTo(map);
 
