@@ -125,7 +125,7 @@
     const planesData = {}; // To store plane data and their previous positions
 
     // Departure and Destination mappings for some airports
-    const airportDestinations = {
+    const airportLocations = {
       "JFK": "New York, USA",
       "LHR": "London, UK",
       "CDG": "Paris, France",
@@ -200,12 +200,12 @@
               const lat = state[6];
               const lon = state[5];
               const altitude = state[7] || "N/A"; // Altitude is at index 7
-              const origin = state[2]; // Departure airport
-              const destination = state[3]; // Destination airport
+              const origin = state[2]; // Departure airport code
+              const destination = state[3]; // Destination airport code
 
-              // Use airport destination map for user-friendly location display
-              const departureName = airportDestinations[origin] || "Unknown Location";
-              const destinationName = airportDestinations[destination] || "Unknown Location";
+              // Use airport location map for user-friendly departure and destination display
+              const departureLocation = airportLocations[origin] || "Unknown Location";
+              const destinationLocation = airportLocations[destination] || "Unknown Location";
 
               if (lat && lon) {
                 const x = ((lon - radarCenter.lon) / radarRange) * radarRadius * 2 + radarRadius;
@@ -223,8 +223,8 @@
                     planeInfo.className = 'plane-info';
                     planeInfo.innerHTML = `
                       <strong>Altitude:</strong> ${altitude} meters <br>
-                      <strong>Departure:</strong> ${departureName} <br>
-                      <strong>Destination:</strong> ${destinationName}
+                      <strong>Departure:</strong> ${departureLocation} <br>
+                      <strong>Destination:</strong> ${destinationLocation}
                     `;
                     planeInfo.style.left = `${x - 40}px`;
                     planeInfo.style.top = `${y - 30}px`; // Position the label above the plane
