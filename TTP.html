@@ -53,28 +53,6 @@
       color: #999;
     }
 
-    /* Improved styling for instructions */
-    #instructions {
-      position: fixed;
-      top: 100px;
-      right: 20px;
-      z-index: 1000;
-      background-color: rgba(0, 0, 0, 0.8);
-      color: white;
-      padding: 12px;
-      font-size: 14px;
-      font-family: Arial, sans-serif;
-      border-radius: 8px;
-      width: auto;
-      max-width: 300px;
-      line-height: 1.4;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-      display: none;
-      text-align: center;
-      opacity: 0;
-      animation: fadeIn 0.5s forwards;
-    }
-
     /* Fade-in animation for instructions */
     @keyframes fadeIn {
       from {
@@ -205,15 +183,15 @@
       const distanceKm = (step.distance / 1000).toFixed(1);
       const spokenText = `${step.text.replace(/continue onto/i, 'Continue on')} for ${distanceKm} kilometers.`;
       speak(spokenText);
-      
-      // Show instruction text briefly in the tiny div
-      document.getElementById('instructions').style.display = 'block';
-      document.getElementById('instructions').innerHTML = spokenText;
 
-      // Hide the instruction after a delay
+      const instructionsBox = document.getElementById('instructions');
+      instructionsBox.innerHTML = spokenText;
+      instructionsBox.style.display = 'block';
+      instructionsBox.style.opacity = '1';
+
       setTimeout(() => {
-        document.getElementById('instructions').style.display = 'none';
-      }, 5000); // Hide after 5 seconds
+        instructionsBox.style.display = 'none';
+      }, 5000);
     }
   }
 
