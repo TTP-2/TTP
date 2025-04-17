@@ -1,12 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Distance & Time Calculator</title>
+  <title>TTP maps</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
-    #map { height: 100vh; }
+    body, html { 
+      margin: 0; 
+      padding: 0; 
+      height: 100%; 
+    }
+    #map { 
+      height: 100%; /* Takes full height of the page */
+      width: 100%; /* Takes full width of the page */
+    }
     .leaflet-control-attribution { display: none !important; }
     .red-dot {
       width: 10px;
