@@ -51,8 +51,10 @@
 
         if (lat && lon) {
           const redIcon = L.divIcon({
-            className: 'red-dot',
-            iconSize: [10, 10]
+            html: '<div class="red-dot"></div>',
+            className: '',
+            iconSize: [10, 10],
+            iconAnchor: [5, 5]
           });
 
           const marker = L.marker([lat, lon], { icon: redIcon })
