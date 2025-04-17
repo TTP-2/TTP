@@ -13,8 +13,8 @@
       height: 100%;
     }
     #map {
-      height: 100%;
-      width: 100%;
+      height: 2000px;
+      width: 1187px;
     }
     .leaflet-control-attribution { display: none !important; }
     .red-dot {
@@ -52,18 +52,10 @@
       content: "Search country, city, road, street";
       color: #999;
     }
-
-    /* Fade-in animation for instructions */
     @keyframes fadeIn {
-      from {
-        opacity: 0;
-      }
-      to {
-        opacity: 1;
-      }
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
-
-    /* Optional: Add a slight hover effect to the button */
     #set-location-btn:hover {
       background-color: #0056b3;
     }
@@ -104,9 +96,8 @@
   let startMarker, endMarker;
   let isSettingLocation = false;
   let control = null;
-  let currentStepIndex = 0;
-  let routeSteps = [];
-  let previousPosition = null;
+  let routeInstructions = [];
+  let currentStep = 0;
 
   function speak(text) {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -133,7 +124,6 @@
       });
 
       L.marker([lat, lon], { icon: redIcon }).addTo(map).bindPopup("Your Location");
-      previousPosition = L.latLng(lat, lon);
     }, function(error) {
       console.error('Error getting location:', error);
       alert('Could not get your location');
@@ -150,50 +140,6 @@
       speak("Click the button to set your start and end locations.");
     }
   };
-
-  function monitorProgress(route) {
-    routeSteps = route.instructions;
-    currentStepIndex = 0;
-    speakCurrentStep();
-
-    map.on('moveend', () => {
-      if (currentStepIndex >= routeSteps.length) return;
-      if (!navigator.geolocation) return;
-
-      navigator.geolocation.getCurrentPosition(position => {
-        const currentLatLng = L.latLng(position.coords.latitude, position.coords.longitude);
-        const currentStep = routeSteps[currentStepIndex];
-
-        const stepEndLatLng = currentStep.latLng || L.latLng(route.coordinates[currentStepIndex + 1]);
-
-        const distance = currentLatLng.distanceTo(stepEndLatLng);
-        if (distance < 50) {
-          currentStepIndex++;
-          if (currentStepIndex < routeSteps.length) {
-            speakCurrentStep();
-          }
-        }
-      });
-    });
-  }
-
-  function speakCurrentStep() {
-    const step = routeSteps[currentStepIndex];
-    if (step) {
-      const distanceKm = (step.distance / 1000).toFixed(1);
-      const spokenText = `${step.text.replace(/continue onto/i, 'Continue on')} for ${distanceKm} kilometers.`;
-      speak(spokenText);
-
-      const instructionsBox = document.getElementById('instructions');
-      instructionsBox.innerHTML = spokenText;
-      instructionsBox.style.display = 'block';
-      instructionsBox.style.opacity = '1';
-
-      setTimeout(() => {
-        instructionsBox.style.display = 'none';
-      }, 5000);
-    }
-  }
 
   map.on('click', function(e) {
     if (!isSettingLocation) return;
@@ -215,7 +161,7 @@
           endMarker.getLatLng()
         ],
         routeWhileDragging: false,
-        show: true,
+        show: false,
         lineOptions: {
           styles: [{ color: 'blue', weight: 5 }]
         },
@@ -226,11 +172,50 @@
         const routes = e.routes;
         if (routes.length > 0) {
           const route = routes[0];
-          monitorProgress(route);
+          const totalDistanceKm = (route.summary.totalDistance / 1000).toFixed(1);
+          const totalTimeMin = Math.round(route.summary.totalTime / 60);
+          speak(`The total distance is ${totalDistanceKm} kilometers. Estimated time is ${totalTimeMin} minutes.`);
+
+          routeInstructions = route.instructions;
+          currentStep = 0;
+          readNextStep();
+
+          map.on('moveend', () => {
+            if (currentStep >= routeInstructions.length) return;
+            if (!navigator.geolocation) return;
+
+            navigator.geolocation.getCurrentPosition(pos => {
+              const currentLatLng = L.latLng(pos.coords.latitude, pos.coords.longitude);
+              const stepLatLng = routeInstructions[currentStep].latLng || route.coordinates[currentStep + 1];
+              const distance = currentLatLng.distanceTo(stepLatLng);
+              if (distance < 50) {
+                currentStep++;
+                readNextStep();
+              }
+            });
+          });
         }
       });
     }
   });
+
+  function readNextStep() {
+    if (currentStep >= routeInstructions.length) return;
+    const step = routeInstructions[currentStep];
+    let text = step.text;
+    const distance = (step.distance / 1000).toFixed(2);
+
+    // Format instruction text
+    if (/turn/i.test(text)) {
+      text = text.replace(/Turn (left|right)/i, match => match.charAt(0).toUpperCase() + match.slice(1)) + ` in ${distance} kilometers`;
+    } else if (/continue/i.test(text)) {
+      text = `Continue for ${distance} kilometers`;
+    } else {
+      text = text + ` for ${distance} kilometers`;
+    }
+
+    speak(text);
+  }
 </script>
 
 </body>
