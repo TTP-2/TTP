@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Location Marker</title>
+  <title>Distance & Time Calculator</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
@@ -15,11 +15,20 @@
       border-radius: 50%;
       display: block;
     }
+    .info {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background-color: rgba(255, 255, 255, 0.7);
+      padding: 10px;
+      font-family: Arial, sans-serif;
+    }
   </style>
 </head>
 <body>
 
 <div id="map"></div>
+<div class="info" id="info"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script>
@@ -30,31 +39,58 @@
     attribution: ''
   }).addTo(map);
 
-  // Request location from the user
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(function(position) {
-      const lat = position.coords.latitude;
-      const lon = position.coords.longitude;
+  // Start and end coordinates
+  let startLat = 40.748817; // New York (example start)
+  let startLon = -73.985428;
+  let endLat = 34.052235;   // Los Angeles (example destination)
+  let endLon = -118.243683;
 
-      // Center map on the user's location
-      map.setView([lat, lon], 13);
+  // Add markers for start and end
+  const redIcon = L.divIcon({
+    html: '<div class="red-dot"></div>',
+    className: '',
+    iconSize: [10, 10],
+    iconAnchor: [5, 5]
+  });
 
-      // Create a red dot marker for the user's location
-      const redIcon = L.divIcon({
-        html: '<div class="red-dot"></div>',
-        className: '',
-        iconSize: [10, 10],
-        iconAnchor: [5, 5]
-      });
+  L.marker([startLat, startLon], { icon: redIcon }).addTo(map).bindPopup("Start Location");
+  L.marker([endLat, endLon], { icon: redIcon }).addTo(map).bindPopup("End Location");
 
-      L.marker([lat, lon], { icon: redIcon }).addTo(map);
-    }, function(error) {
-      console.error('Error getting location:', error);
-      alert('Could not get your location');
-    });
-  } else {
-    alert('Geolocation is not supported by this browser.');
+  // Calculate distance between two points using Haversine formula
+  function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Earth's radius in km
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c; // Distance in km
+    return distance;
   }
+
+  // Convert degrees to radians
+  function toRad(deg) {
+    return deg * (Math.PI / 180);
+  }
+
+  // Calculate time (assuming 50 km/h speed)
+  function calculateTime(distance, speed = 50) {
+    const time = distance / speed; // time = distance / speed (in hours)
+    return time;
+  }
+
+  // Calculate distance and time
+  const distance = calculateDistance(startLat, startLon, endLat, endLon);
+  const time = calculateTime(distance);
+
+  // Display the result
+  document.getElementById('info').innerHTML = `
+    <strong>Start Location:</strong> (${startLat}, ${startLon})<br>
+    <strong>End Location:</strong> (${endLat}, ${endLon})<br>
+    <strong>Distance:</strong> ${distance.toFixed(2)} km<br>
+    <strong>Estimated Time:</strong> ${time.toFixed(2)} hours at 50 km/h
+  `;
 </script>
 
 </body>
