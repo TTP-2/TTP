@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>TTP maps</title>
+  <title>TTP Maps with Routing</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
   <style>
     body, html {
@@ -17,7 +18,6 @@
       height: 100%;
       width: 100%;
     }
-    .leaflet-control-attribution { display: none !important; }
     .red-dot {
       width: 10px;
       height: 10px;
@@ -25,53 +25,53 @@
       border-radius: 50%;
       display: block;
     }
+    .leaflet-control-attribution {
+      display: none !important;
+    }
     #set-location-btn {
       position: fixed;
       top: 20px;
       right: 20px;
-      padding: 10px;
+      padding: 12px 20px;
       background-color: #007bff;
       color: white;
       border: none;
+      border-radius: 5px;
       cursor: pointer;
       z-index: 1000;
-      border-radius: 5px;
-      font-weight: bold;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    }
-    #search-input {
-      position: fixed;
-      top: 100px;
-      left: 10px;
-      z-index: 1000;
-      width: 250px;
-    }
-    #transport-mode {
-      position: fixed;
-      top: 80px;
-      left: 10px;
-      z-index: 1000;
-      padding: 5px;
-      background-color: white;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    .leaflet-control-geocoder {
-      margin-top: 70px !important;
-    }
-    .leaflet-control-geocoder-form input {
-      width: 100% !important;
-    }
-    .leaflet-control-geocoder-form input::placeholder {
-      content: "Search country, city, road, street";
-      color: #999;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      font-size: 16px;
+      transition: background-color 0.3s ease;
     }
     #set-location-btn:hover {
       background-color: #0056b3;
+    }
+    #search-box {
+      position: fixed;
+      top: 70px;
+      right: 20px;
+      z-index: 1000;
+      width: 280px;
+      background: #fff;
+      border-radius: 8px;
+      padding: 12px 15px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      font-family: Arial, sans-serif;
+      transition: width 0.3s ease, box-shadow 0.3s ease;
+    }
+    #search-box input {
+      width: 100%;
+      padding: 8px 15px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+    #search-box input:focus {
+      border-color: #007bff;
+    }
+    #search-box input::placeholder {
+      color: #999;
     }
   </style>
 </head>
@@ -79,27 +79,21 @@
 
 <div id="map"></div>
 <button id="set-location-btn">Set Locations</button>
-<select id="transport-mode">
-  <option value="car">Driving</option>
-  <option value="bike">Cycling</option>
-  <option value="foot">Walking</option>
-</select>
-<div id="search-input"></div>
+<div id="search-box"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
 <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 <script>
-  const map = L.map('map', { maxZoom: 25 }).setView([20, 0], 2);
+  const map = L.map('map').setView([20, 0], 2);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 25,
+    maxZoom: 18,
     attribution: ''
   }).addTo(map);
 
-  const searchControl = L.Control.geocoder({
-    defaultMarkGeocode: false,
-    placeholder: "Search country, city, road, street"
+  const geocoderControl = L.Control.geocoder({
+    defaultMarkGeocode: false
   }).on('markgeocode', function(e) {
     const bbox = e.geocode.bbox;
     const poly = L.polygon([
@@ -110,11 +104,20 @@
     ]).addTo(map);
     map.fitBounds(poly.getBounds());
     L.marker(e.geocode.center).addTo(map).bindPopup(e.geocode.name).openPopup();
-  }).addTo(map);
+  });
 
-  let startMarker, endMarker;
+  geocoderControl.addTo(map);
+  document.getElementById('search-box').appendChild(geocoderControl.getContainer());
+
+  let startMarker, endMarker, routeControl;
   let isSettingLocation = false;
-  let control = null;
+
+  const redIcon = L.divIcon({
+    html: '<div class="red-dot"></div>',
+    className: '',
+    iconSize: [10, 10],
+    iconAnchor: [5, 5]
+  });
 
   function speak(text) {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -122,9 +125,22 @@
     speechSynthesis.speak(utterance);
   }
 
-  window.onload = () => {
-    speak("Click the button in the top right to set your start and end locations.");
-  };
+  function locateUser() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        map.setView([lat, lon], 13);
+        L.marker([lat, lon], { icon: redIcon }).addTo(map).bindPopup("Your Location").openPopup();
+      }, function(error) {
+        console.error('Error getting location:', error);
+        alert('Could not get your location');
+      });
+    } else {
+      alert('Geolocation is not supported by this browser.');
+    }
+  }
 
   document.getElementById('set-location-btn').onclick = function() {
     isSettingLocation = !isSettingLocation;
@@ -146,36 +162,35 @@
       speak("Click to set your end location.");
     } else if (!endMarker) {
       endMarker = L.marker([lat, lon]).addTo(map);
-      drawRoute(startMarker.getLatLng(), endMarker.getLatLng());
+      speak("Start and end locations set.");
+      highlightShortestRoute();
     }
   });
 
-  function drawRoute(start, end) {
-    const mode = document.getElementById('transport-mode').value;  // Get the selected transport mode
+  function highlightShortestRoute() {
+    if (routeControl) {
+      map.removeControl(routeControl);
+    }
 
-    if (control) map.removeControl(control);
-
-    control = L.Routing.control({
-      waypoints: [start, end],
-      routeWhileDragging: false,
-      show: false,
-      lineOptions: { styles: [{ color: 'blue', weight: 5 }] },
+    routeControl = L.Routing.control({
+      waypoints: [
+        startMarker.getLatLng(),
+        endMarker.getLatLng()
+      ],
+      lineOptions: {
+        styles: [{ color: 'blue', weight: 5 }]
+      },
       createMarker: () => null,
-      routeOptions: {
-        // Set the transportation mode based on the selection
-        vehicular: mode === 'car' ? true : false,
-        foot: mode === 'foot' ? true : false,
-        bicycle: mode === 'bike' ? true : false
-      }
+      addWaypoints: false,
+      routeWhileDragging: false,
+      draggableWaypoints: false
     }).addTo(map);
-
-    control.on('routesfound', function(e) {
-      const route = e.routes[0];
-      const totalDistanceKm = (route.summary.totalDistance / 1000).toFixed(1);
-      const totalTimeMin = Math.round(route.summary.totalTime / 60);
-      speak(`The total distance is ${totalDistanceKm} kilometers. Estimated time is ${totalTimeMin} minutes.`);
-    });
   }
+
+  window.onload = () => {
+    locateUser();
+    speak("Click the button in the top right to set your start and end locations.");
+  };
 </script>
 
 </body>
