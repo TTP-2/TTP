@@ -24,6 +24,7 @@
             border: none;
             outline: none;
             background-color: #f4f4f4;
+            resize: none;
         }
 
         iframe {
@@ -32,21 +33,28 @@
             border: none;
         }
 
-        .header {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            padding: 10px;
+        #run-button {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
             background-color: #007bff;
             color: white;
-            text-align: center;
-            font-size: 18px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 1000;
+        }
+
+        #run-button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
 
-    <div class="header">HTML Live Editor</div>
+    <button id="run-button">Run Code</button>
 
     <div id="editor-container">
         <!-- Code input section -->
@@ -59,14 +67,16 @@
     <script>
         const codeInput = document.getElementById('code-input');
         const livePreview = document.getElementById('live-preview');
+        const runButton = document.getElementById('run-button');
 
-        // Function to update the live preview whenever the user types
-        codeInput.addEventListener('input', updatePreview);
-
+        // Function to update the live preview with the code from the editor
         function updatePreview() {
             const code = codeInput.value;
             livePreview.srcdoc = code; // Set the code into the iframe
         }
+
+        // Add event listener to the run button
+        runButton.addEventListener('click', updatePreview);
 
         // Default content to get started
         codeInput.value = `
