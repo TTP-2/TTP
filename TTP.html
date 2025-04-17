@@ -46,6 +46,16 @@
       z-index: 1000;
       width: 250px;
     }
+    #transport-mode {
+      position: fixed;
+      top: 80px;
+      left: 10px;
+      z-index: 1000;
+      padding: 5px;
+      background-color: white;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
     .leaflet-control-geocoder {
       margin-top: 70px !important;
     }
@@ -69,15 +79,18 @@
 
 <div id="map"></div>
 <button id="set-location-btn">Set Locations</button>
+<select id="transport-mode">
+  <option value="car">Driving</option>
+  <option value="bike">Cycling</option>
+  <option value="foot">Walking</option>
+</select>
 <div id="search-input"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 <script>
-  const map = L.map('map', {
-    maxZoom: 25 // Allow zooming in very far
-  }).setView([20, 0], 2);
+  const map = L.map('map', { maxZoom: 25 }).setView([20, 0], 2);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 25,
@@ -102,8 +115,6 @@
   let startMarker, endMarker;
   let isSettingLocation = false;
   let control = null;
-  let routeInstructions = [];
-  let currentStep = 0;
 
   function speak(text) {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -114,29 +125,6 @@
   window.onload = () => {
     speak("Click the button in the top right to set your start and end locations.");
   };
-
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(function(position) {
-      const lat = position.coords.latitude;
-      const lon = position.coords.longitude;
-
-      map.setView([lat, lon], 13);
-
-      const redIcon = L.divIcon({
-        html: '<div class="red-dot"></div>',
-        className: '',
-        iconSize: [10, 10],
-        iconAnchor: [5, 5]
-      });
-
-      L.marker([lat, lon], { icon: redIcon }).addTo(map).bindPopup("Your Location");
-    }, function(error) {
-      console.error('Error getting location:', error);
-      alert('Could not get your location');
-    });
-  } else {
-    alert('Geolocation is not supported by this browser.');
-  }
 
   document.getElementById('set-location-btn').onclick = function() {
     isSettingLocation = !isSettingLocation;
@@ -158,68 +146,35 @@
       speak("Click to set your end location.");
     } else if (!endMarker) {
       endMarker = L.marker([lat, lon]).addTo(map);
-
-      if (control) map.removeControl(control);
-
-      control = L.Routing.control({
-        waypoints: [
-          startMarker.getLatLng(),
-          endMarker.getLatLng()
-        ],
-        routeWhileDragging: false,
-        show: false,
-        lineOptions: {
-          styles: [{ color: 'blue', weight: 5 }]
-        },
-        createMarker: () => null
-      }).addTo(map);
-
-      control.on('routesfound', function(e) {
-        const routes = e.routes;
-        if (routes.length > 0) {
-          const route = routes[0];
-          const totalDistanceKm = (route.summary.totalDistance / 1000).toFixed(1);
-          const totalTimeMin = Math.round(route.summary.totalTime / 60);
-          speak(`The total distance is ${totalDistanceKm} kilometers. Estimated time is ${totalTimeMin} minutes.`);
-
-          routeInstructions = route.instructions;
-          currentStep = 0;
-          readNextStep();
-
-          map.on('moveend', () => {
-            if (currentStep >= routeInstructions.length) return;
-            if (!navigator.geolocation) return;
-
-            navigator.geolocation.getCurrentPosition(pos => {
-              const currentLatLng = L.latLng(pos.coords.latitude, pos.coords.longitude);
-              const stepLatLng = routeInstructions[currentStep].latLng || route.coordinates[currentStep + 1];
-              const distance = currentLatLng.distanceTo(stepLatLng);
-              if (distance < 50) {
-                currentStep++;
-                readNextStep();
-              }
-            });
-          });
-        }
-      });
+      drawRoute(startMarker.getLatLng(), endMarker.getLatLng());
     }
   });
 
-  function readNextStep() {
-    if (currentStep >= routeInstructions.length) return;
-    const step = routeInstructions[currentStep];
-    let text = step.text;
-    const distance = (step.distance / 1000).toFixed(2);
+  function drawRoute(start, end) {
+    const mode = document.getElementById('transport-mode').value;  // Get the selected transport mode
 
-    if (/turn/i.test(text)) {
-      text = text.replace(/Turn (left|right)/i, match => match.charAt(0).toUpperCase() + match.slice(1)) + ` in ${distance} kilometers`;
-    } else if (/continue/i.test(text)) {
-      text = `Continue for ${distance} kilometers`;
-    } else {
-      text = text + ` for ${distance} kilometers`;
-    }
+    if (control) map.removeControl(control);
 
-    speak(text);
+    control = L.Routing.control({
+      waypoints: [start, end],
+      routeWhileDragging: false,
+      show: false,
+      lineOptions: { styles: [{ color: 'blue', weight: 5 }] },
+      createMarker: () => null,
+      routeOptions: {
+        // Set the transportation mode based on the selection
+        vehicular: mode === 'car' ? true : false,
+        foot: mode === 'foot' ? true : false,
+        bicycle: mode === 'bike' ? true : false
+      }
+    }).addTo(map);
+
+    control.on('routesfound', function(e) {
+      const route = e.routes[0];
+      const totalDistanceKm = (route.summary.totalDistance / 1000).toFixed(1);
+      const totalTimeMin = Math.round(route.summary.totalTime / 60);
+      speak(`The total distance is ${totalDistanceKm} kilometers. Estimated time is ${totalTimeMin} minutes.`);
+    });
   }
 </script>
 
