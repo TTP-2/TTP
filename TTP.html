@@ -23,18 +23,6 @@
       border-radius: 50%;
       display: block;
     }
-    .info {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      background-color: rgba(0, 0, 0, 0.7);
-      padding: 4px 6px;
-      font-family: Arial, sans-serif;
-      z-index: 1000;
-      color: white;
-      font-size: 11px;
-      max-width: 200px;
-    }
     #set-location-btn {
       position: fixed;
       top: 20px;
@@ -51,7 +39,6 @@
 <body>
 
 <div id="map"></div>
-<div class="info" id="info">Please click the button to set your start and end locations.</div>
 <button id="set-location-btn">Set Locations</button>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
@@ -67,6 +54,16 @@
   let startMarker, endMarker;
   let isSettingLocation = false;
   let control = null;
+
+  function speak(text) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    speechSynthesis.speak(utterance);
+  }
+
+  // Automatically speak instructions when the page loads
+  window.onload = () => {
+    speak("Click the button in the top right to set your start and end locations.");
+  };
 
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function(position) {
@@ -94,9 +91,9 @@
   document.getElementById('set-location-btn').onclick = function() {
     isSettingLocation = !isSettingLocation;
     if (isSettingLocation) {
-      document.getElementById('info').innerHTML = "Click on the map to set your start and end locations.";
+      speak("Click on the map to set your start and end locations.");
     } else {
-      document.getElementById('info').innerHTML = "Please click the button to set your start and end locations.";
+      speak("Click the button to set your start and end locations.");
     }
   };
 
@@ -108,7 +105,7 @@
 
     if (!startMarker) {
       startMarker = L.marker([lat, lon]).addTo(map);
-      document.getElementById('info').innerHTML = "Click to set your end location.";
+      speak("Click to set your end location.");
     } else if (!endMarker) {
       endMarker = L.marker([lat, lon]).addTo(map);
 
@@ -124,7 +121,21 @@
         addWaypoints: false
       }).addTo(map);
 
-      document.getElementById('info').innerHTML = `Route set between start and end location.`;
+      speak("Route set between start and end location.");
+
+      control.on('routesfound', function(e) {
+        const routes = e.routes;
+        if (routes.length > 0) {
+          const instructions = routes[0].instructions || [];
+          routes[0].instructions = [];
+          routes[0].coordinates.forEach((coord, index) => {
+            if (index % 10 === 0) {
+              const direction = `Continue to ${Math.round(coord.lat * 1000) / 1000}, ${Math.round(coord.lng * 1000) / 1000}`;
+              speak(direction);
+            }
+          });
+        }
+      });
     }
   });
 </script>
