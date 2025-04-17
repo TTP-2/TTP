@@ -23,12 +23,23 @@
       padding: 10px;
       font-family: Arial, sans-serif;
     }
+    #set-location-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
 <div id="map"></div>
-<div class="info" id="info">Please click on the map to set your start and end locations.</div>
+<div class="info" id="info">Please click the button to set your start and end locations.</div>
+<button id="set-location-btn">Set Locations</button>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script>
@@ -41,6 +52,7 @@
 
   let startMarker, endMarker;
   let startLat, startLon, endLat, endLon;
+  let isSettingLocation = false;
 
   // Request location from the user
   if (navigator.geolocation) {
@@ -68,8 +80,20 @@
     alert('Geolocation is not supported by this browser.');
   }
 
+  // Toggle the ability to set locations
+  document.getElementById('set-location-btn').onclick = function() {
+    isSettingLocation = !isSettingLocation;
+    if (isSettingLocation) {
+      document.getElementById('info').innerHTML = "Click on the map to set your start and end locations.";
+    } else {
+      document.getElementById('info').innerHTML = "Please click the button to set your start and end locations.";
+    }
+  };
+
   // Handle clicks on the map
   map.on('click', function(e) {
+    if (!isSettingLocation) return;
+
     const lat = e.latlng.lat;
     const lon = e.latlng.lng;
 
@@ -77,13 +101,13 @@
       // Set start location
       startLat = lat;
       startLon = lon;
-      startMarker = L.marker([lat, lon]).addTo(map).bindPopup("Start Location").openPopup();
+      startMarker = L.marker([lat, lon]).addTo(map);
       document.getElementById('info').innerHTML = "Click to set your end location.";
     } else if (!endMarker) {
       // Set end location
       endLat = lat;
       endLon = lon;
-      endMarker = L.marker([lat, lon]).addTo(map).bindPopup("End Location").openPopup();
+      endMarker = L.marker([lat, lon]).addTo(map);
 
       // Calculate distance and time
       const distance = calculateDistance(startLat, startLon, endLat, endLon);
