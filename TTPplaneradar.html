@@ -6,7 +6,7 @@
   <title>Real-Time Plane Radar</title>
   <style>
     body {
-      background: #222; /* Dark background for contrast */
+      background: #222;
       margin: 0;
       display: flex;
       align-items: center;
@@ -28,7 +28,7 @@
     .plane {
       width: 8px;
       height: 8px;
-      background: red; /* Red dots for planes */
+      background: red;
       border-radius: 50%;
       position: absolute;
       cursor: pointer;
@@ -38,7 +38,7 @@
     .location {
       width: 8px;
       height: 8px;
-      background: green; /* Green dots for countries */
+      background: green;
       border-radius: 50%;
       position: absolute;
     }
@@ -68,7 +68,6 @@
       border-top: 2px dashed red;
     }
 
-    /* Zoom Buttons Styling */
     .zoom-buttons {
       position: absolute;
       top: 20px;
@@ -80,7 +79,7 @@
     }
 
     .zoom-btn {
-      background-color: #4CAF50; /* Green background */
+      background-color: #4CAF50;
       color: white;
       padding: 10px 20px;
       font-size: 16px;
@@ -91,7 +90,7 @@
     }
 
     .zoom-btn:hover {
-      background-color: #45a049; /* Darker green when hovered */
+      background-color: #45a049;
     }
 
     .plane-info {
@@ -103,6 +102,7 @@
       font-size: 14px;
       display: none;
       z-index: 2;
+      white-space: nowrap;
     }
   </style>
 </head>
@@ -123,6 +123,15 @@
     let radarRange = 1.0; // degrees (~111 km)
     
     const planesData = {}; // To store plane data and their previous positions
+
+    // Destination mappings for some airports (simple example)
+    const airportDestinations = {
+      "JFK": "New York, USA",
+      "LHR": "London, UK",
+      "CDG": "Paris, France",
+      "DXB": "Dubai, UAE",
+      "SYD": "Sydney, Australia"
+    };
 
     // Zoom In and Zoom Out buttons functionality
     document.getElementById('zoom-in').addEventListener('click', () => {
@@ -190,6 +199,9 @@
               const origin = state[2]; // Departure airport
               const destination = state[3]; // Destination airport
 
+              // Use airport destination map for user-friendly destination display
+              const destinationName = airportDestinations[destination] || "Unknown Location";
+
               if (lat && lon) {
                 const x = ((lon - radarCenter.lon) / radarRange) * radarRadius * 2 + radarRadius;
                 const y = ((radarCenter.lat - lat) / radarRange) * radarRadius * 2 + radarRadius;
@@ -207,11 +219,14 @@
                     planeInfo.innerHTML = `
                       <strong>Altitude:</strong> ${altitude} meters <br>
                       <strong>Departure:</strong> ${origin || 'N/A'} <br>
-                      <strong>Destination:</strong> ${destination || 'N/A'}
+                      <strong>Destination:</strong> ${destinationName}
                     `;
                     planeInfo.style.left = `${x - 40}px`;
                     planeInfo.style.top = `${y - 30}px`; // Position the label above the plane
                     radarContainer.appendChild(planeInfo);
+
+                    // Show the label
+                    planeInfo.style.display = 'block';
 
                     // Hide the label after a few seconds
                     setTimeout(() => {
