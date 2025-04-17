@@ -11,10 +11,11 @@
       margin: 0;
       padding: 0;
       height: 100%;
+      width: 100%;
     }
     #map {
-      height: 2000px;
-      width: 1187px;
+      height: 100%;
+      width: 100%;
     }
     .leaflet-control-attribution { display: none !important; }
     .red-dot {
@@ -34,6 +35,9 @@
       border: none;
       cursor: pointer;
       z-index: 1000;
+      border-radius: 5px;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
     #search-input {
       position: fixed;
@@ -205,7 +209,6 @@
     let text = step.text;
     const distance = (step.distance / 1000).toFixed(2);
 
-    // Format instruction text
     if (/turn/i.test(text)) {
       text = text.replace(/Turn (left|right)/i, match => match.charAt(0).toUpperCase() + match.slice(1)) + ` in ${distance} kilometers`;
     } else if (/continue/i.test(text)) {
