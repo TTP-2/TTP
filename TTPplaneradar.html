@@ -124,13 +124,17 @@
     
     const planesData = {}; // To store plane data and their previous positions
 
-    // Destination mappings for some airports (simple example)
+    // Departure and Destination mappings for some airports
     const airportDestinations = {
       "JFK": "New York, USA",
       "LHR": "London, UK",
       "CDG": "Paris, France",
       "DXB": "Dubai, UAE",
-      "SYD": "Sydney, Australia"
+      "SYD": "Sydney, Australia",
+      "SFO": "San Francisco, USA",
+      "HKG": "Hong Kong",
+      "ICN": "Seoul, South Korea",
+      "ORD": "Chicago, USA"
     };
 
     // Zoom In and Zoom Out buttons functionality
@@ -199,7 +203,8 @@
               const origin = state[2]; // Departure airport
               const destination = state[3]; // Destination airport
 
-              // Use airport destination map for user-friendly destination display
+              // Use airport destination map for user-friendly location display
+              const departureName = airportDestinations[origin] || "Unknown Location";
               const destinationName = airportDestinations[destination] || "Unknown Location";
 
               if (lat && lon) {
@@ -213,12 +218,12 @@
                   plane.style.top = `${y - 4}px`;  // Adjust to center the plane
 
                   plane.addEventListener('click', () => {
-                    // Create and show a label with altitude and flight info
+                    // Create and show a label with altitude, departure, and destination info
                     const planeInfo = document.createElement('div');
                     planeInfo.className = 'plane-info';
                     planeInfo.innerHTML = `
                       <strong>Altitude:</strong> ${altitude} meters <br>
-                      <strong>Departure:</strong> ${origin || 'N/A'} <br>
+                      <strong>Departure:</strong> ${departureName} <br>
                       <strong>Destination:</strong> ${destinationName}
                     `;
                     planeInfo.style.left = `${x - 40}px`;
