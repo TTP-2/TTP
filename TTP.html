@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Distance & Time Calculator</title>
+  <title>TTP maps</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
   <style>
     body, html {
       margin: 0;
@@ -34,15 +35,34 @@
       cursor: pointer;
       z-index: 1000;
     }
+    #search-input {
+      position: fixed;
+      top: 100px;
+      left: 10px;
+      z-index: 1000;
+      width: 250px;
+    }
+    .leaflet-control-geocoder {
+      margin-top: 70px !important;
+    }
+    .leaflet-control-geocoder-form input {
+      width: 100% !important;
+    }
+    .leaflet-control-geocoder-form input::placeholder {
+      content: "Search country, city, road, street";
+      color: #999;
+    }
   </style>
 </head>
 <body>
 
 <div id="map"></div>
 <button id="set-location-btn">Set Locations</button>
+<div id="search-input"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 <script>
   const map = L.map('map').setView([20, 0], 2);
 
@@ -51,16 +71,34 @@
     attribution: ''
   }).addTo(map);
 
+  const searchControl = L.Control.geocoder({
+    defaultMarkGeocode: false,
+    placeholder: "Search country, city, road, street"
+  }).on('markgeocode', function(e) {
+    const bbox = e.geocode.bbox;
+    const poly = L.polygon([
+      bbox.getSouthEast(),
+      bbox.getNorthEast(),
+      bbox.getNorthWest(),
+      bbox.getSouthWest()
+    ]).addTo(map);
+    map.fitBounds(poly.getBounds());
+    L.marker(e.geocode.center).addTo(map).bindPopup(e.geocode.name).openPopup();
+  }).addTo(map);
+
   let startMarker, endMarker;
   let isSettingLocation = false;
   let control = null;
+  let currentStepIndex = 0;
+  let routeSteps = [];
+  let previousPosition = null;
 
   function speak(text) {
     const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
     speechSynthesis.speak(utterance);
   }
 
-  // Automatically speak instructions when the page loads
   window.onload = () => {
     speak("Click the button in the top right to set your start and end locations.");
   };
@@ -80,6 +118,7 @@
       });
 
       L.marker([lat, lon], { icon: redIcon }).addTo(map).bindPopup("Your Location");
+      previousPosition = L.latLng(lat, lon);
     }, function(error) {
       console.error('Error getting location:', error);
       alert('Could not get your location');
@@ -96,6 +135,41 @@
       speak("Click the button to set your start and end locations.");
     }
   };
+
+  function monitorProgress(route) {
+    routeSteps = route.instructions;
+    currentStepIndex = 0;
+    speakCurrentStep();
+
+    map.on('moveend', () => {
+      if (currentStepIndex >= routeSteps.length) return;
+      if (!navigator.geolocation) return;
+
+      navigator.geolocation.getCurrentPosition(position => {
+        const currentLatLng = L.latLng(position.coords.latitude, position.coords.longitude);
+        const currentStep = routeSteps[currentStepIndex];
+
+        const stepEndLatLng = currentStep.latLng || L.latLng(route.coordinates[currentStepIndex + 1]);
+
+        const distance = currentLatLng.distanceTo(stepEndLatLng);
+        if (distance < 50) {
+          currentStepIndex++;
+          if (currentStepIndex < routeSteps.length) {
+            speakCurrentStep();
+          }
+        }
+      });
+    });
+  }
+
+  function speakCurrentStep() {
+    const step = routeSteps[currentStepIndex];
+    if (step) {
+      const distanceKm = (step.distance / 1000).toFixed(1);
+      const spokenText = `${step.text.replace(/continue onto/i, 'Continue on')} for ${distanceKm} kilometers.`;
+      speak(spokenText);
+    }
+  }
 
   map.on('click', function(e) {
     if (!isSettingLocation) return;
@@ -118,22 +192,18 @@
         ],
         routeWhileDragging: false,
         show: false,
-        addWaypoints: false
+        addWaypoints: false,
+        lineOptions: {
+          styles: [{ color: 'gray', weight: 5 }]
+        },
+        createMarker: () => null
       }).addTo(map);
-
-      speak("Route set between start and end location.");
 
       control.on('routesfound', function(e) {
         const routes = e.routes;
         if (routes.length > 0) {
-          const instructions = routes[0].instructions || [];
-          routes[0].instructions = [];
-          routes[0].coordinates.forEach((coord, index) => {
-            if (index % 10 === 0) {
-              const direction = `Continue to ${Math.round(coord.lat * 1000) / 1000}, ${Math.round(coord.lng * 1000) / 1000}`;
-              speak(direction);
-            }
-          });
+          const route = routes[0];
+          monitorProgress(route);
         }
       });
     }
