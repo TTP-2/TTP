@@ -28,9 +28,8 @@
     .leaflet-control-attribution {
       display: none !important;
     }
-    #set-location-btn, #note-mode-btn {
-      position: fixed;
-      right: 20px;
+    #set-location-btn, #note-mode-btn, #cancel-trip-btn {
+      position: absolute;
       padding: 10px 15px;
       background-color: #007bff;
       color: white;
@@ -40,14 +39,25 @@
       z-index: 1000;
       font-size: 16px;
     }
-    #set-location-btn:hover, #note-mode-btn:hover {
+    #set-location-btn:hover, #note-mode-btn:hover, #cancel-trip-btn:hover {
       background-color: #0056b3;
+    }
+    #set-location-btn, #note-mode-btn {
+      right: 20px;
+    }
+    #cancel-trip-btn {
+      left: 20px; /* Position the cancel button on the left */
+      top: 120px; /* Place it below other controls */
     }
     #set-location-btn {
       top: 120px;
     }
     #note-mode-btn {
       top: 170px;
+    }
+    #cancel-trip-btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
     }
     #search-box {
       position: fixed;
@@ -101,6 +111,7 @@
 <div id="map"></div>
 <button id="set-location-btn">Set Locations</button>
 <button id="note-mode-btn">Add Note</button>
+<button id="cancel-trip-btn" disabled>Cancel Trip</button>
 <div id="search-box"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
@@ -182,12 +193,27 @@
       document.getElementById('note-mode-btn').style.display = 'block'; // Show note button when not setting locations
       speak("Click the button to set your start and end locations.");
     }
+    toggleCancelTripButton();
   };
 
   document.getElementById('note-mode-btn').onclick = function() {
     isNoteMode = !isNoteMode;
     isSettingLocation = false;
     document.getElementById('set-location-btn').disabled = isNoteMode;
+    toggleCancelTripButton();
+  };
+
+  function toggleCancelTripButton() {
+    if (startMarker && endMarker) {
+      document.getElementById('cancel-trip-btn').disabled = false;
+    } else {
+      document.getElementById('cancel-trip-btn').disabled = true;
+    }
+  }
+
+  document.getElementById('cancel-trip-btn').onclick = function() {
+    // Reload the page to reset everything
+    location.reload();
   };
 
   map.on('click', function(e) {
@@ -202,6 +228,7 @@
         endMarker = L.marker([lat, lon]).addTo(map);
         speak("Start and end locations set.");
         highlightShortestRoute();
+        toggleCancelTripButton();
       }
     } else if (isNoteMode) {
       const mapContainer = document.getElementById('map');
