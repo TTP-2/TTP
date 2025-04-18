@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>TTP Maps</title>
+  <title>TTP Maps with Routing</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
@@ -146,8 +146,14 @@
   document.getElementById('set-location-btn').onclick = function() {
     isSettingLocation = !isSettingLocation;
     if (isSettingLocation) {
+      // Hide the button and search box when setting locations
+      document.getElementById('set-location-btn').style.display = 'none';
+      document.getElementById('search-box').style.display = 'none';
       speak("Click on the map to set your start and end locations.");
     } else {
+      // Show the button and search box again when done
+      document.getElementById('set-location-btn').style.display = 'block';
+      document.getElementById('search-box').style.display = 'block';
       speak("Click the button to set your start and end locations.");
     }
   };
