@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>TTP Maps with Routing</title>
+  <title>TTP maps</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
@@ -179,7 +179,7 @@
     } else {
       document.getElementById('set-location-btn').style.display = 'block';
       document.getElementById('search-box').style.display = 'block';
-      document.getElementById('note-mode-btn').style.display = 'block';  // Show Add Note button when not setting locations
+      document.getElementById('note-mode-btn').style.display = 'block';  // Keep Add Note button visible when not setting locations
       speak("Click the button to set your start and end locations.");
     }
   };
@@ -189,11 +189,7 @@
     isSettingLocation = false;
     document.getElementById('set-location-btn').disabled = isNoteMode;
 
-    if (isNoteMode) {
-      document.getElementById('note-mode-btn').style.display = 'none';  // Hide Add Note button when in note mode
-    } else {
-      document.getElementById('note-mode-btn').style.display = 'block';  // Show Add Note button when not in note mode
-    }
+    // Do not hide the Add Note button when it's clicked
   };
 
   map.on('click', function(e) {
