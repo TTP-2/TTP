@@ -28,6 +28,315 @@
     .leaflet-control-attribution {
       display: none !important;
     }
+    #set-location-btn, #note-mode-btn {
+      position: fixed;
+      right: 20px;
+      padding: 10px 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      z-index: 1000;
+      font-size: 16px;
+    }
+    #set-location-btn:hover, #note-mode-btn:hover {
+      background-color: #0056b3;
+    }
+    #set-location-btn {
+      top: 120px;
+    }
+    #note-mode-btn {
+      top: 170px;
+    }
+    #search-box {
+      position: fixed;
+      top: 40px;
+      right: 20px;
+      z-index: 1000;
+      width: 300px;
+      background: white;
+      border-radius: 4px;
+      padding: 5px;
+    }
+    #search-box input {
+      width: 100%;
+      padding: 10px 15px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      outline: none;
+    }
+    #search-box input:focus {
+      border-color: #007bff;
+    }
+    .note-input {
+      position: absolute;
+      z-index: 2000;
+      transform: translate(-50%, -100%);
+      padding: 8px 12px;
+      border: 2px solid #007bff;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .delete-btn {
+      margin-left: 8px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 6px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .delete-btn:hover {
+      background-color: #b02a37;
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+<button id="set-location-btn">Set Locations</button>
+<button id="note-mode-btn">Add Note</button>
+<div id="search-box"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<script>
+  const map = L.map('map', {
+    center: [20, 0],
+    zoom: 2,
+    minZoom: 2,
+    maxZoom: 18,
+    zoomAnimation: true,
+    zoomAnimationThreshold: 10
+  });
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: ''
+  }).addTo(map);
+
+  const geocoderControl = L.Control.geocoder({
+    defaultMarkGeocode: false
+  }).on('markgeocode', function(e) {
+    const latLng = e.geocode.center;
+    map.setView(latLng, 13);
+    L.marker(latLng).addTo(map).bindPopup(e.geocode.name).openPopup();
+  });
+
+  geocoderControl.addTo(map);
+  document.getElementById('search-box').appendChild(geocoderControl.getContainer());
+
+  let startMarker, endMarker, routeControl;
+  let isSettingLocation = false;
+  let isNoteMode = false;
+
+  const redIcon = L.divIcon({
+    html: '<div class="red-dot"></div>',
+    className: '',
+    iconSize: [10, 10],
+    iconAnchor: [5, 5]
+  });
+
+  function speak(text) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    speechSynthesis.speak(utterance);
+  }
+
+  function locateUser() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        map.setView([lat, lon], 13);
+        L.marker([lat, lon], { icon: redIcon }).addTo(map).bindPopup("Your Location").openPopup();
+      }, function(error) {
+        console.error('Error getting location:', error);
+        alert('Could not get your location');
+      });
+    } else {
+      alert('Geolocation is not supported by this browser.');
+    }
+  }
+
+  document.getElementById('set-location-btn').onclick = function() {
+    isSettingLocation = !isSettingLocation;
+    isNoteMode = false;
+    document.getElementById('note-mode-btn').disabled = isSettingLocation;
+
+    if (isSettingLocation) {
+      document.getElementById('set-location-btn').style.display = 'none';
+      document.getElementById('search-box').style.display = 'none';
+      document.getElementById('note-mode-btn').style.display = 'none'; // Hide note button when setting locations
+      speak("Click on the map to set your start and end locations.");
+    } else {
+      document.getElementById('set-location-btn').style.display = 'block';
+      document.getElementById('search-box').style.display = 'block';
+      document.getElementById('note-mode-btn').style.display = 'block'; // Show note button when not setting locations
+      speak("Click the button to set your start and end locations.");
+    }
+  };
+
+  document.getElementById('note-mode-btn').onclick = function() {
+    isNoteMode = !isNoteMode;
+    isSettingLocation = false;
+    document.getElementById('set-location-btn').disabled = isNoteMode;
+  };
+
+  map.on('click', function(e) {
+    if (isSettingLocation) {
+      const lat = e.latlng.lat;
+      const lon = e.latlng.lng;
+
+      if (!startMarker) {
+        startMarker = L.marker([lat, lon]).addTo(map);
+        speak("Click to set your end location.");
+      } else if (!endMarker) {
+        endMarker = L.marker([lat, lon]).addTo(map);
+        speak("Start and end locations set.");
+        highlightShortestRoute();
+      }
+    } else if (isNoteMode) {
+      const mapContainer = document.getElementById('map');
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = 'Enter a label';
+      input.className = 'note-input';
+      input.style.left = e.originalEvent.clientX + 'px';
+      input.style.top = e.originalEvent.clientY + 'px';
+
+      input.onkeydown = function(event) {
+        if (event.key === 'Enter' && input.value.trim()) {
+          const marker = L.marker(e.latlng).addTo(map);
+          const popupContent = document.createElement('div');
+          popupContent.textContent = input.value;
+
+          const deleteBtn = document.createElement('button');
+          deleteBtn.textContent = 'Delete';
+          deleteBtn.className = 'delete-btn';
+          deleteBtn.onclick = function() {
+            map.removeLayer(marker);
+            deleteLabelFromLocalStorage(marker);
+          };
+
+          popupContent.appendChild(deleteBtn);
+          marker.bindPopup(popupContent);
+          marker.openPopup();
+          mapContainer.removeChild(input);
+
+          saveLabelToLocalStorage(marker, input.value, e.latlng);
+        } else if (event.key === 'Escape') {
+          mapContainer.removeChild(input);
+        }
+      };
+
+      mapContainer.appendChild(input);
+      input.focus();
+    }
+  });
+
+  function saveLabelToLocalStorage(marker, labelText, latlng) {
+    const labels = JSON.parse(localStorage.getItem('labels')) || [];
+    labels.push({
+      labelText: labelText,
+      lat: latlng.lat,
+      lng: latlng.lng
+    });
+    localStorage.setItem('labels', JSON.stringify(labels));
+  }
+
+  function loadLabelsFromLocalStorage() {
+    const labels = JSON.parse(localStorage.getItem('labels')) || [];
+    labels.forEach(label => {
+      const marker = L.marker([label.lat, label.lng]).addTo(map);
+      const popupContent = document.createElement('div');
+      popupContent.textContent = label.labelText;
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.className = 'delete-btn';
+      deleteBtn.onclick = function() {
+        map.removeLayer(marker);
+        deleteLabelFromLocalStorage(marker);
+      };
+
+      popupContent.appendChild(deleteBtn);
+      marker.bindPopup(popupContent);
+      marker.openPopup();
+    });
+  }
+
+  function deleteLabelFromLocalStorage(marker) {
+    const labels = JSON.parse(localStorage.getItem('labels')) || [];
+    const updatedLabels = labels.filter(label => label.lat !== marker.getLatLng().lat || label.lng !== marker.getLatLng().lng);
+    localStorage.setItem('labels', JSON.stringify(updatedLabels));
+  }
+
+  function highlightShortestRoute() {
+    if (routeControl) {
+      map.removeControl(routeControl);
+    }
+
+    routeControl = L.Routing.control({
+      waypoints: [
+        startMarker.getLatLng(),
+        endMarker.getLatLng()
+      ],
+      lineOptions: {
+        styles: [{ color: 'blue', weight: 5 }]
+      },
+      createMarker: () => null,
+      addWaypoints: false,
+      routeWhileDragging: false,
+      draggableWaypoints: false
+    }).addTo(map);
+  }
+
+  window.onload = () => {
+    locateUser();
+    loadLabelsFromLocalStorage();
+    speak("Click the button in the top right to set your start and end locations.");
+  };
+</script>
+
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>TTP Maps with Routing</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+    }
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+    .red-dot {
+      width: 10px;
+      height: 10px;
+      background-color: red;
+      border-radius: 50%;
+      display: block;
+    }
+    .leaflet-control-attribution {
+      display: none !important;
+    }
     #set-location-btn, #note-mode-btn, #cancel-trip-btn {
       position: absolute;
       padding: 10px 15px;
