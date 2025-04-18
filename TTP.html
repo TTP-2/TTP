@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>TTP Maps with Routing</title>
+  <title>TTP maps</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
@@ -46,8 +46,8 @@
       right: 20px;
     }
     #cancel-trip-btn {
-      left: 20px; /* Position the cancel button on the left */
-      top: 120px; /* Place it below other controls */
+      left: 20px;
+      top: 120px;
     }
     #set-location-btn {
       top: 120px;
@@ -104,6 +104,36 @@
     .delete-btn:hover {
       background-color: #b02a37;
     }
+
+    @media (max-width: 600px) {
+      #search-box {
+        width: 90%;
+        right: 5%;
+        top: 20px;
+      }
+
+      #set-location-btn, #note-mode-btn, #cancel-trip-btn {
+        font-size: 14px;
+        padding: 8px 12px;
+      }
+
+      #set-location-btn, #note-mode-btn {
+        right: 10px;
+        width: auto;
+        min-width: 120px;
+      }
+
+      #cancel-trip-btn {
+        left: 10px;
+        width: auto;
+        min-width: 120px;
+      }
+
+      .note-input {
+        font-size: 12px;
+        padding: 6px 10px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -132,12 +162,15 @@
     attribution: ''
   }).addTo(map);
 
+  // Setting up the geocoder to allow city, country, street, etc. searches
   const geocoderControl = L.Control.geocoder({
-    defaultMarkGeocode: false
+    placeholder: 'Search for a place...',
+    defaultMarkGeocode: false,  // Don't mark the geocode result by default
+    geocoder: L.Control.Geocoder.nominatim() // Using Nominatim for geocoding
   }).on('markgeocode', function(e) {
-    const latLng = e.geocode.center;
-    map.setView(latLng, 13);
-    L.marker(latLng).addTo(map).bindPopup(e.geocode.name).openPopup();
+    const latLng = e.geocode.center; // Get the coordinates of the found place
+    map.setView(latLng, 13); // Move the map to the found place
+    L.marker(latLng).addTo(map).bindPopup(e.geocode.name).openPopup(); // Add marker and popup for the found place
   });
 
   geocoderControl.addTo(map);
@@ -177,6 +210,26 @@
     }
   }
 
+  // Detect Enter key to trigger search
+  const searchInput = document.querySelector("#search-box input");
+  searchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      const searchQuery = searchInput.value.trim().toLowerCase(); // Make it case-insensitive
+      if (searchQuery) {
+        geocoderControl.geocoder.geocode(searchQuery, function(results) {
+          if (results && results.length > 0) {
+            const latLng = results[0].center; // Use the first result from geocoding
+            map.setView(latLng, 13); // Move map to the location
+            L.marker(latLng).addTo(map).bindPopup(results[0].name).openPopup(); // Show the marker
+            searchInput.value = ''; // Clear search field after search
+          } else {
+            alert("No results found for your query.");
+          }
+        });
+      }
+    }
+  });
+
   document.getElementById('set-location-btn').onclick = function() {
     isSettingLocation = !isSettingLocation;
     isNoteMode = false;
@@ -193,27 +246,12 @@
       document.getElementById('note-mode-btn').style.display = 'block'; // Show note button when not setting locations
       speak("Click the button to set your start and end locations.");
     }
-    toggleCancelTripButton();
   };
 
   document.getElementById('note-mode-btn').onclick = function() {
     isNoteMode = !isNoteMode;
     isSettingLocation = false;
     document.getElementById('set-location-btn').disabled = isNoteMode;
-    toggleCancelTripButton();
-  };
-
-  function toggleCancelTripButton() {
-    if (startMarker && endMarker) {
-      document.getElementById('cancel-trip-btn').disabled = false;
-    } else {
-      document.getElementById('cancel-trip-btn').disabled = true;
-    }
-  }
-
-  document.getElementById('cancel-trip-btn').onclick = function() {
-    // Reload the page to reset everything
-    location.reload();
   };
 
   map.on('click', function(e) {
@@ -228,7 +266,7 @@
         endMarker = L.marker([lat, lon]).addTo(map);
         speak("Start and end locations set.");
         highlightShortestRoute();
-        toggleCancelTripButton();
+        enableCancelButton(); // Enable cancel button when locations are set
       }
     } else if (isNoteMode) {
       const mapContainer = document.getElementById('map');
@@ -242,96 +280,36 @@
       input.onkeydown = function(event) {
         if (event.key === 'Enter' && input.value.trim()) {
           const marker = L.marker(e.latlng).addTo(map);
-          const popupContent = document.createElement('div');
-          popupContent.textContent = input.value;
-
-          const deleteBtn = document.createElement('button');
-          deleteBtn.textContent = 'Delete';
-          deleteBtn.className = 'delete-btn';
-          deleteBtn.onclick = function() {
-            map.removeLayer(marker);
-            deleteLabelFromLocalStorage(marker);
-          };
-
-          popupContent.appendChild(deleteBtn);
-          marker.bindPopup(popupContent);
-          marker.openPopup();
-          mapContainer.removeChild(input);
-
-          saveLabelToLocalStorage(marker, input.value, e.latlng);
-        } else if (event.key === 'Escape') {
-          mapContainer.removeChild(input);
+          marker.bindPopup(input.value).openPopup();
+          input.disabled = true;
+          setTimeout(() => {
+            input.remove();
+          }, 100);
         }
       };
 
       mapContainer.appendChild(input);
-      input.focus();
     }
   });
 
-  function saveLabelToLocalStorage(marker, labelText, latlng) {
-    const labels = JSON.parse(localStorage.getItem('labels')) || [];
-    labels.push({
-      labelText: labelText,
-      lat: latlng.lat,
-      lng: latlng.lng
-    });
-    localStorage.setItem('labels', JSON.stringify(labels));
-  }
-
-  function loadLabelsFromLocalStorage() {
-    const labels = JSON.parse(localStorage.getItem('labels')) || [];
-    labels.forEach(label => {
-      const marker = L.marker([label.lat, label.lng]).addTo(map);
-      const popupContent = document.createElement('div');
-      popupContent.textContent = label.labelText;
-
-      const deleteBtn = document.createElement('button');
-      deleteBtn.textContent = 'Delete';
-      deleteBtn.className = 'delete-btn';
-      deleteBtn.onclick = function() {
-        map.removeLayer(marker);
-        deleteLabelFromLocalStorage(marker);
-      };
-
-      popupContent.appendChild(deleteBtn);
-      marker.bindPopup(popupContent);
-      marker.openPopup();
-    });
-  }
-
-  function deleteLabelFromLocalStorage(marker) {
-    const labels = JSON.parse(localStorage.getItem('labels')) || [];
-    const updatedLabels = labels.filter(label => label.lat !== marker.getLatLng().lat || label.lng !== marker.getLatLng().lng);
-    localStorage.setItem('labels', JSON.stringify(updatedLabels));
-  }
-
-  function highlightShortestRoute() {
-    if (routeControl) {
-      map.removeControl(routeControl);
+  document.getElementById('cancel-trip-btn').onclick = function() {
+    if (startMarker && endMarker) {
+      map.removeLayer(startMarker);
+      map.removeLayer(endMarker);
+      if (routeControl) {
+        map.removeControl(routeControl);
+      }
     }
-
-    routeControl = L.Routing.control({
-      waypoints: [
-        startMarker.getLatLng(),
-        endMarker.getLatLng()
-      ],
-      lineOptions: {
-        styles: [{ color: 'blue', weight: 5 }]
-      },
-      createMarker: () => null,
-      addWaypoints: false,
-      routeWhileDragging: false,
-      draggableWaypoints: false
-    }).addTo(map);
-  }
-
-  window.onload = () => {
-    locateUser();
-    loadLabelsFromLocalStorage();
-    speak("Click the button in the top right to set your start and end locations.");
+    document.getElementById('cancel-trip-btn').disabled = true; // Disable cancel button after trip is canceled
+    // Make all buttons and inputs visible again after canceling the trip
+    document.getElementById('set-location-btn').style.display = 'block';
+    document.getElementById('note-mode-btn').style.display = 'block';
+    document.getElementById('search-box').style.display = 'block';
   };
-</script>
 
+  function enableCancelButton() {
+    document.getElementById('cancel-trip-btn').disabled = false;
+  }
+</script>
 </body>
 </html>
