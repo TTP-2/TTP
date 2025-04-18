@@ -77,7 +77,12 @@
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
 <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 <script>
-  const map = L.map('map').setView([20, 0], 2);
+  const map = L.map('map', {
+    center: [20, 0], 
+    zoom: 2,
+    minZoom: 2,  // Restrict zoom out to level 2
+    maxZoom: 18  // You can adjust the max zoom level as needed
+  });
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18,
@@ -138,8 +143,14 @@
     isSettingLocation = !isSettingLocation;
     if (isSettingLocation) {
       speak("Click on the map to set your start and end locations.");
+      // Hide the button and search box when setting locations
+      document.getElementById('set-location-btn').style.display = 'none';
+      document.getElementById('search-box').style.display = 'none';
     } else {
       speak("Click the button to set your start and end locations.");
+      // Show the button and search box when not setting locations
+      document.getElementById('set-location-btn').style.display = 'block';
+      document.getElementById('search-box').style.display = 'block';
     }
   };
 
