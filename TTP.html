@@ -28,9 +28,8 @@
     .leaflet-control-attribution {
       display: none !important;
     }
-    #set-location-btn {
+    #set-location-btn, #note-mode-btn {
       position: fixed;
-      top: 120px;
       right: 20px;
       padding: 10px 15px;
       background-color: #007bff;
@@ -41,8 +40,14 @@
       z-index: 1000;
       font-size: 16px;
     }
-    #set-location-btn:hover {
+    #set-location-btn:hover, #note-mode-btn:hover {
       background-color: #0056b3;
+    }
+    #set-location-btn {
+      top: 120px;
+    }
+    #note-mode-btn {
+      top: 170px;
     }
     #search-box {
       position: fixed;
@@ -65,12 +70,37 @@
     #search-box input:focus {
       border-color: #007bff;
     }
+    .note-input {
+      position: absolute;
+      z-index: 2000;
+      transform: translate(-50%, -100%);
+      padding: 8px 12px;
+      border: 2px solid #007bff;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .delete-btn {
+      margin-left: 8px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 6px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .delete-btn:hover {
+      background-color: #b02a37;
+    }
   </style>
 </head>
 <body>
 
 <div id="map"></div>
 <button id="set-location-btn">Set Locations</button>
+<button id="note-mode-btn">Add Note</button>
 <div id="search-box"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
@@ -81,10 +111,11 @@
     center: [20, 0],
     zoom: 2,
     minZoom: 2,
-    maxZoom: 18
+    maxZoom: 18,
+    zoomAnimation: true,
+    zoomAnimationThreshold: 10
   });
 
-  // Add the base tile layer (OpenStreetMap)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18,
     attribution: ''
@@ -93,15 +124,9 @@
   const geocoderControl = L.Control.geocoder({
     defaultMarkGeocode: false
   }).on('markgeocode', function(e) {
-    const bbox = e.geocode.bbox;
-    const poly = L.polygon([
-      bbox.getSouthEast(),
-      bbox.getNorthEast(),
-      bbox.getNorthWest(),
-      bbox.getSouthWest()
-    ]).addTo(map);
-    map.fitBounds(poly.getBounds());
-    L.marker(e.geocode.center).addTo(map).bindPopup(e.geocode.name).openPopup();
+    const latLng = e.geocode.center;
+    map.setView(latLng, 13);
+    L.marker(latLng).addTo(map).bindPopup(e.geocode.name).openPopup();
   });
 
   geocoderControl.addTo(map);
@@ -109,6 +134,7 @@
 
   let startMarker, endMarker, routeControl;
   let isSettingLocation = false;
+  let isNoteMode = false;
 
   const redIcon = L.divIcon({
     html: '<div class="red-dot"></div>',
@@ -117,14 +143,12 @@
     iconAnchor: [5, 5]
   });
 
-  // Function to speak text
   function speak(text) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
     speechSynthesis.speak(utterance);
   }
 
-  // Function to locate user
   function locateUser() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(function(position) {
@@ -142,39 +166,77 @@
     }
   }
 
-  // Set location button action
   document.getElementById('set-location-btn').onclick = function() {
     isSettingLocation = !isSettingLocation;
+    isNoteMode = false;
+    document.getElementById('note-mode-btn').disabled = isSettingLocation;
+
     if (isSettingLocation) {
-      // Hide the button and search box when setting locations
       document.getElementById('set-location-btn').style.display = 'none';
       document.getElementById('search-box').style.display = 'none';
       speak("Click on the map to set your start and end locations.");
     } else {
-      // Show the button and search box again when done
       document.getElementById('set-location-btn').style.display = 'block';
       document.getElementById('search-box').style.display = 'block';
       speak("Click the button to set your start and end locations.");
     }
   };
 
+  document.getElementById('note-mode-btn').onclick = function() {
+    isNoteMode = !isNoteMode;
+    isSettingLocation = false;
+    document.getElementById('set-location-btn').disabled = isNoteMode;
+  };
+
   map.on('click', function(e) {
-    if (!isSettingLocation) return;
+    if (isSettingLocation) {
+      const lat = e.latlng.lat;
+      const lon = e.latlng.lng;
 
-    const lat = e.latlng.lat;
-    const lon = e.latlng.lng;
+      if (!startMarker) {
+        startMarker = L.marker([lat, lon]).addTo(map);
+        speak("Click to set your end location.");
+      } else if (!endMarker) {
+        endMarker = L.marker([lat, lon]).addTo(map);
+        speak("Start and end locations set.");
+        highlightShortestRoute();
+      }
+    } else if (isNoteMode) {
+      const mapContainer = document.getElementById('map');
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = 'Enter a label';
+      input.className = 'note-input';
+      input.style.left = e.originalEvent.clientX + 'px';
+      input.style.top = e.originalEvent.clientY + 'px';
 
-    if (!startMarker) {
-      startMarker = L.marker([lat, lon]).addTo(map);
-      speak("Click to set your end location.");
-    } else if (!endMarker) {
-      endMarker = L.marker([lat, lon]).addTo(map);
-      speak("Start and end locations set.");
-      highlightShortestRoute();
+      input.onkeydown = function(event) {
+        if (event.key === 'Enter' && input.value.trim()) {
+          const marker = L.marker(e.latlng).addTo(map);
+          const popupContent = document.createElement('div');
+          popupContent.textContent = input.value;
+
+          const deleteBtn = document.createElement('button');
+          deleteBtn.textContent = 'Delete';
+          deleteBtn.className = 'delete-btn';
+          deleteBtn.onclick = function() {
+            map.removeLayer(marker);
+          };
+
+          popupContent.appendChild(deleteBtn);
+          marker.bindPopup(popupContent);
+          marker.openPopup();
+          mapContainer.removeChild(input);
+        } else if (event.key === 'Escape') {
+          mapContainer.removeChild(input);
+        }
+      };
+
+      mapContainer.appendChild(input);
+      input.focus();
     }
   });
 
-  // Highlight shortest route
   function highlightShortestRoute() {
     if (routeControl) {
       map.removeControl(routeControl);
