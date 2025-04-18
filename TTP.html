@@ -1,33 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>TTP Maps with Routing</title>
+  <title>TTP Maps</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
   <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      width: 100%;
-    }
-    #map {
-      height: 100%;
-      width: 100%;
-    }
-    .red-dot {
-      width: 10px;
-      height: 10px;
-      background-color: red;
-      border-radius: 50%;
-      display: block;
-    }
-    .leaflet-control-attribution {
-      display: none !important;
-    }
+    body, html { margin: 0; padding: 0; height: 100%; width: 100%; }
+    #map { height: 100%; width: 100%; }
+    .red-dot { width: 10px; height: 10px; background-color: red; border-radius: 50%; display: block; }
+    .leaflet-control-attribution { display: none !important; }
     #set-location-btn, #note-mode-btn {
       position: fixed;
       right: 20px;
@@ -40,15 +24,9 @@
       z-index: 1000;
       font-size: 16px;
     }
-    #set-location-btn:hover, #note-mode-btn:hover {
-      background-color: #0056b3;
-    }
-    #set-location-btn {
-      top: 120px;
-    }
-    #note-mode-btn {
-      top: 170px;
-    }
+    #set-location-btn:hover, #note-mode-btn:hover { background-color: #0056b3; }
+    #set-location-btn { top: 120px; }
+    #note-mode-btn { top: 170px; }
     #search-box {
       position: fixed;
       top: 40px;
@@ -67,9 +45,7 @@
       border-radius: 4px;
       outline: none;
     }
-    #search-box input:focus {
-      border-color: #007bff;
-    }
+    #search-box input:focus { border-color: #007bff; }
     .note-input {
       position: absolute;
       z-index: 2000;
@@ -91,9 +67,7 @@
       cursor: pointer;
       font-size: 12px;
     }
-    .delete-btn:hover {
-      background-color: #b02a37;
-    }
+    .delete-btn:hover { background-color: #b02a37; }
   </style>
 </head>
 <body>
@@ -121,15 +95,13 @@
     attribution: ''
   }).addTo(map);
 
-  const geocoderControl = L.Control.geocoder({
-    defaultMarkGeocode: false
-  }).on('markgeocode', function(e) {
-    const latLng = e.geocode.center;
-    map.setView(latLng, 13);
-    L.marker(latLng).addTo(map).bindPopup(e.geocode.name).openPopup();
-  });
+  const geocoderControl = L.Control.geocoder({ defaultMarkGeocode: false })
+    .on('markgeocode', function(e) {
+      const latLng = e.geocode.center;
+      map.setView(latLng, 13);
+      L.marker(latLng).addTo(map).bindPopup(e.geocode.name).openPopup();
+    }).addTo(map);
 
-  geocoderControl.addTo(map);
   document.getElementById('search-box').appendChild(geocoderControl.getContainer());
 
   let startMarker, endMarker, routeControl;
@@ -154,15 +126,13 @@
       navigator.geolocation.getCurrentPosition(function(position) {
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
-
         map.setView([lat, lon], 13);
         L.marker([lat, lon], { icon: redIcon }).addTo(map).bindPopup("Your Location").openPopup();
       }, function(error) {
-        console.error('Error getting location:', error);
         alert('Could not get your location');
       });
     } else {
-      alert('Geolocation is not supported by this browser.');
+      alert('Geolocation not supported');
     }
   }
 
@@ -172,14 +142,14 @@
     document.getElementById('note-mode-btn').disabled = isSettingLocation;
 
     if (isSettingLocation) {
-      document.getElementById('set-location-btn').style.display = 'none';
+      this.style.display = 'none';
       document.getElementById('search-box').style.display = 'none';
-      document.getElementById('note-mode-btn').style.display = 'none'; // Hide note button when setting locations
+      document.getElementById('note-mode-btn').style.display = 'none';
       speak("Click on the map to set your start and end locations.");
     } else {
-      document.getElementById('set-location-btn').style.display = 'block';
+      this.style.display = 'block';
       document.getElementById('search-box').style.display = 'block';
-      document.getElementById('note-mode-btn').style.display = 'block'; // Show note button when not setting locations
+      document.getElementById('note-mode-btn').style.display = 'block';
       speak("Click the button to set your start and end locations.");
     }
   };
@@ -231,7 +201,7 @@
           marker.openPopup();
           mapContainer.removeChild(input);
 
-          saveLabelToLocalStorage(marker, input.value, e.latlng);
+          saveLabelToLocalStorage(input.value, e.latlng);
         } else if (event.key === 'Escape') {
           mapContainer.removeChild(input);
         }
@@ -241,16 +211,32 @@
     }
   });
 
-  function saveLabelToLocalStorage(marker, label, latlng) {
+  function saveLabelToLocalStorage(label, latlng) {
     const notes = JSON.parse(localStorage.getItem('notes')) || [];
-    notes.push({ label, latlng: latlng });
+    notes.push({ label, latlng });
     localStorage.setItem('notes', JSON.stringify(notes));
   }
 
   function deleteLabelFromLocalStorage(marker) {
     const notes = JSON.parse(localStorage.getItem('notes')) || [];
-    const updatedNotes = notes.filter(note => note.latlng !== marker.getLatLng());
+    const markerLatLng = marker.getLatLng();
+    const updatedNotes = notes.filter(note =>
+      Math.abs(note.latlng.lat - markerLatLng.lat) > 0.000001 ||
+      Math.abs(note.latlng.lng - markerLatLng.lng) > 0.000001
+    );
     localStorage.setItem('notes', JSON.stringify(updatedNotes));
+  }
+
+  function highlightShortestRoute() {
+    if (startMarker && endMarker) {
+      if (routeControl) {
+        map.removeControl(routeControl);
+      }
+      routeControl = L.Routing.control({
+        waypoints: [startMarker.getLatLng(), endMarker.getLatLng()],
+        routeWhileDragging: true
+      }).addTo(map);
+    }
   }
 
   function loadNotesFromLocalStorage() {
@@ -270,23 +256,9 @@
 
       popupContent.appendChild(deleteBtn);
       marker.bindPopup(popupContent);
-      marker.openPopup();
     });
   }
 
-  function highlightShortestRoute() {
-    if (startMarker && endMarker) {
-      if (routeControl) {
-        map.removeControl(routeControl);
-      }
-      routeControl = L.Routing.control({
-        waypoints: [startMarker.getLatLng(), endMarker.getLatLng()],
-        routeWhileDragging: true
-      }).addTo(map);
-    }
-  }
-
-  // Load saved notes from localStorage when the page loads
   loadNotesFromLocalStorage();
 </script>
 </body>
