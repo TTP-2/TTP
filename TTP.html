@@ -80,7 +80,6 @@
       font-size: 14px;
       outline: none;
       box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      background: white;
     }
     .delete-btn {
       margin-left: 8px;
@@ -167,47 +166,20 @@
     }
   }
 
-  function saveNotesToStorage(notes) {
-    localStorage.setItem('ttp_map_notes', JSON.stringify(notes));
-  }
-
-  function loadNotesFromStorage() {
-    const saved = localStorage.getItem('ttp_map_notes');
-    return saved ? JSON.parse(saved) : [];
-  }
-
-  function addNoteToMap(note) {
-    const { lat, lng, text } = note;
-    const marker = L.marker([lat, lng]).addTo(map);
-    const popupContent = document.createElement('div');
-    popupContent.textContent = text;
-
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = 'Delete';
-    deleteBtn.className = 'delete-btn';
-    deleteBtn.onclick = function () {
-      map.removeLayer(marker);
-      const notes = loadNotesFromStorage().filter(n => !(n.lat === lat && n.lng === lng && n.text === text));
-      saveNotesToStorage(notes);
-    };
-
-    popupContent.appendChild(deleteBtn);
-    marker.bindPopup(popupContent);
-    marker.openPopup();
-  }
-
   document.getElementById('set-location-btn').onclick = function() {
     isSettingLocation = !isSettingLocation;
     isNoteMode = false;
-    document.getElementById('note-mode-btn').disabled = isSettingLocation;
+    document.getElementById('note-mode-btn').disabled = isSettingLocation;  // Disable the Add Note button when setting locations
 
     if (isSettingLocation) {
       document.getElementById('set-location-btn').style.display = 'none';
       document.getElementById('search-box').style.display = 'none';
+      document.getElementById('note-mode-btn').style.display = 'none';  // Hide Add Note button when setting location
       speak("Click on the map to set your start and end locations.");
     } else {
       document.getElementById('set-location-btn').style.display = 'block';
       document.getElementById('search-box').style.display = 'block';
+      document.getElementById('note-mode-btn').style.display = 'block';  // Show Add Note button when not setting locations
       speak("Click the button to set your start and end locations.");
     }
   };
@@ -216,6 +188,12 @@
     isNoteMode = !isNoteMode;
     isSettingLocation = false;
     document.getElementById('set-location-btn').disabled = isNoteMode;
+
+    if (isNoteMode) {
+      document.getElementById('note-mode-btn').style.display = 'none';  // Hide Add Note button when in note mode
+    } else {
+      document.getElementById('note-mode-btn').style.display = 'block';  // Show Add Note button when not in note mode
+    }
   };
 
   map.on('click', function(e) {
@@ -242,17 +220,20 @@
 
       input.onkeydown = function(event) {
         if (event.key === 'Enter' && input.value.trim()) {
-          const note = {
-            lat: e.latlng.lat,
-            lng: e.latlng.lng,
-            text: input.value.trim()
+          const marker = L.marker(e.latlng).addTo(map);
+          const popupContent = document.createElement('div');
+          popupContent.textContent = input.value;
+
+          const deleteBtn = document.createElement('button');
+          deleteBtn.textContent = 'Delete';
+          deleteBtn.className = 'delete-btn';
+          deleteBtn.onclick = function() {
+            map.removeLayer(marker);
           };
-          addNoteToMap(note);
 
-          const currentNotes = loadNotesFromStorage();
-          currentNotes.push(note);
-          saveNotesToStorage(currentNotes);
-
+          popupContent.appendChild(deleteBtn);
+          marker.bindPopup(popupContent);
+          marker.openPopup();
           mapContainer.removeChild(input);
         } else if (event.key === 'Escape') {
           mapContainer.removeChild(input);
@@ -287,7 +268,6 @@
   window.onload = () => {
     locateUser();
     speak("Click the button in the top right to set your start and end locations.");
-    loadNotesFromStorage().forEach(note => addNoteToMap(note));
   };
 </script>
 
