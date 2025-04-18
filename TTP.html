@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>TTP maps</title>
+  <title>TTP Maps with Routing</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
@@ -169,17 +169,17 @@
   document.getElementById('set-location-btn').onclick = function() {
     isSettingLocation = !isSettingLocation;
     isNoteMode = false;
-    document.getElementById('note-mode-btn').disabled = isSettingLocation;  // Disable the Add Note button when setting locations
+    document.getElementById('note-mode-btn').disabled = isSettingLocation;
 
     if (isSettingLocation) {
       document.getElementById('set-location-btn').style.display = 'none';
       document.getElementById('search-box').style.display = 'none';
-      document.getElementById('note-mode-btn').style.display = 'none';  // Hide Add Note button when setting location
+      document.getElementById('note-mode-btn').style.display = 'none'; // Hide note button when setting locations
       speak("Click on the map to set your start and end locations.");
     } else {
       document.getElementById('set-location-btn').style.display = 'block';
       document.getElementById('search-box').style.display = 'block';
-      document.getElementById('note-mode-btn').style.display = 'block';  // Keep Add Note button visible when not setting locations
+      document.getElementById('note-mode-btn').style.display = 'block'; // Show note button when not setting locations
       speak("Click the button to set your start and end locations.");
     }
   };
@@ -188,8 +188,6 @@
     isNoteMode = !isNoteMode;
     isSettingLocation = false;
     document.getElementById('set-location-btn').disabled = isNoteMode;
-
-    // Do not hide the Add Note button when it's clicked
   };
 
   map.on('click', function(e) {
@@ -225,12 +223,15 @@
           deleteBtn.className = 'delete-btn';
           deleteBtn.onclick = function() {
             map.removeLayer(marker);
+            deleteLabelFromLocalStorage(marker);
           };
 
           popupContent.appendChild(deleteBtn);
           marker.bindPopup(popupContent);
           marker.openPopup();
           mapContainer.removeChild(input);
+
+          saveLabelToLocalStorage(marker, input.value, e.latlng);
         } else if (event.key === 'Escape') {
           mapContainer.removeChild(input);
         }
@@ -240,6 +241,43 @@
       input.focus();
     }
   });
+
+  function saveLabelToLocalStorage(marker, labelText, latlng) {
+    const labels = JSON.parse(localStorage.getItem('labels')) || [];
+    labels.push({
+      labelText: labelText,
+      lat: latlng.lat,
+      lng: latlng.lng
+    });
+    localStorage.setItem('labels', JSON.stringify(labels));
+  }
+
+  function loadLabelsFromLocalStorage() {
+    const labels = JSON.parse(localStorage.getItem('labels')) || [];
+    labels.forEach(label => {
+      const marker = L.marker([label.lat, label.lng]).addTo(map);
+      const popupContent = document.createElement('div');
+      popupContent.textContent = label.labelText;
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.className = 'delete-btn';
+      deleteBtn.onclick = function() {
+        map.removeLayer(marker);
+        deleteLabelFromLocalStorage(marker);
+      };
+
+      popupContent.appendChild(deleteBtn);
+      marker.bindPopup(popupContent);
+      marker.openPopup();
+    });
+  }
+
+  function deleteLabelFromLocalStorage(marker) {
+    const labels = JSON.parse(localStorage.getItem('labels')) || [];
+    const updatedLabels = labels.filter(label => label.lat !== marker.getLatLng().lat || label.lng !== marker.getLatLng().lng);
+    localStorage.setItem('labels', JSON.stringify(updatedLabels));
+  }
 
   function highlightShortestRoute() {
     if (routeControl) {
@@ -263,6 +301,7 @@
 
   window.onload = () => {
     locateUser();
+    loadLabelsFromLocalStorage();
     speak("Click the button in the top right to set your start and end locations.");
   };
 </script>
