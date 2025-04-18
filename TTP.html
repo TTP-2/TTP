@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>TTP Maps with Routing</title>
+  <title>TTP maps</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
@@ -101,7 +101,9 @@
 <div id="map"></div>
 <button id="set-location-btn">Set Locations</button>
 <button id="note-mode-btn">Add Note</button>
-<div id="search-box"></div>
+<div id="search-box">
+  <input id="custom-search" type="text" placeholder="Search for a place or note..." />
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
@@ -174,12 +176,12 @@
     if (isSettingLocation) {
       document.getElementById('set-location-btn').style.display = 'none';
       document.getElementById('search-box').style.display = 'none';
-      document.getElementById('note-mode-btn').style.display = 'none'; // Hide note button when setting locations
+      document.getElementById('note-mode-btn').style.display = 'none';
       speak("Click on the map to set your start and end locations.");
     } else {
       document.getElementById('set-location-btn').style.display = 'block';
       document.getElementById('search-box').style.display = 'block';
-      document.getElementById('note-mode-btn').style.display = 'block'; // Show note button when not setting locations
+      document.getElementById('note-mode-btn').style.display = 'block';
       speak("Click the button to set your start and end locations.");
     }
   };
@@ -248,8 +250,11 @@
   }
 
   function deleteLabelFromLocalStorage(marker) {
+    const markerLatLng = marker.getLatLng();
     const notes = JSON.parse(localStorage.getItem('notes')) || [];
-    const updatedNotes = notes.filter(note => note.latlng !== marker.getLatLng());
+    const updatedNotes = notes.filter(note =>
+      !(note.latlng.lat === markerLatLng.lat && note.latlng.lng === markerLatLng.lng)
+    );
     localStorage.setItem('notes', JSON.stringify(updatedNotes));
   }
 
@@ -265,6 +270,52 @@
     }
   }
 
+  // Search from input
+  const searchInput = document.getElementById('custom-search');
+
+  searchInput.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+      const query = searchInput.value.trim().toLowerCase();
+      if (!query) return;
+
+      const notes = JSON.parse(localStorage.getItem('notes')) || [];
+      const matchedNote = notes.find(note => note.label.toLowerCase() === query);
+
+      if (matchedNote) {
+        const { lat, lng } = matchedNote.latlng;
+        map.setView([lat, lng], 15);
+        L.popup()
+          .setLatLng([lat, lng])
+          .setContent(matchedNote.label)
+          .openOn(map);
+        speak(`Found ${matchedNote.label}`);
+      } else {
+        geocoderControl._input.value = query;
+        geocoderControl._geocode(query);
+      }
+    }
+  });
+
+  // Restore saved notes on load
+  window.addEventListener('load', () => {
+    const savedNotes = JSON.parse(localStorage.getItem('notes')) || [];
+    savedNotes.forEach(note => {
+      const marker = L.marker(note.latlng).addTo(map);
+      const popupContent = document.createElement('div');
+      popupContent.textContent = note.label;
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.className = 'delete-btn';
+      deleteBtn.onclick = function () {
+        map.removeLayer(marker);
+        deleteLabelFromLocalStorage(marker);
+      };
+
+      popupContent.appendChild(deleteBtn);
+      marker.bindPopup(popupContent);
+    });
+  });
 </script>
 </body>
 </html>
