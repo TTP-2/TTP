@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>TTP Maps</title>
+  <title>TTP Maps with Routing</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
@@ -10,7 +10,13 @@
   <style>
     body, html { margin: 0; padding: 0; height: 100%; width: 100%; }
     #map { height: 100%; width: 100%; }
-    .red-dot { width: 10px; height: 10px; background-color: red; border-radius: 50%; display: block; }
+    .red-dot {
+      width: 10px;
+      height: 10px;
+      background-color: red;
+      border-radius: 50%;
+      display: block;
+    }
     .leaflet-control-attribution { display: none !important; }
     #set-location-btn, #note-mode-btn {
       position: fixed;
@@ -24,7 +30,9 @@
       z-index: 1000;
       font-size: 16px;
     }
-    #set-location-btn:hover, #note-mode-btn:hover { background-color: #0056b3; }
+    #set-location-btn:hover, #note-mode-btn:hover {
+      background-color: #0056b3;
+    }
     #set-location-btn { top: 120px; }
     #note-mode-btn { top: 170px; }
     #search-box {
@@ -85,9 +93,7 @@
     center: [20, 0],
     zoom: 2,
     minZoom: 2,
-    maxZoom: 18,
-    zoomAnimation: true,
-    zoomAnimationThreshold: 10
+    maxZoom: 18
   });
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -95,13 +101,15 @@
     attribution: ''
   }).addTo(map);
 
-  const geocoderControl = L.Control.geocoder({ defaultMarkGeocode: false })
-    .on('markgeocode', function(e) {
-      const latLng = e.geocode.center;
-      map.setView(latLng, 13);
-      L.marker(latLng).addTo(map).bindPopup(e.geocode.name).openPopup();
-    }).addTo(map);
+  const geocoderControl = L.Control.geocoder({
+    defaultMarkGeocode: false
+  }).on('markgeocode', function(e) {
+    const latLng = e.geocode.center;
+    map.setView(latLng, 13);
+    L.marker(latLng).addTo(map).bindPopup(e.geocode.name).openPopup();
+  });
 
+  geocoderControl.addTo(map);
   document.getElementById('search-box').appendChild(geocoderControl.getContainer());
 
   let startMarker, endMarker, routeControl;
@@ -121,21 +129,6 @@
     speechSynthesis.speak(utterance);
   }
 
-  function locateUser() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(function(position) {
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
-        map.setView([lat, lon], 13);
-        L.marker([lat, lon], { icon: redIcon }).addTo(map).bindPopup("Your Location").openPopup();
-      }, function(error) {
-        alert('Could not get your location');
-      });
-    } else {
-      alert('Geolocation not supported');
-    }
-  }
-
   document.getElementById('set-location-btn').onclick = function() {
     isSettingLocation = !isSettingLocation;
     isNoteMode = false;
@@ -143,13 +136,13 @@
 
     if (isSettingLocation) {
       this.style.display = 'none';
-      document.getElementById('search-box').style.display = 'none';
       document.getElementById('note-mode-btn').style.display = 'none';
+      document.getElementById('search-box').style.display = 'none';
       speak("Click on the map to set your start and end locations.");
     } else {
       this.style.display = 'block';
-      document.getElementById('search-box').style.display = 'block';
       document.getElementById('note-mode-btn').style.display = 'block';
+      document.getElementById('search-box').style.display = 'block';
       speak("Click the button to set your start and end locations.");
     }
   };
@@ -184,24 +177,24 @@
 
       input.onkeydown = function(event) {
         if (event.key === 'Enter' && input.value.trim()) {
+          const label = input.value;
           const marker = L.marker(e.latlng).addTo(map);
           const popupContent = document.createElement('div');
-          popupContent.textContent = input.value;
+          popupContent.textContent = label;
 
           const deleteBtn = document.createElement('button');
           deleteBtn.textContent = 'Delete';
           deleteBtn.className = 'delete-btn';
           deleteBtn.onclick = function() {
             map.removeLayer(marker);
-            deleteLabelFromLocalStorage(marker);
+            deleteNoteFromStorage(e.latlng, label);
           };
 
           popupContent.appendChild(deleteBtn);
-          marker.bindPopup(popupContent);
-          marker.openPopup();
+          marker.bindPopup(popupContent).openPopup();
           mapContainer.removeChild(input);
 
-          saveLabelToLocalStorage(input.value, e.latlng);
+          saveNoteToStorage(label, e.latlng);
         } else if (event.key === 'Escape') {
           mapContainer.removeChild(input);
         }
@@ -211,35 +204,23 @@
     }
   });
 
-  function saveLabelToLocalStorage(label, latlng) {
+  function saveNoteToStorage(label, latlng) {
     const notes = JSON.parse(localStorage.getItem('notes')) || [];
     notes.push({ label, latlng });
     localStorage.setItem('notes', JSON.stringify(notes));
   }
 
-  function deleteLabelFromLocalStorage(marker) {
-    const notes = JSON.parse(localStorage.getItem('notes')) || [];
-    const markerLatLng = marker.getLatLng();
-    const updatedNotes = notes.filter(note =>
-      Math.abs(note.latlng.lat - markerLatLng.lat) > 0.000001 ||
-      Math.abs(note.latlng.lng - markerLatLng.lng) > 0.000001
+  function deleteNoteFromStorage(latlng, label) {
+    let notes = JSON.parse(localStorage.getItem('notes')) || [];
+    notes = notes.filter(note =>
+      note.label !== label ||
+      note.latlng.lat !== latlng.lat ||
+      note.latlng.lng !== latlng.lng
     );
-    localStorage.setItem('notes', JSON.stringify(updatedNotes));
+    localStorage.setItem('notes', JSON.stringify(notes));
   }
 
-  function highlightShortestRoute() {
-    if (startMarker && endMarker) {
-      if (routeControl) {
-        map.removeControl(routeControl);
-      }
-      routeControl = L.Routing.control({
-        waypoints: [startMarker.getLatLng(), endMarker.getLatLng()],
-        routeWhileDragging: true
-      }).addTo(map);
-    }
-  }
-
-  function loadNotesFromLocalStorage() {
+  function loadNotesFromStorage() {
     const notes = JSON.parse(localStorage.getItem('notes')) || [];
     notes.forEach(note => {
       const marker = L.marker(note.latlng).addTo(map);
@@ -251,7 +232,7 @@
       deleteBtn.className = 'delete-btn';
       deleteBtn.onclick = function() {
         map.removeLayer(marker);
-        deleteLabelFromLocalStorage(marker);
+        deleteNoteFromStorage(note.latlng, note.label);
       };
 
       popupContent.appendChild(deleteBtn);
@@ -259,7 +240,32 @@
     });
   }
 
-  loadNotesFromLocalStorage();
+  function highlightShortestRoute() {
+    if (startMarker && endMarker) {
+      if (routeControl) map.removeControl(routeControl);
+
+      const customFormatter = new L.Routing.Formatter();
+      customFormatter.formatHeading = () => 'Go forward';
+      customFormatter.formatInstruction = function(instr) {
+        if (instr.type === 'Head' || instr.type === 'Straight') {
+          return 'Go forward';
+        } else if (instr.type === 'EndAt') {
+          return 'You’ve reached your destination.';
+        } else if (instr.text) {
+          return instr.text.replace(/^Head .*/, 'Go forward');
+        }
+        return L.Routing.Formatter.prototype.formatInstruction.call(this, instr);
+      };
+
+      routeControl = L.Routing.control({
+        waypoints: [startMarker.getLatLng(), endMarker.getLatLng()],
+        routeWhileDragging: true,
+        formatter: customFormatter
+      }).addTo(map);
+    }
+  }
+
+  loadNotesFromStorage(); // Load any saved notes when the page opens
 </script>
 </body>
 </html>
