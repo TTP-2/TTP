@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>TTP map</title>
+  <title>TTP Maps with Routing</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
@@ -253,6 +253,27 @@
     localStorage.setItem('notes', JSON.stringify(updatedNotes));
   }
 
+  function loadNotesFromLocalStorage() {
+    const notes = JSON.parse(localStorage.getItem('notes')) || [];
+    notes.forEach(note => {
+      const marker = L.marker(note.latlng).addTo(map);
+      const popupContent = document.createElement('div');
+      popupContent.textContent = note.label;
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.className = 'delete-btn';
+      deleteBtn.onclick = function() {
+        map.removeLayer(marker);
+        deleteLabelFromLocalStorage(marker);
+      };
+
+      popupContent.appendChild(deleteBtn);
+      marker.bindPopup(popupContent);
+      marker.openPopup();
+    });
+  }
+
   function highlightShortestRoute() {
     if (startMarker && endMarker) {
       if (routeControl) {
@@ -265,6 +286,8 @@
     }
   }
 
+  // Load saved notes from localStorage when the page loads
+  loadNotesFromLocalStorage();
 </script>
 </body>
 </html>
