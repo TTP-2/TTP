@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Arrow Key Movement barrier</title>
+  <title>Arrow Key Movement</title>
 </head>
 <body>
   <canvas id="game" width="300" height="300" style="background: lightgray;"></canvas>
@@ -17,10 +17,10 @@
     }
     
     document.onkeydown = function(event) {
-        if (event.key === "ArrowUp") && y > 0) y -= 5;
-        if (event.key === "ArrowDown") y < canvas.height - 50) y += 5;
-        if (event.key === "ArrowLeft") && x > 0) x -= 5;
-        if (event.key === "ArrowRight") && x < canvas.width - 50) x += 5;
+        if (event.key === "ArrowUp" && y > 0) y -= 5;
+        if (event.key === "ArrowDown" && y < canvas.height - 50) y += 5;
+        if (event.key === "ArrowLeft" && x > 0) x -= 5;
+        if (event.key === "ArrowRight" && x < canvas.width - 50) x += 5;
         draw();
     };
     
