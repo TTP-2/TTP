@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Arrow Key Movement</title>
+</head>
+<body>
+  <canvas id="game" width="300" height="300" style="background: lightgray;"></canvas>
+  <script>
+    let canvas = document.getElementById("game");
+    let ctx = canvas.getContext("2d");
+    let x = 50, y = 50;
+    
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "red";
+        ctx.fillRect(x, y, 50, 50);
+    }
+    
+    document.onkeydown = function(event) {
+        if (event.key === "ArrowUp") y -= 5;
+        if (event.key === "ArrowDown") y += 5;
+        if (event.key === "ArrowLeft") x -= 5;
+        if (event.key === "ArrowRight") x += 5;
+        draw();
+    };
+    
+    draw();
+  </script>
+</body>
+</html>
