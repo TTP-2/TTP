@@ -1,10 +1,9 @@
-// Full updated HTML code for park-style benches around the fountain without pavement
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Circle of Buildings - Babylon.js</title>
+    <title>Circle of Buildings with Car Park - Babylon.js</title>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
     <style>
@@ -50,7 +49,7 @@
             const width = Math.random() * 3 + 5;
             const depth = Math.random() * 3 + 5;
 
-            const building = BABYLON.MeshBuilder.CreateBox("building", {
+            const building = BABYLON.MeshBuilder.CreateBox(`building_${i}`, {
                 width: width,
                 height: height,
                 depth: depth
@@ -63,9 +62,33 @@
             building.material = mat;
 
             building.checkCollisions = true;
+
+            // Label the first building as "BNZ"
+            if (i === 0) {
+                const dynamicTexture = new BABYLON.DynamicTexture("dynamicTexture", { width: 512, height: 256 }, scene);
+                const ctx = dynamicTexture.getContext();
+                ctx.fillStyle = "black";
+                ctx.fillRect(0, 0, 512, 256);
+                ctx.fillStyle = "white";
+                ctx.font = "bold 100px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("BNZ", 256, 128);
+                dynamicTexture.update();
+
+                const textMat = new BABYLON.StandardMaterial("textMat", scene);
+                textMat.diffuseTexture = dynamicTexture;
+                textMat.emissiveColor = new BABYLON.Color3(1, 1, 1);
+
+                const textPlane = BABYLON.MeshBuilder.CreatePlane("bnzLabel", { width: 4, height: 2 }, scene);
+                textPlane.position = new BABYLON.Vector3(x, height - 2, z - depth / 2 - 0.1);
+                textPlane.rotation.y = Math.PI; // Facing the fountain
+                textPlane.material = textMat;
+            }
         }
 
         // Fountain
+ supercritical fluid extraction
         const base = BABYLON.MeshBuilder.CreateCylinder("fountainBase", { diameter: 10, height: 1 }, scene);
         base.position.y = 0.5;
         const pool = BABYLON.MeshBuilder.CreateCylinder("fountainPool", { diameter: 6, height: 0.5 }, scene);
@@ -111,34 +134,333 @@
         particleSystem.start();
 
         // Park-style benches
-        const benchMat = new BABYLON.StandardMaterial("benchMat", scene);
-        benchMat.diffuseColor = new BABYLON.Color3(0.4, 0.2, 0);
+        const woodMat = new BABYLON.StandardMaterial("woodMat", scene);
+        woodMat.diffuseColor = new BABYLON.Color3(0.55, 0.27, 0.07);
+        woodMat.specularColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+
+        const metalMat = new BABYLON.StandardMaterial("metalMat", scene);
+        metalMat.diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+        metalMat.specularColor = new BABYLON.Color3(0.5, 0.5, 0.5);
 
         const benchCount = 8;
-        const benchDistance = 9;
+        const benchDistance = 10;
 
         for (let i = 0; i < benchCount; i++) {
             const angle = (i / benchCount) * 2 * Math.PI;
             const x = benchDistance * Math.cos(angle);
             const z = benchDistance * Math.sin(angle);
 
-            const seat = BABYLON.MeshBuilder.CreateBox(`seat_${i}`, { width: 2, height: 0.15, depth: 0.6 }, scene);
-            seat.position = new BABYLON.Vector3(x, 0.2, z);
-            seat.rotation.y = -angle + Math.PI / 2;
-            seat.material = benchMat;
+            const bench = new BABYLON.Mesh(`bench_${i}`, scene);
+            bench.position = new BABYLON.Vector3(x, 0, z);
+            bench.rotation.y = -angle + Math.PI / 2;
 
-            const backrest = BABYLON.MeshBuilder.CreateBox(`backrest_${i}`, { width: 2, height: 0.5, depth: 0.1 }, scene);
-            backrest.position = new BABYLON.Vector3(x, 0.6, z - 0.25 * Math.cos(angle));
-            backrest.rotation.y = seat.rotation.y;
-            backrest.material = benchMat;
+            const slatCount = 4;
+            for (let j = 0; j < slatCount; j++) {
+                const slat = BABYLON.MeshBuilder.CreateBox(`seat_slat_${i}_${j}`, {
+                    width: 2.2,
+                    height: 0.05,
+                    depth: 0.12
+                }, scene);
+                slat.position = new BABYLON.Vector3(0, 0.25, -0.18 + j * 0.14);
+                slat.material = woodMat;
+                slat.parent = bench;
+            }
 
-            const leg1 = BABYLON.MeshBuilder.CreateBox(`leg1_${i}`, { width: 0.1, height: 0.4, depth: 0.1 }, scene);
-            leg1.position = new BABYLON.Vector3(x - 0.9 * Math.sin(angle), 0.2, z + 0.3 * Math.cos(angle));
-            leg1.material = benchMat;
+            for (let j = 0; j < 3; j++) {
+                const backSlat = BABYLON.MeshBuilder.CreateBox(`back_slat_${i}_${j}`, {
+                    width: 2.2,
+                    height: 0.05,
+                    depth: 0.1
+                }, scene);
+                backSlat.position = new BABYLON.Vector3(0, 0.4 + j * 0.15, -0.25);
+                backSlat.rotation.x = Math.PI / 6;
+                backSlat.material = woodMat;
+                backSlat.parent = bench;
+            }
 
-            const leg2 = BABYLON.MeshBuilder.CreateBox(`leg2_${i}`, { width: 0.1, height: 0.4, depth: 0.1 }, scene);
-            leg2.position = new BABYLON.Vector3(x + 0.9 * Math.sin(angle), 0.2, z + 0.3 * Math.cos(angle));
-            leg2.material = benchMat;
+            const legFrameLeft = BABYLON.MeshBuilder.CreateBox(`leg_left_${i}`, {
+                width: 0.06,
+                height: 0.3,
+                depth: 0.5
+            }, scene);
+            legFrameLeft.position = new BABYLON.Vector3(-1, 0.15, -0.05);
+            legFrameLeft.material = metalMat;
+            legFrameLeft.parent = bench;
+
+            const legFrameRight = BABYLON.MeshBuilder.CreateBox(`leg_right_${i}`, {
+                width: 0.06,
+                height: 0.3,
+                depth: 0.5
+            }, scene);
+            legFrameRight.position = new BABYLON.Vector3(1, 0.15, -0.05);
+            legFrameRight.material = metalMat;
+            legFrameRight.parent = bench;
+
+            const armrestLeft = BABYLON.MeshBuilder.CreateBox(`armrest_left_${i}`, {
+                width: 0.06,
+                height: 0.3,
+                depth: 0.06
+            }, scene);
+            armrestLeft.position = new BABYLON.Vector3(-1, 0.45, -0.25);
+            armrestLeft.material = metalMat;
+            armrestLeft.parent = bench;
+
+            const armrestRight = BABYLON.MeshBuilder.CreateBox(`armrest_right_${i}`, {
+                width: 0.06,
+                height: 0.3,
+                depth: 0.06
+            }, scene);
+            armrestRight.position = new BABYLON.Vector3(1, 0.45, -0.25);
+            armrestRight.material = metalMat;
+            armrestRight.parent = bench;
+        }
+
+        // Car park inside the circle in front of BNZ building (at angle 0)
+        const carParkWidth = 20;
+        const carParkDepth = 6;
+        const carPark = BABYLON.MeshBuilder.CreateGround("carPark", {
+            width: carParkWidth,
+            height: carParkDepth
+        }, scene);
+        carPark.position = new BABYLON.Vector3(radius - 8, 0.01, 0); // Closer to BNZ
+        const asphaltMat = new BABYLON.StandardMaterial("asphaltMat", scene);
+        asphaltMat.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+        carPark.material = asphaltMat;
+
+        // Concrete curbs
+        const curbMat = new BABYLON.StandardMaterial("curbMat", scene);
+        curbMat.diffuseColor = new BABYLON.Color3(0.6, 0.6, 0.6);
+
+        const curbLong1 = BABYLON.MeshBuilder.CreateBox("curb_long1", {
+            width: carParkWidth,
+            height: 0.15,
+            depth: 0.3
+        }, scene);
+        curbLong1.position = new BABYLON.Vector3(radius - 8, 0.075, carParkDepth / 2);
+        curbLong1.material = curbMat;
+
+        const curbLong2 = BABYLON.MeshBuilder.CreateBox("curb_long2", {
+            width: carParkWidth,
+            height: 0.15,
+            depth: 0.3
+        }, scene);
+        curbLong2.position = new BABYLON.Vector3(radius - 8, 0.075, -carParkDepth / 2);
+        curbLong2.material = curbMat;
+
+        const curbShort1 = BABYLON.MeshBuilder.CreateBox("curb_short1", {
+            width: carParkDepth,
+            height: 0.15,
+            depth: 0.3
+        }, scene);
+        curbShort1.position = new BABYLON.Vector3(radius - 8 - carParkWidth / 2, 0.075, 0);
+        curbShort1.rotation.y = Math.PI / 2;
+        curbShort1.material = curbMat;
+
+        const curbShort2 = BABYLON.MeshBuilder.CreateBox("curb_short2", {
+            width: carParkDepth,
+            height: 0.15,
+            depth: 0.3
+        }, scene);
+        curbShort2.position = new BABYLON.Vector3(radius - 8 + carParkWidth / 2, 0.075, 0);
+        curbShort2.rotation.y = Math.PI / 2;
+        curbShort2.material = curbMat;
+
+        // Pavement for pedestrian access
+        const pavement = BABYLON.MeshBuilder.CreateGround("pavement", {
+            width: carParkWidth,
+            height: 2
+        }, scene);
+        pavement.position = new BABYLON.Vector3(radius - 8, 0.01, carParkDepth / 2 + 1);
+        pavement.material = curbMat;
+
+        // Parking lines (yellow)
+        const lineMat = new BABYLON.StandardMaterial("lineMat", scene);
+        lineMat.diffuseColor = new BABYLON.Color3(1, 1, 0); // Yellow
+
+        const parkingSpaces = 5;
+        const spaceWidth = carParkWidth / parkingSpaces;
+        for (let i = 0; i <= parkingSpaces; i++) {
+            const line = BABYLON.MeshBuilder.CreateBox(`line_${i}`, {
+                width: 0.2,
+                height: 0.01,
+                depth: carParkDepth
+            }, scene);
+            line.position = new BABYLON.Vector3(
+                radius - 8 - carParkWidth / 2 + i * spaceWidth,
+                0.02,
+                0
+            );
+            line.material = lineMat;
+        }
+
+        // Parking bollards
+        const bollardMat = new BABYLON.StandardMaterial("bollardMat", scene);
+        bollardMat.diffuseColor = new BABYLON.Color3(0.8, 0.8, 0);
+
+        const bollardPositions = [
+            new BABYLON.Vector3(radius - 8 - carParkWidth / 2, 0.5, carParkDepth / 2 + 0.5),
+            new BABYLON.Vector3(radius - 8 + carParkWidth / 2, 0.5, carParkDepth / 2 + 0.5)
+        ];
+
+        bollardPositions.forEach((pos, index) => {
+            const bollard = BABYLON.MeshBuilder.CreateCylinder(`bollard_${index}`, {
+                diameter: 0.2,
+                height: 1
+            }, scene);
+            bollard.position = pos;
+            bollard.material = bollardMat;
+        });
+
+        // Streetlights
+        const lightPoleMat = new BABYLON.StandardMaterial("lightPoleMat", scene);
+        lightPoleMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+
+        for (let i = 0; i < 2; i++) {
+            const pole = BABYLON.MeshBuilder.CreateCylinder(`pole_${i}`, {
+                diameter: 0.2,
+                height: 4
+            }, scene);
+            pole.position = new BABYLON.Vector3(
+                radius - 8 - carParkWidth / 2 + (i + 0.5) * carParkWidth,
+                2,
+                carParkDepth / 2 + 1.5
+            );
+            pole.material = lightPoleMat;
+
+            const lampLight = new BABYLON.SpotLight(
+                `lamp_${i}`,
+                new BABYLON.Vector3(
+                    radius - 8 - carParkWidth / 2 + (i + 0.5) * carParkWidth,
+                    4,
+                    carParkDepth / 2 + 1.5
+                ),
+                new BABYLON.Vector3(0, -1, 0),
+                Math.PI / 4,
+                10,
+                scene
+            );
+            lampLight.intensity = 0.5;
+        }
+
+        // Realistic cars
+        const carColors = [
+            new BABYLON.Color3(0.8, 0.2, 0.2), // Red
+            new BABYLON.Color3(0.2, 0.2, 0.8), // Blue
+            new BABYLON.Color3(0.1, 0.1, 0.1), // Black
+            new BABYLON.Color3(0.9, 0.9, 0.9)  // White
+        ];
+
+        for (let i = 0; i < parkingSpaces - 1; i++) {
+            const car = new BABYLON.Mesh(`car_${i}`, scene);
+            const randomAngle = (Math.random() - 0.5) * Math.PI / 12; // Slight rotation for realism
+            car.position = new BABYLON.Vector3(
+                radius - 8 - carParkWidth / 2 + (i + 0.5) * spaceWidth,
+                0.5,
+                0
+            );
+            car.rotation.y = Math.PI + randomAngle; // Facing toward BNZ
+
+            // Car body (main)
+            const mainBody = BABYLON.MeshBuilder.CreateBox(`car_main_body_${i}`, {
+                width: 2.5,
+                height: 0.6,
+                depth: 3.5
+            }, scene);
+            mainBody.position.y = 0.3;
+            const carMat = new BABYLON.StandardMaterial(`carMat_${i}`, scene);
+            carMat.diffuseColor = carColors[i % carColors.length];
+            carMat.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+            mainBody.material = carMat;
+            mainBody.parent = car;
+
+            // Hood
+            const hood = BABYLON.MeshBuilder.CreateBox(`car_hood_${i}`, {
+                width: 2.5,
+                height: 0.3,
+                depth: 1.5
+            }, scene);
+            hood.position = new BABYLON.Vector3(0, 0.35, 1.5);
+            hood.rotation.x = -Math.PI / 12;
+            hood.material = carMat;
+            hood.parent = car;
+
+            // Trunk
+            const trunk = BABYLON.MeshBuilder.CreateBox(`car_trunk_${i}`, {
+                width: 2.5,
+                height: 0.3,
+                depth: 1.5
+            }, scene);
+            trunk.position = new BABYLON.Vector3(0, 0.35, -1.5);
+            trunk.rotation.x = Math.PI / 12;
+            trunk.material = carMat;
+            trunk.parent = car;
+
+            // Windows
+            const windowMat = new BABYLON.StandardMaterial(`windowMat_${i}`, scene);
+            windowMat.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+            windowMat.alpha = 0.8;
+
+            const frontWindow = BABYLON.MeshBuilder.CreateBox(`front_window_${i}`, {
+                width: 2.3,
+                height: 0.3,
+                depth: 0.5
+            }, scene);
+            frontWindow.position = new BABYLON.Vector3(0, 0.6, 1);
+            frontWindow.rotation.x = Math.PI / 4;
+            frontWindow.material = windowMat;
+            frontWindow.parent = car;
+
+            const rearWindow = BABYLON.MeshBuilder.CreateBox(`rear_window_${i}`, {
+                width: 2.3,
+                height: 0.3,
+                depth: 0.5
+            }, scene);
+            rearWindow.position = new BABYLON.Vector3(0, 0.6, -1);
+            rearWindow.rotation.x = -Math.PI / 4;
+            rearWindow.material = windowMat;
+            rearWindow.parent = car;
+
+            // Side windows
+            const sideWindowLeft = BABYLON.MeshBuilder.CreateBox(`side_window_left_${i}`, {
+                width: 0.1,
+                height: 0.3,
+                depth: 1.5
+            }, scene);
+            sideWindowLeft.position = new BABYLON.Vector3(1.2, 0.6, 0);
+            sideWindowLeft.material = windowMat;
+            sideWindowLeft.parent = car;
+
+            const sideWindowRight = BABYLON.MeshBuilder.CreateBox(`side_window_right_${i}`, {
+                width: 0.1,
+                height: 0.3,
+                depth: 1.5
+            }, scene);
+            sideWindowRight.position = new BABYLON.Vector3(-1.2, 0.6, 0);
+            sideWindowRight.material = windowMat;
+            sideWindowRight.parent = car;
+
+            // Wheels
+            const wheelMat = new BABYLON.StandardMaterial(`wheelMat_${i}`, scene);
+            wheelMat.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+
+            const wheelPositions = [
+                new BABYLON.Vector3(0.9, 0.2, 1.2),
+                new BABYLON.Vector3(-0.9, 0.2, 1.2),
+                new BABYLON.Vector3(0.9, 0.2, -1.2),
+                new BABYLON.Vector3(-0.9, 0.2, -1.2)
+            ];
+
+            wheelPositions.forEach((pos, index) => {
+                const wheel = BABYLON.MeshBuilder.CreateCylinder(`wheel_${i}_${index}`, {
+                    diameter: 0.4,
+                    height: 0.2,
+                    tessellation: 16
+                }, scene);
+                wheel.position = pos;
+                wheel.rotation.z = Math.PI / 2;
+                wheel.material = wheelMat;
+                wheel.parent = car;
+            });
         }
 
         return scene;
