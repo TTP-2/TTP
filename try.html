@@ -3,476 +3,294 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Circle of Buildings with Car Park - Babylon.js</title>
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    <title>Minecraft-like Game with Babylon.js</title>
     <style>
         body { margin: 0; overflow: hidden; }
-        canvas { display: block; width: 100vw; height: 100vh; }
+        canvas { width: 100%; height: 100vh; }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+        }
+        #debug {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: yellow;
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px;
+        }
     </style>
 </head>
 <body>
-<canvas id="renderCanvas"></canvas>
-<script>
-    const canvas = document.getElementById('renderCanvas');
-    const engine = new BABYLON.Engine(canvas, true);
+    <div id="ui">Click to lock cursor. WASD to move, Space to jump, Mouse to look, Left-click to break, Right-click to place.</div>
+    <div id="debug"></div>
+    <canvas id="renderCanvas"></canvas>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script>
+        const canvas = document.getElementById("renderCanvas");
+        const debugDiv = document.getElementById("debug");
+        let engine, scene, camera, world, selectedBlockType = 1;
 
-    const createScene = function () {
-        const scene = new BABYLON.Scene(engine);
+        function logDebug(message) {
+            console.log(message);
+            debugDiv.innerText = message;
+        }
 
-        const camera = new BABYLON.UniversalCamera("camera1", new BABYLON.Vector3(0, 2, -60), scene);
-        camera.attachControl(canvas, true);
-        camera.speed = 0.5;
-        camera.applyGravity = true;
-        camera.checkCollisions = true;
+        try {
+            engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+            logDebug("Engine initialized");
+        } catch (e) {
+            logDebug("Engine init failed: " + e.message);
+            alert("Failed to initialize game engine. Please check console for details.");
+            throw e;
+        }
 
-        const light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+        function createScene() {
+            try {
+                scene = new BABYLON.Scene(engine);
+                scene.clearColor = new BABYLON.Color4(0.5, 0.8, 1, 1);
+                logDebug("Scene created");
 
-        // Ground without pavement (just gray platform)
-        const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 200, height: 200 }, scene);
-        const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
-        groundMat.diffuseColor = new BABYLON.Color3(0.7, 0.7, 0.7);
-        ground.material = groundMat;
-        ground.checkCollisions = true;
+                // Camera
+                camera = new BABYLON.UniversalCamera("camera", new BABYLON.Vector3(0, 5, -10), scene);
+                camera.setTarget(BABYLON.Vector3.Zero());
+                camera.applyGravity = true;
+                camera.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
+                camera.checkCollisions = true;
+                camera.speed = 0.3;
+                camera.angularSensibility = 2000;
+                camera.keysUp.push(87); // W
+                camera.keysDown.push(83); // S
+                camera.keysLeft.push(65); // A
+                camera.keysRight.push(68); // D
+                camera.keysUpward.push(32); // Space
+                logDebug("Camera set up");
 
-        scene.gravity = new BABYLON.Vector3(0, -0.5, 0);
-        scene.collisionsEnabled = true;
+                // Lighting
+                const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+                light.intensity = 0.8;
 
-        const buildingCount = 12;
-        const radius = 50;
+                // Materials
+                const grassMat = new BABYLON.StandardMaterial("grassMat", scene);
+                grassMat.diffuseColor = new BABYLON.Color3(0, 0.6, 0);
+                const dirtMat = new BABYLON.StandardMaterial("dirtMat", scene);
+                dirtMat.diffuseColor = new BABYLON.Color3(0.4, 0.2, 0);
+                const stoneMat = new BABYLON.StandardMaterial("stoneMat", scene);
+                stoneMat.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
 
-        for (let i = 0; i < buildingCount; i++) {
-            const angle = (i / buildingCount) * 2 * Math.PI;
-            const x = radius * Math.cos(angle);
-            const z = radius * Math.sin(angle);
-            const height = Math.random() * 10 + 10;
-            const width = Math.random() * 3 + 5;
-            const depth = Math.random() * 3 + 5;
+                // World
+                world = {
+                    chunks: {},
+                    blockTypes: { 1: grassMat, 2: dirtMat, 3: stoneMat },
+                    chunkSize: 8,
+                    blockSize: 1,
+                    getBlock(x, y, z) {
+                        const chunkX = Math.floor(x / this.chunkSize);
+                        const chunkZ = Math.floor(z / this.chunkSize);
+                        const chunkId = `${chunkX},${chunkZ}`;
+                        if (!this.chunks[chunkId]) return 0;
+                        const localX = Math.floor((x % this.chunkSize + this.chunkSize) % this.chunkSize);
+                        const localZ = Math.floor((z % this.chunkSize + this.chunkSize) % this.chunkSize);
+                        return this.chunks[chunkId].blocks[localX]?.[Math.floor(y)]?.[localZ] || 0;
+                    },
+                    setBlock(x, y, z, type) {
+                        try {
+                            const chunkX = Math.floor(x / this.chunkSize);
+                            const chunkZ = Math.floor(z / this.chunkSize);
+                            const chunkId = `${chunkX},${chunkZ}`;
+                            if (!this.chunks[chunkId]) {
+                                this.chunks[chunkId] = {
+                                    blocks: Array(this.chunkSize).fill().map(() => Array(16).fill().map(() => Array(this.chunkSize).fill(0))),
+                                    mesh: null
+                                };
+                            }
+                            const localX = Math.floor((x % this.chunkSize + this.chunkSize) % this.chunkSize);
+                            const localZ = Math.floor((z % this.chunkSize + this.chunkSize) % this.chunkSize);
+                            this.chunks[chunkId].blocks[localX][Math.floor(y)][localZ] = type;
+                            updateChunkMesh(chunkX, chunkZ);
+                            logDebug(`Set block at (${x},${y},${z}) to type ${type}`);
+                        } catch (e) {
+                            logDebug("Set block failed: " + e.message);
+                        }
+                    }
+                };
 
-            const building = BABYLON.MeshBuilder.CreateBox(`building_${i}`, {
-                width: width,
-                height: height,
-                depth: depth
-            }, scene);
+                function generateChunk(chunkX, chunkZ) {
+                    try {
+                        for (let x = chunkX * world.chunkSize; x < (chunkX + 1) * world.chunkSize; x++) {
+                            for (let z = chunkZ * world.chunkSize; z < (chunkZ + 1) * world.chunkSize; z++) {
+                                const height = Math.floor(4 + Math.sin(x * 0.2) + Math.cos(z * 0.2));
+                                for (let y = 0; y < 16; y++) {
+                                    if (y === height) world.setBlock(x, y, z, 1);
+                                    else if (y > height - 2 && y < height) world.setBlock(x, y, z, 2);
+                                    else if (y < height - 1) world.setBlock(x, y, z, 3);
+                                }
+                            }
+                        }
+                        logDebug(`Generated chunk ${chunkX},${chunkZ}`);
+                    } catch (e) {
+                        logDebug("Chunk generation failed: " + e.message);
+                    }
+                }
 
-            building.position = new BABYLON.Vector3(x, height / 2, z);
+                function updateChunkMesh(chunkX, chunkZ) {
+                    try {
+                        const chunkId = `${chunkX},${chunkZ}`;
+                        if (world.chunks[chunkId].mesh) world.chunks[chunkId].mesh.dispose();
+                        const positions = [];
+                        const indices = [];
+                        const colors = [];
+                        let index = 0;
 
-            const mat = new BABYLON.StandardMaterial("buildingMat", scene);
-            mat.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
-            building.material = mat;
+                        for (let x = 0; x < world.chunkSize; x++) {
+                            for (let y = 0; y < 16; y++) {
+                                for (let z = 0; z < world.chunkSize; z++) {
+                                    const block = world.chunks[chunkId].blocks[x][y][z];
+                                    if (block === 0) continue;
 
-            building.checkCollisions = true;
+                                    const wx = x + chunkX * world.chunkSize;
+                                    const wz = z + chunkZ * world.chunkSize;
 
-            // Label the first building as "BNZ"
-            if (i === 0) {
-                const dynamicTexture = new BABYLON.DynamicTexture("dynamicTexture", { width: 512, height: 256 }, scene);
-                const ctx = dynamicTexture.getContext();
-                ctx.fillStyle = "black";
-                ctx.fillRect(0, 0, 512, 256);
-                ctx.fillStyle = "white";
-                ctx.font = "bold 100px Arial";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText("BNZ", 256, 128);
-                dynamicTexture.update();
+                                    const faces = [
+                                        !world.getBlock(wx + 1, y, wz),
+                                        !world.getBlock(wx - 1, y, wz),
+                                        !world.getBlock(wx, y + 1, wz),
+                                        !world.getBlock(wx, y - 1, wz),
+                                        !world.getBlock(wx, y, wz + 1),
+                                        !world.getBlock(wx, y, wz - 1)
+                                    ];
 
-                const textMat = new BABYLON.StandardMaterial("textMat", scene);
-                textMat.diffuseTexture = dynamicTexture;
-                textMat.emissiveColor = new BABYLON.Color3(1, 1, 1);
+                                    if (faces.some(f => f)) {
+                                        const blockMat = world.blockTypes[block];
+                                        const color = blockMat.diffuseColor;
 
-                const textPlane = BABYLON.MeshBuilder.CreatePlane("bnzLabel", { width: 4, height: 2 }, scene);
-                textPlane.position = new BABYLON.Vector3(x, height - 2, z - depth / 2 - 0.1);
-                textPlane.rotation.y = Math.PI; // Facing the fountain
-                textPlane.material = textMat;
+                                        const v = [
+                                            [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],
+                                            [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]
+                                        ].map(([vx, vy, vz]) => [vx + wx, vy + y, vz + wz]);
+
+                                        const faceIndices = [
+                                            [0, 1, 2, 3], [5, 4, 7, 6], [1, 5, 6, 2],
+                                            [4, 0, 3, 7], [3, 2, 6, 7], [4, 5, 1, 0]
+                                        ];
+
+                                        faces.forEach((visible, f) => {
+                                            if (!visible) return;
+                                            const fi = faceIndices[f];
+                                            positions.push(...v[fi[0]], ...v[fi[1]], ...v[fi[2]], ...v[fi[3]]);
+                                            indices.push(index, index + 1, index + 2, index, index + 2, index + 3);
+                                            colors.push(...[color.r, color.g, color.b, 1].repeat(4));
+                                            index += 4;
+                                        });
+                                    }
+                                }
+                            }
+                        }
+
+                        if (positions.length === 0) return;
+                        const mesh = new BABYLON.Mesh(`chunk_${chunkId}`, scene);
+                        const vertexData = new BABYLON.VertexData();
+                        vertexData.positions = positions;
+                        vertexData.indices = indices;
+                        vertexData.colors = colors;
+                        vertexData.applyToMesh(mesh);
+                        mesh.checkCollisions = true;
+                        world.chunks[chunkId].mesh = mesh;
+                        logDebug(`Updated mesh for chunk ${chunkId}`);
+                    } catch (e) {
+                        logDebug("Mesh update failed: " + e.message);
+                    }
+                }
+
+                // Generate initial chunks
+                try {
+                    for (let x = -1; x <= 1; x++) {
+                        for (let z = -1; z <= 1; z++) {
+                            generateChunk(x, z);
+                        }
+                    }
+                } catch (e) {
+                    logDebug("Initial chunk generation failed: " + e.message);
+                }
+
+                // Pointer lock
+                canvas.addEventListener("click", () => {
+                    try {
+                        if (!document.pointerLockElement) {
+                            canvas.requestPointerLock();
+                            logDebug("Requested pointer lock");
+                        }
+                    } catch (e) {
+                        logDebug("Pointer lock failed: " + e.message);
+                    }
+                });
+
+                document.addEventListener("pointerlockchange", () => {
+                    logDebug(document.pointerLockElement ? "Pointer locked" : "Pointer unlocked");
+                });
+
+                scene.onPointerDown = (evt) => {
+                    if (!document.pointerLockElement) return;
+                    try {
+                        const pick = scene.pickWithRay(camera.getForwardRay(5));
+                        if (!pick.hit) {
+                            logDebug("No block hit");
+                            return;
+                        }
+                        const pos = pick.pickedPoint.clone();
+                        pos.x = Math.floor(pos.x);
+                        pos.y = Math.floor(pos.y);
+                        pos.z = Math.floor(pos.z);
+                        if (evt.button === 0) {
+                            world.setBlock(pos.x, pos.y, pos.z, 0);
+                        } else if (evt.button === 2) {
+                            const normal = pick.getNormal(true);
+                            const newPos = pos.add(new BABYLON.Vector3(
+                                Math.round(normal.x),
+                                Math.round(normal.y),
+                                Math.round(normal.z)
+                            ));
+                            if (!world.getBlock(newPos.x, newPos.y, newPos.z)) {
+                                world.setBlock(newPos.x, newPos.y, newPos.z, selectedBlockType);
+                            }
+                        }
+                    } catch (e) {
+                        logDebug("Block interaction failed: " + e.message);
+                    }
+                };
+
+                return scene;
+            } catch (e) {
+                logDebug("Scene creation failed: " + e.message);
+                throw e;
             }
         }
 
-        // Fountain
- supercritical fluid extraction
-        const base = BABYLON.MeshBuilder.CreateCylinder("fountainBase", { diameter: 10, height: 1 }, scene);
-        base.position.y = 0.5;
-        const pool = BABYLON.MeshBuilder.CreateCylinder("fountainPool", { diameter: 6, height: 0.5 }, scene);
-        pool.position.y = 1;
-        const column = BABYLON.MeshBuilder.CreateCylinder("fountainColumn", { diameter: 1.2, height: 4 }, scene);
-        column.position.y = 3;
-        const topBowl = BABYLON.MeshBuilder.CreateSphere("topBowl", { diameter: 2, slice: 0.5 }, scene);
-        topBowl.position.y = 5;
-        const water = BABYLON.MeshBuilder.CreateCylinder("fountainWater", { diameter: 5.5, height: 0.1 }, scene);
-        water.position.y = 1.25;
-
-        const matStone = new BABYLON.StandardMaterial("matStone", scene);
-        matStone.diffuseColor = new BABYLON.Color3(0.6, 0.6, 0.6);
-        const matWater = new BABYLON.StandardMaterial("matWater", scene);
-        matWater.diffuseColor = new BABYLON.Color3(0.2, 0.6, 1);
-        matWater.alpha = 0.7;
-
-        base.material = matStone;
-        pool.material = matStone;
-        column.material = matStone;
-        topBowl.material = matStone;
-        water.material = matWater;
-
-        const particleSystem = new BABYLON.ParticleSystem("waterSpray", 1000, scene);
-        particleSystem.particleTexture = new BABYLON.Texture("https://www.babylonjs-playground.com/textures/flare.png", scene);
-        particleSystem.emitter = topBowl;
-        particleSystem.minEmitBox = new BABYLON.Vector3(0, 0, 0);
-        particleSystem.maxEmitBox = new BABYLON.Vector3(0, 0, 0);
-        particleSystem.color1 = new BABYLON.Color4(0.6, 0.8, 1, 1);
-        particleSystem.color2 = new BABYLON.Color4(0.2, 0.6, 1, 1);
-        particleSystem.colorDead = new BABYLON.Color4(0.2, 0.6, 1, 0);
-        particleSystem.minSize = 0.1;
-        particleSystem.maxSize = 0.3;
-        particleSystem.minLifeTime = 0.3;
-        particleSystem.maxLifeTime = 0.7;
-        particleSystem.emitRate = 800;
-        particleSystem.direction1 = new BABYLON.Vector3(-1, 4, -1);
-        particleSystem.direction2 = new BABYLON.Vector3(1, 4, 1);
-        particleSystem.gravity = new BABYLON.Vector3(0, -9.8, 0);
-        particleSystem.minEmitPower = 1;
-        particleSystem.maxEmitPower = 3;
-        particleSystem.updateSpeed = 0.01;
-        particleSystem.start();
-
-        // Park-style benches
-        const woodMat = new BABYLON.StandardMaterial("woodMat", scene);
-        woodMat.diffuseColor = new BABYLON.Color3(0.55, 0.27, 0.07);
-        woodMat.specularColor = new BABYLON.Color3(0.2, 0.2, 0.2);
-
-        const metalMat = new BABYLON.StandardMaterial("metalMat", scene);
-        metalMat.diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.3);
-        metalMat.specularColor = new BABYLON.Color3(0.5, 0.5, 0.5);
-
-        const benchCount = 8;
-        const benchDistance = 10;
-
-        for (let i = 0; i < benchCount; i++) {
-            const angle = (i / benchCount) * 2 * Math.PI;
-            const x = benchDistance * Math.cos(angle);
-            const z = benchDistance * Math.sin(angle);
-
-            const bench = new BABYLON.Mesh(`bench_${i}`, scene);
-            bench.position = new BABYLON.Vector3(x, 0, z);
-            bench.rotation.y = -angle + Math.PI / 2;
-
-            const slatCount = 4;
-            for (let j = 0; j < slatCount; j++) {
-                const slat = BABYLON.MeshBuilder.CreateBox(`seat_slat_${i}_${j}`, {
-                    width: 2.2,
-                    height: 0.05,
-                    depth: 0.12
-                }, scene);
-                slat.position = new BABYLON.Vector3(0, 0.25, -0.18 + j * 0.14);
-                slat.material = woodMat;
-                slat.parent = bench;
-            }
-
-            for (let j = 0; j < 3; j++) {
-                const backSlat = BABYLON.MeshBuilder.CreateBox(`back_slat_${i}_${j}`, {
-                    width: 2.2,
-                    height: 0.05,
-                    depth: 0.1
-                }, scene);
-                backSlat.position = new BABYLON.Vector3(0, 0.4 + j * 0.15, -0.25);
-                backSlat.rotation.x = Math.PI / 6;
-                backSlat.material = woodMat;
-                backSlat.parent = bench;
-            }
-
-            const legFrameLeft = BABYLON.MeshBuilder.CreateBox(`leg_left_${i}`, {
-                width: 0.06,
-                height: 0.3,
-                depth: 0.5
-            }, scene);
-            legFrameLeft.position = new BABYLON.Vector3(-1, 0.15, -0.05);
-            legFrameLeft.material = metalMat;
-            legFrameLeft.parent = bench;
-
-            const legFrameRight = BABYLON.MeshBuilder.CreateBox(`leg_right_${i}`, {
-                width: 0.06,
-                height: 0.3,
-                depth: 0.5
-            }, scene);
-            legFrameRight.position = new BABYLON.Vector3(1, 0.15, -0.05);
-            legFrameRight.material = metalMat;
-            legFrameRight.parent = bench;
-
-            const armrestLeft = BABYLON.MeshBuilder.CreateBox(`armrest_left_${i}`, {
-                width: 0.06,
-                height: 0.3,
-                depth: 0.06
-            }, scene);
-            armrestLeft.position = new BABYLON.Vector3(-1, 0.45, -0.25);
-            armrestLeft.material = metalMat;
-            armrestLeft.parent = bench;
-
-            const armrestRight = BABYLON.MeshBuilder.CreateBox(`armrest_right_${i}`, {
-                width: 0.06,
-                height: 0.3,
-                depth: 0.06
-            }, scene);
-            armrestRight.position = new BABYLON.Vector3(1, 0.45, -0.25);
-            armrestRight.material = metalMat;
-            armrestRight.parent = bench;
-        }
-
-        // Car park inside the circle in front of BNZ building (at angle 0)
-        const carParkWidth = 20;
-        const carParkDepth = 6;
-        const carPark = BABYLON.MeshBuilder.CreateGround("carPark", {
-            width: carParkWidth,
-            height: carParkDepth
-        }, scene);
-        carPark.position = new BABYLON.Vector3(radius - 8, 0.01, 0); // Closer to BNZ
-        const asphaltMat = new BABYLON.StandardMaterial("asphaltMat", scene);
-        asphaltMat.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2);
-        carPark.material = asphaltMat;
-
-        // Concrete curbs
-        const curbMat = new BABYLON.StandardMaterial("curbMat", scene);
-        curbMat.diffuseColor = new BABYLON.Color3(0.6, 0.6, 0.6);
-
-        const curbLong1 = BABYLON.MeshBuilder.CreateBox("curb_long1", {
-            width: carParkWidth,
-            height: 0.15,
-            depth: 0.3
-        }, scene);
-        curbLong1.position = new BABYLON.Vector3(radius - 8, 0.075, carParkDepth / 2);
-        curbLong1.material = curbMat;
-
-        const curbLong2 = BABYLON.MeshBuilder.CreateBox("curb_long2", {
-            width: carParkWidth,
-            height: 0.15,
-            depth: 0.3
-        }, scene);
-        curbLong2.position = new BABYLON.Vector3(radius - 8, 0.075, -carParkDepth / 2);
-        curbLong2.material = curbMat;
-
-        const curbShort1 = BABYLON.MeshBuilder.CreateBox("curb_short1", {
-            width: carParkDepth,
-            height: 0.15,
-            depth: 0.3
-        }, scene);
-        curbShort1.position = new BABYLON.Vector3(radius - 8 - carParkWidth / 2, 0.075, 0);
-        curbShort1.rotation.y = Math.PI / 2;
-        curbShort1.material = curbMat;
-
-        const curbShort2 = BABYLON.MeshBuilder.CreateBox("curb_short2", {
-            width: carParkDepth,
-            height: 0.15,
-            depth: 0.3
-        }, scene);
-        curbShort2.position = new BABYLON.Vector3(radius - 8 + carParkWidth / 2, 0.075, 0);
-        curbShort2.rotation.y = Math.PI / 2;
-        curbShort2.material = curbMat;
-
-        // Pavement for pedestrian access
-        const pavement = BABYLON.MeshBuilder.CreateGround("pavement", {
-            width: carParkWidth,
-            height: 2
-        }, scene);
-        pavement.position = new BABYLON.Vector3(radius - 8, 0.01, carParkDepth / 2 + 1);
-        pavement.material = curbMat;
-
-        // Parking lines (yellow)
-        const lineMat = new BABYLON.StandardMaterial("lineMat", scene);
-        lineMat.diffuseColor = new BABYLON.Color3(1, 1, 0); // Yellow
-
-        const parkingSpaces = 5;
-        const spaceWidth = carParkWidth / parkingSpaces;
-        for (let i = 0; i <= parkingSpaces; i++) {
-            const line = BABYLON.MeshBuilder.CreateBox(`line_${i}`, {
-                width: 0.2,
-                height: 0.01,
-                depth: carParkDepth
-            }, scene);
-            line.position = new BABYLON.Vector3(
-                radius - 8 - carParkWidth / 2 + i * spaceWidth,
-                0.02,
-                0
-            );
-            line.material = lineMat;
-        }
-
-        // Parking bollards
-        const bollardMat = new BABYLON.StandardMaterial("bollardMat", scene);
-        bollardMat.diffuseColor = new BABYLON.Color3(0.8, 0.8, 0);
-
-        const bollardPositions = [
-            new BABYLON.Vector3(radius - 8 - carParkWidth / 2, 0.5, carParkDepth / 2 + 0.5),
-            new BABYLON.Vector3(radius - 8 + carParkWidth / 2, 0.5, carParkDepth / 2 + 0.5)
-        ];
-
-        bollardPositions.forEach((pos, index) => {
-            const bollard = BABYLON.MeshBuilder.CreateCylinder(`bollard_${index}`, {
-                diameter: 0.2,
-                height: 1
-            }, scene);
-            bollard.position = pos;
-            bollard.material = bollardMat;
-        });
-
-        // Streetlights
-        const lightPoleMat = new BABYLON.StandardMaterial("lightPoleMat", scene);
-        lightPoleMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
-
-        for (let i = 0; i < 2; i++) {
-            const pole = BABYLON.MeshBuilder.CreateCylinder(`pole_${i}`, {
-                diameter: 0.2,
-                height: 4
-            }, scene);
-            pole.position = new BABYLON.Vector3(
-                radius - 8 - carParkWidth / 2 + (i + 0.5) * carParkWidth,
-                2,
-                carParkDepth / 2 + 1.5
-            );
-            pole.material = lightPoleMat;
-
-            const lampLight = new BABYLON.SpotLight(
-                `lamp_${i}`,
-                new BABYLON.Vector3(
-                    radius - 8 - carParkWidth / 2 + (i + 0.5) * carParkWidth,
-                    4,
-                    carParkDepth / 2 + 1.5
-                ),
-                new BABYLON.Vector3(0, -1, 0),
-                Math.PI / 4,
-                10,
-                scene
-            );
-            lampLight.intensity = 0.5;
-        }
-
-        // Realistic cars
-        const carColors = [
-            new BABYLON.Color3(0.8, 0.2, 0.2), // Red
-            new BABYLON.Color3(0.2, 0.2, 0.8), // Blue
-            new BABYLON.Color3(0.1, 0.1, 0.1), // Black
-            new BABYLON.Color3(0.9, 0.9, 0.9)  // White
-        ];
-
-        for (let i = 0; i < parkingSpaces - 1; i++) {
-            const car = new BABYLON.Mesh(`car_${i}`, scene);
-            const randomAngle = (Math.random() - 0.5) * Math.PI / 12; // Slight rotation for realism
-            car.position = new BABYLON.Vector3(
-                radius - 8 - carParkWidth / 2 + (i + 0.5) * spaceWidth,
-                0.5,
-                0
-            );
-            car.rotation.y = Math.PI + randomAngle; // Facing toward BNZ
-
-            // Car body (main)
-            const mainBody = BABYLON.MeshBuilder.CreateBox(`car_main_body_${i}`, {
-                width: 2.5,
-                height: 0.6,
-                depth: 3.5
-            }, scene);
-            mainBody.position.y = 0.3;
-            const carMat = new BABYLON.StandardMaterial(`carMat_${i}`, scene);
-            carMat.diffuseColor = carColors[i % carColors.length];
-            carMat.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
-            mainBody.material = carMat;
-            mainBody.parent = car;
-
-            // Hood
-            const hood = BABYLON.MeshBuilder.CreateBox(`car_hood_${i}`, {
-                width: 2.5,
-                height: 0.3,
-                depth: 1.5
-            }, scene);
-            hood.position = new BABYLON.Vector3(0, 0.35, 1.5);
-            hood.rotation.x = -Math.PI / 12;
-            hood.material = carMat;
-            hood.parent = car;
-
-            // Trunk
-            const trunk = BABYLON.MeshBuilder.CreateBox(`car_trunk_${i}`, {
-                width: 2.5,
-                height: 0.3,
-                depth: 1.5
-            }, scene);
-            trunk.position = new BABYLON.Vector3(0, 0.35, -1.5);
-            trunk.rotation.x = Math.PI / 12;
-            trunk.material = carMat;
-            trunk.parent = car;
-
-            // Windows
-            const windowMat = new BABYLON.StandardMaterial(`windowMat_${i}`, scene);
-            windowMat.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.1);
-            windowMat.alpha = 0.8;
-
-            const frontWindow = BABYLON.MeshBuilder.CreateBox(`front_window_${i}`, {
-                width: 2.3,
-                height: 0.3,
-                depth: 0.5
-            }, scene);
-            frontWindow.position = new BABYLON.Vector3(0, 0.6, 1);
-            frontWindow.rotation.x = Math.PI / 4;
-            frontWindow.material = windowMat;
-            frontWindow.parent = car;
-
-            const rearWindow = BABYLON.MeshBuilder.CreateBox(`rear_window_${i}`, {
-                width: 2.3,
-                height: 0.3,
-                depth: 0.5
-            }, scene);
-            rearWindow.position = new BABYLON.Vector3(0, 0.6, -1);
-            rearWindow.rotation.x = -Math.PI / 4;
-            rearWindow.material = windowMat;
-            rearWindow.parent = car;
-
-            // Side windows
-            const sideWindowLeft = BABYLON.MeshBuilder.CreateBox(`side_window_left_${i}`, {
-                width: 0.1,
-                height: 0.3,
-                depth: 1.5
-            }, scene);
-            sideWindowLeft.position = new BABYLON.Vector3(1.2, 0.6, 0);
-            sideWindowLeft.material = windowMat;
-            sideWindowLeft.parent = car;
-
-            const sideWindowRight = BABYLON.MeshBuilder.CreateBox(`side_window_right_${i}`, {
-                width: 0.1,
-                height: 0.3,
-                depth: 1.5
-            }, scene);
-            sideWindowRight.position = new BABYLON.Vector3(-1.2, 0.6, 0);
-            sideWindowRight.material = windowMat;
-            sideWindowRight.parent = car;
-
-            // Wheels
-            const wheelMat = new BABYLON.StandardMaterial(`wheelMat_${i}`, scene);
-            wheelMat.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.1);
-
-            const wheelPositions = [
-                new BABYLON.Vector3(0.9, 0.2, 1.2),
-                new BABYLON.Vector3(-0.9, 0.2, 1.2),
-                new BABYLON.Vector3(0.9, 0.2, -1.2),
-                new BABYLON.Vector3(-0.9, 0.2, -1.2)
-            ];
-
-            wheelPositions.forEach((pos, index) => {
-                const wheel = BABYLON.MeshBuilder.CreateCylinder(`wheel_${i}_${index}`, {
-                    diameter: 0.4,
-                    height: 0.2,
-                    tessellation: 16
-                }, scene);
-                wheel.position = pos;
-                wheel.rotation.z = Math.PI / 2;
-                wheel.material = wheelMat;
-                wheel.parent = car;
+        try {
+            scene = createScene();
+            engine.runRenderLoop(() => {
+                try {
+                    scene.render();
+                    camera.position.y = Math.max(camera.position.y, 0); // Prevent falling through
+                } catch (e) {
+                    logDebug("Render loop error: " + e.message);
+                    engine.stopRenderLoop();
+                }
             });
+            logDebug("Game loop started");
+        } catch (e) {
+            logDebug("Game init failed: " + e.message);
         }
 
-        return scene;
-    };
-
-    const scene = createScene();
-    engine.runRenderLoop(function () {
-        scene.render();
-    });
-    window.addEventListener("resize", function () {
-        engine.resize();
-    });
-</script>
+        window.addEventListener("resize", () => {
+            engine.resize();
+        });
+    </script>
 </body>
 </html>
