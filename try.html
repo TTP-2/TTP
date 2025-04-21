@@ -1,425 +1,150 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>Minecraft-like Game with Babylon.js</title>
-    <style>
-        body { margin: 0; overflow: hidden; }
-        canvas { width: 100%; height: 100vh; }
-        #ui {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: white;
-            font-family: Arial, sans-serif;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px;
-        }
-        #hotbar {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 5px;
-            border: 2px solid gray;
-        }
-        .hotbar-slot {
-            width: 50px;
-            height: 50px;
-            border: 2px solid #555;
-            margin: 0 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 16px;
-            text-align: center;
-        }
-        .hotbar-slot.selected {
-            border-color: yellow;
-        }
-        #inventory {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
-            padding: 20px;
-            display: none;
-            color: white;
-            font-family: Arial, sans-serif;
-            border: 2px solid gray;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        .inventory-slot {
-            width: 60px;
-            height: 60px;
-            border: 2px solid #555;
-            margin: 5px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            font-size: 14px;
-        }
-        #inventory-search {
-            width: 100%;
-            padding: 5px;
-            margin-bottom: 10px;
-            background: #333;
-            color: white;
-            border: 1px solid #555;
-        }
-        #crosshair {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 20px;
-            pointer-events: none;
-        }
-    </style>
+  <title>2D Platformer Game</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/addons/p5.sound.min.js"></script>
+  <style>
+    body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: #222; }
+    canvas { border: 2px solid #fff; }
+  </style>
 </head>
 <body>
-    <div id="ui">
-        Left-click: Break block<br>
-        Right-click: Place block<br>
-        E: Toggle Inventory<br>
-        1-4: Select Hotbar Slot<br>
-        Space: Jump
-    </div>
-    <div id="hotbar">
-        <div class="hotbar-slot selected" data-index="0">Dirt</div>
-        <div class="hotbar-slot" data-index="1">Stone</div>
-        <div class="hotbar-slot" data-index="2">Grass</div>
-        <div class="hotbar-slot" data-index="3">Sand</div>
-    </div>
-    <div id="inventory">
-        <h2>Inventory</h2>
-        <input type="text" id="inventory-search" placeholder="Search blocks...">
-        <div id="inventory-slots"></div>
-    </div>
-    <div id="crosshair">+</div>
-    <canvas id="renderCanvas"></canvas>
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <script src="https://cdn.babylonjs.com/ammo.js"></script>
-    <script>
-        const canvas = document.getElementById("renderCanvas");
-        const engine = new BABYLON.Engine(canvas, true);
+<script>
+let player;
+let platforms = [];
+let coins = [];
+let gravity = 0.6;
+let jumpForce = -12;
+let groundY;
+let jumpCount = 0;
+let maxJumps = 2;
+let score = 0;
+let jumpSound, coinSound;
+let bgOffset = 0;
 
-        function createScene() {
-            const scene = new BABYLON.Scene(engine);
-            scene.clearColor = new BABYLON.Color4(0.5, 0.8, 1, 1);
+function preload() {
+  // Load sound effects
+  jumpSound = loadSound('https://www.xai.com/sounds/jump.mp3');
+  coinSound = loadSound('https://www.xai.com/sounds/coin.mp3');
+}
 
-            // Enable physics
-            scene.enablePhysics(new BABYLON.Vector3(0, -9.81, 0), new BABYLON.AmmoJSPlugin());
+function setup() {
+  createCanvas(800, 600);
+  groundY = height - 50;
+  player = {
+    x: 100,
+    y: groundY,
+    w: 30,
+    h: 40,
+    vx: 0,
+    vy: 0,
+    speed: 5,
+    isJumping: false
+  };
+  // Create platforms (some moving)
+  platforms.push({ x: 200, y: height - 150, w: 150, h: 20, vx: 0 });
+  platforms.push({ x: 400, y: height - 250, w: 150, h: 20, vx: 2 });
+  platforms.push({ x: 600, y: height - 350, w: 150, h: 20, vx: -2 });
+  // Create coins
+  coins.push({ x: 250, y: height - 180, r: 10 });
+  coins.push({ x: 450, y: height - 280, r: 10 });
+  coins.push({ x: 650, y: height - 380, r: 10 });
+}
 
-            // Camera
-            const camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 5, -10), scene);
-            camera.setTarget(BABYLON.Vector3.Zero());
-            camera.attachControl(canvas, true);
-            camera.speed = 0.2;
-            camera.angularSensibility = 4000;
-            camera.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
-            camera.checkCollisions = true;
-            camera.applyGravity = true;
+function draw() {
+  // Parallax background
+  background(50, 50, 100);
+  bgOffset -= 0.5;
+  if (bgOffset < -width) bgOffset = 0;
+  fill(80, 80, 150);
+  for (let i = -1; i < 2; i++) {
+    rect(bgOffset + i * width, height - 100, width, 50);
+  }
+  
+  // Update player
+  player.vy += gravity;
+  player.x += player.vx;
+  player.y += player.vy;
+  
+  // Ground collision
+  if (player.y > groundY) {
+    player.y = groundY;
+    player.vy = 0;
+    player.isJumping = false;
+    jumpCount = 0;
+  }
+  
+  // Update and draw moving platforms
+  for (let platform of platforms) {
+    if (platform.vx) {
+      platform.x += platform.vx;
+      if (platform.x < 0 || platform.x + platform.w > width) platform.vx *= -1;
+    }
+    fill(200, 100, 50);
+    rect(platform.x, platform.y, platform.w, platform.h);
+    
+    // Platform collision
+    if (player.x + player.w > platform.x && player.x < platform.x + platform.w &&
+        player.y + player.h > platform.y && player.y + player.h < platform.y + platform.h + 10 &&
+        player.vy > 0) {
+      player.y = platform.y - player.h;
+      player.vy = 0;
+      player.isJumping = false;
+      jumpCount = 0;
+    }
+  }
+  
+  // Handle movement with arrow keys
+  if (keyIsDown(LEFT_ARROW)) {
+    player.vx = -player.speed;
+  } else if (keyIsDown(RIGHT_ARROW)) {
+    player.vx = player.speed;
+  } else {
+    player.vx = 0;
+  }
+  
+  // Coin collection
+  for (let i = coins.length - 1; i >= 0; i--) {
+    let coin = coins[i];
+    fill(255, 255, 0);
+    ellipse(coin.x, coin.y, coin.r * 2);
+    if (dist(player.x + player.w / 2, player.y + player.h / 2, coin.x, coin.y) < coin.r + player.w / 2) {
+      coins.splice(i, 1);
+      score += 10;
+      if (coinSound) coinSound.play();
+    }
+  }
+  
+  // Draw ground
+  fill(100, 200, 100);
+  rect(0, groundY + 10, width, height - groundY - 10);
+  
+  // Draw player
+  fill(255, 100, 100);
+  rect(player.x, player.y, player.w, player.h);
+  
+  // UI: Score and instructions
+  fill(255);
+  textSize(16);
+  text(`Score: ${score}`, 10, 50);
+  text("Arrow keys to move, Space to double jump", 10, 30);
+}
 
-            // Lighting
-            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-            light.intensity = 0.7;
+function keyPressed() {
+  if (keyCode === 32 && jumpCount < maxJumps) { // Space key for jumping
+    player.vy = jumpForce;
+    jumpCount++;
+    player.isJumping = true;
+    if (jumpSound) jumpSound.play();
+  }
+}
 
-            // Block types and materials
-            const blockTypes = [
-                'dirt', 'stone', 'grass', 'sand', 'wood', 'leaves', 'coal', 'iron', 'gold', 'diamond',
-                'redstone', 'clay', 'gravel', 'obsidian', 'brick', 'cobblestone', 'water', 'flower',
-                'piston', 'redstone_dust', 'bucket'
-            ];
-            const materials = {};
-            blockTypes.forEach(type => {
-                materials[type] = new BABYLON.StandardMaterial(`${type}Mat`, scene);
-                if (type === 'grass') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.2, 0.6, 0.2); // Green
-                } else if (type === 'stone') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4); // Gray
-                } else if (type === 'dirt') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.5, 0.3, 0.1);
-                } else if (type === 'sand') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.8, 0.7, 0.4);
-                } else if (type === 'wood') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.6, 0.4, 0.2);
-                } else if (type === 'leaves') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.3, 0.5, 0.3);
-                    materials[type].alpha = 0.9;
-                } else if (type === 'coal') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.1);
-                } else if (type === 'iron') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.7, 0.7, 0.7);
-                } else if (type === 'gold') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.9, 0.7, 0.2);
-                } else if (type === 'diamond') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.3, 0.8, 0.8);
-                } else if (type === 'redstone') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.8, 0.1, 0.1);
-                } else if (type === 'clay') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.6, 0.5, 0.5);
-                } else if (type === 'gravel') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
-                } else if (type === 'obsidian') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.2);
-                } else if (type === 'brick') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.7, 0.3, 0.2);
-                } else if (type === 'cobblestone') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.3);
-                } else if (type === 'water') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.2, 0.4, 0.8);
-                    materials[type].alpha = 0.6;
-                    materials[type].specularColor = new BABYLON.Color3(0, 0, 0);
-                } else if (type === 'flower') {
-                    materials[type].diffuseColor = new BABYLON.Color3(1, 1, 0);
-                } else if (type === 'piston') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.6, 0.6, 0.4);
-                } else if (type === 'redstone_dust') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.8, 0, 0);
-                } else if (type === 'bucket') {
-                    materials[type].diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
-                }
-            });
-
-            // Generate terrain
-            const worldSize = 20;
-            const blocks = [];
-            for (let x = -worldSize / 2; x < worldSize / 2; x++) {
-                for (let z = -worldSize / 2; z < worldSize / 2; z++) {
-                    const height = Math.floor(Math.sin(x * 0.1) + Math.cos(z * 0.1) + 2);
-                    for (let y = 0; y <= height; y++) {
-                        let blockType = 'stone';
-                        if (y === height) {
-                            blockType = Math.random() < 0.1 ? 'water' : 'grass';
-                        } else if (y === height - 1) {
-                            blockType = 'dirt';
-                        } else if (y < height - 1 && Math.random() < 0.05) {
-                            blockType = ['coal', 'iron', 'gold', 'diamond', 'redstone'][Math.floor(Math.random() * 5)];
-                        }
-                        const block = BABYLON.MeshBuilder.CreateBox(`block_${x}_${y}_${z}`, { size: 1 }, scene);
-                        block.position = new BABYLON.Vector3(x, y, z);
-                        block.material = materials[blockType];
-                        block.checkCollisions = true;
-                        block.physicsImpostor = new BABYLON.PhysicsImpostor(
-                            block,
-                            BABYLON.PhysicsImpostor.BoxImpostor,
-                            { mass: 0, restitution: 0 },
-                            scene
-                        );
-                        blocks.push(block);
-                    }
-                    // Add flowers on grass
-                    if (Math.random() < 0.02 && height > 0) {
-                        const block = BABYLON.MeshBuilder.CreateBox(`block_${x}_${height + 1}_${z}`, { size: 0.5 }, scene);
-                        block.position = new BABYLON.Vector3(x, height + 0.5, z);
-                        block.material = materials.flower;
-                        block.checkCollisions = false;
-                        blocks.push(block);
-                    }
-                }
-            }
-
-            // Generate trees
-            for (let i = 0; i < worldSize * 0.2; i++) {
-                const x = Math.floor(Math.random() * worldSize) - worldSize / 2;
-                const z = Math.floor(Math.random() * worldSize) - worldSize / 2;
-                const height = Math.floor(Math.sin(x * 0.1) + Math.cos(z * 0.1) + 2);
-                if (height > 0 && Math.random() < 0.3) {
-                    // Tree trunk (3-5 blocks high)
-                    const treeHeight = Math.floor(Math.random() * 3) + 3;
-                    for (let y = height + 1; y <= height + treeHeight; y++) {
-                        const block = BABYLON.MeshBuilder.CreateBox(`block_${x}_${y}_${z}`, { size: 1 }, scene);
-                        block.position = new BABYLON.Vector3(x, y, z);
-                        block.material = materials.wood;
-                        block.checkCollisions = true;
-                        block.physicsImpostor = new BABYLON.PhysicsImpostor(
-                            block,
-                            BABYLON.PhysicsImpostor.BoxImpostor,
-                            { mass: 0, restitution: 0 },
-                            scene
-                        );
-                        blocks.push(block);
-                    }
-                    // Tree canopy (layered shape)
-                    for (let dy = 0; dy <= 3; dy++) {
-                        const radius = dy < 2 ? 2 : 1;
-                        for (let dx = -radius; dx <= radius; dx++) {
-                            for (let dz = -radius; dz <= radius; dz++) {
-                                if (Math.random() < 0.85 && !(dx === 0 && dz === 0 && dy < 2)) {
-                                    const block = BABYLON.MeshBuilder.CreateBox(`block_${x + dx}_${height + treeHeight + dy}_${z + dz}`, { size: 1 }, scene);
-                                    block.position = new BABYLON.Vector3(x + dx, height + treeHeight + dy, z + dz);
-                                    block.material = materials.leaves;
-                                    block.checkCollisions = true;
-                                    block.physicsImpostor = new BABYLON.PhysicsImpostor(
-                                        block,
-                                        BABYLON.PhysicsImpostor.BoxImpostor,
-                                        { mass: 0, restitution: 0 },
-                                        scene
-                                    );
-                                    blocks.push(block);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Add physics to camera
-            camera.physicsImpostor = new BABYLON.PhysicsImpostor(
-                camera,
-                BABYLON.PhysicsImpostor.SphereImpostor,
-                { mass: 1, restitution: 0 },
-                scene
-            );
-
-            // Hotbar and Inventory
-            let selectedHotbarIndex = 0;
-            const hotbarSlots = document.querySelectorAll('.hotbar-slot');
-            const inventoryDiv = document.getElementById('inventory');
-            const inventorySlotsDiv = document.getElementById('inventory-slots');
-            const searchInput = document.getElementById('inventory-search');
-            let isInventoryOpen = false;
-
-            function updateHotbarSelection() {
-                hotbarSlots.forEach((slot, index) => {
-                    slot.classList.toggle('selected', index === selectedHotbarIndex);
-                });
-            }
-
-            function updateInventory(searchTerm = '') {
-                inventorySlotsDiv.innerHTML = '';
-                blockTypes
-                    .filter(type => type.toLowerCase().includes(searchTerm.toLowerCase()))
-                    .forEach(type => {
-                        const slot = document.createElement('div');
-                        slot.className = 'inventory-slot';
-                        slot.textContent = type.charAt(0).toUpperCase() + type.slice(1);
-                        slot.addEventListener('click', () => {
-                            hotbarSlots[0].textContent = type.charAt(0).toUpperCase() + type.slice(1);
-                            selectedHotbarIndex = 0;
-                            updateHotbarSelection();
-                        });
-                        inventorySlotsDiv.appendChild(slot);
-                    });
-            }
-
-            // Initial inventory population
-            updateInventory();
-
-            // Search functionality
-            searchInput.addEventListener('input', () => {
-                updateInventory(searchInput.value);
-            });
-
-            // Block interaction (using crosshair center)
-            scene.onPointerDown = (evt) => {
-                if (isInventoryOpen) return;
-                // Raycast from camera through crosshair (screen center)
-                const pickResult = scene.pick(window.innerWidth / 2, window.innerHeight / 2, null, false, camera);
-                if (pickResult.hit && pickResult.pickedMesh.name.startsWith("block_")) {
-                    const mesh = pickResult.pickedMesh;
-                    const selectedBlockType = blockTypes[selectedHotbarIndex];
-                    if (evt.button === 0) { // Left-click: Break block
-                        if (mesh.material === materials.water) {
-                            if (selectedBlockType === 'bucket') {
-                                mesh.dispose();
-                                blocks.splice(blocks.indexOf(mesh), 1);
-                                // Add water to inventory
-                                hotbarSlots[0].textContent = 'Water';
-                                selectedHotbarIndex = 0;
-                                updateHotbarSelection();
-                            }
-                        } else {
-                            mesh.dispose();
-                            blocks.splice(blocks.indexOf(mesh), 1);
-                        }
-                    } else if (evt.button === 2 && selectedBlockType !== 'bucket') { // Right-click: Place block
-                        const normal = pickResult.getNormal(true);
-                        const newPos = pickResult.pickedPoint.add(normal);
-                        newPos.x = Math.round(newPos.x);
-                        newPos.y = Math.round(newPos.y);
-                        newPos.z = Math.round(newPos.z);
-                        const newBlock = BABYLON.MeshBuilder.CreateBox(`block_${newPos.x}_${newPos.y}_${newPos.z}`, { size: 1 }, scene);
-                        newBlock.position = newPos;
-                        newBlock.material = materials[selectedBlockType];
-                        newBlock.checkCollisions = true;
-                        newBlock.physicsImpostor = new BABYLON.PhysicsImpostor(
-                            newBlock,
-                            BABYLON.PhysicsImpostor.BoxImpostor,
-                            { mass: 0, restitution: 0 },
-                            scene
-                        );
-                        blocks.push(newBlock);
-                    }
-                }
-            };
-
-            // Keyboard controls
-            document.addEventListener('keydown', (evt) => {
-                if (evt.key === 'e' || evt.key === 'E') {
-                    isInventoryOpen = !isRunnerInventoryOpen;
-                    inventoryDiv.style.display = isInventoryOpen ? 'block' : 'none';
-                    searchInput.focus();
-                    if (isInventoryOpen) {
-                        engine.exitPointerlock();
-                        scene.activeCamera.detachControl(canvas);
-                    } else {
-                        scene.activeCamera.attachControl(canvas, true);
-                        engine.enterPointerlock();
-                    }
-                } else if (!isInventoryOpen && evt.key >= '1' && evt.key <= '4') {
-                    selectedHotbarIndex = parseInt(evt.key) - 1;
-                    updateHotbarSelection();
-                } else if (!isInventoryOpen && evt.key === ' ') {
-                    // Raycast downward to check for ground
-                    const ray = new BABYLON.Ray(
-                        camera.position,
-                        new BABYLON.Vector3(0, -1, 0),
-                        1.1 // Check for ground within 1.1 units
-                    );
-                    const pickResult = scene.pickWithRay(ray);
-                    if (pickResult.hit && pickResult.pickedMesh.name.startsWith("block_")) {
-                        camera.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 5, 0), camera.position);
-                        evt.preventDefault();
-                    }
-                }
-            });
-
-            // Lock pointer automatically on scene load
-            scene.onAfterRenderObservable.addOnce(() => {
-                engine.enterPointerlock();
-            });
-
-            // Re-lock pointer after clicking if not in inventory
-            canvas.addEventListener("click", () => {
-                if (!isInventoryOpen) {
-                    engine.enterPointerlock();
-                }
-            });
-
-            // Initialize hotbar
-            updateHotbarSelection();
-
-            return scene;
-        }
-
-        const scene = createScene();
-
-        engine.runRenderLoop(() => {
-            scene.render();
-        });
-
-        window.addEventListener("resize", () => {
-            engine.resize();
-        });
-    </script>
+function keyReleased() {
+  if (keyCode === LEFT_ARROW || keyCode === RIGHT_ARROW) {
+    player.vx = 0;
+  }
+}
+</script>
 </body>
 </html>
