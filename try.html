@@ -73,6 +73,15 @@
             color: white;
             border: 1px solid #555;
         }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 20px;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -94,6 +103,7 @@
         <input type="text" id="inventory-search" placeholder="Search blocks...">
         <div id="inventory-slots"></div>
     </div>
+    <div id="crosshair">+</div>
     <canvas id="renderCanvas"></canvas>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/ammo.js"></script>
@@ -122,30 +132,47 @@
             const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
             light.intensity = 0.7;
 
-            // Block types and materials
+            // Block types and materials with textures
             const blockTypes = [
-                'dirt', 'stone', 'grass', 'sand', 'wood', 'coal', 'iron', 'gold', 'diamond', 'redstone',
-                'clay', 'gravel', 'obsidian', 'brick', 'cobblestone'
+                'dirt', 'stone', 'grass', 'sand', 'wood', 'leaves', 'coal', 'iron', 'gold', 'diamond',
+                'redstone', 'clay', 'gravel', 'obsidian', 'brick', 'cobblestone', 'water', 'flower'
             ];
             const materials = {};
+            const textureUrls = {
+                dirt: 'https://textures.minecraft.net/texture/dirt.png',
+                stone: 'https://textures.minecraft.net/texture/stone.png',
+                grass: 'https://textures.minecraft.net/texture/grass_block_top.png',
+                sand: 'https://textures.minecraft.net/texture/sand.png',
+                wood: 'https://textures.minecraft.net/texture/oak_log.png',
+                leaves: 'https://textures.minecraft.net/texture/oak_leaves.png',
+                coal: 'https://textures.minecraft.net/texture/coal_ore.png',
+                iron: 'https://textures.minecraft.net/texture/iron_ore.png',
+                gold: 'https://textures.minecraft.net/texture/gold_ore.png',
+                diamond: 'https://textures.minecraft.net/texture/diamond_ore.png',
+                redstone: 'https://textures.minecraft.net/texture/redstone_ore.png',
+                clay: 'https://textures.minecraft.net/texture/clay.png',
+                gravel: 'https://textures.minecraft.net/texture/gravel.png',
+                obsidian: 'https://textures.minecraft.net/texture/obsidian.png',
+                brick: 'https://textures.minecraft.net/texture/bricks.png',
+                cobblestone: 'https://textures.minecraft.net/texture/cobblestone.png',
+                water: 'https://textures.minecraft.net/texture/water_still.png',
+                flower: 'https://textures.minecraft.net/texture/dandelion.png'
+            };
             blockTypes.forEach(type => {
                 materials[type] = new BABYLON.StandardMaterial(`${type}Mat`, scene);
+                const texture = new BABYLON.Texture(textureUrls[type], scene);
+                materials[type].diffuseTexture = texture;
+                if (type === 'grass') {
+                    materials[type].diffuseTexture = new BABYLON.Texture('https://textures.minecraft.net/texture/grass_block_side.png', scene);
+                    materials[type].diffuseTexture.hasAlpha = false;
+                } else if (type === 'leaves') {
+                    materials[type].diffuseTexture.hasAlpha = true;
+                    materials[type].alpha = 0.9;
+                } else if (type === 'water') {
+                    materials[type].alpha = 0.6;
+                    materials[type].specularColor = new BABYLON.Color3(0, 0, 0);
+                }
             });
-            materials.dirt.diffuseColor = new BABYLON.Color3(0.5, 0.3, 0.1);
-            materials.stone.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
-            materials.grass.diffuseColor = new BABYLON.Color3(0.2, 0.6, 0.2);
-            materials.sand.diffuseColor = new BABYLON.Color3(0.8, 0.7, 0.4);
-            materials.wood.diffuseColor = new BABYLON.Color3(0.6, 0.4, 0.2);
-            materials.coal.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.1);
-            materials.iron.diffuseColor = new BABYLON.Color3(0.7, 0.7, 0.7);
-            materials.gold.diffuseColor = new BABYLON.Color3(0.9, 0.7, 0.2);
-            materials.diamond.diffuseColor = new BABYLON.Color3(0.3, 0.8, 0.8);
-            materials.redstone.diffuseColor = new BABYLON.Color3(0.8, 0.1, 0.1);
-            materials.clay.diffuseColor = new BABYLON.Color3(0.6, 0.5, 0.5);
-            materials.gravel.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
-            materials.obsidian.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.2);
-            materials.brick.diffuseColor = new BABYLON.Color3(0.7, 0.3, 0.2);
-            materials.cobblestone.diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.3);
 
             // Generate terrain
             const worldSize = 20;
@@ -153,10 +180,18 @@
             for (let x = -worldSize / 2; x < worldSize / 2; x++) {
                 for (let z = -worldSize / 2; z < worldSize / 2; z++) {
                     const height = Math.floor(Math.sin(x * 0.1) + Math.cos(z * 0.1) + 2);
-                    for (let y = 0; y < height; y++) {
+                    for (let y = 0; y <= height; y++) {
+                        let blockType = 'stone';
+                        if (y === height) {
+                            blockType = Math.random() < 0.1 ? 'water' : 'grass';
+                        } else if (y === height - 1) {
+                            blockType = 'dirt';
+                        } else if (y < height - 1 && Math.random() < 0.05) {
+                            blockType = ['coal', 'iron', 'gold', 'diamond', 'redstone'][Math.floor(Math.random() * 5)];
+                        }
                         const block = BABYLON.MeshBuilder.CreateBox(`block_${x}_${y}_${z}`, { size: 1 }, scene);
                         block.position = new BABYLON.Vector3(x, y, z);
-                        block.material = y === height - 1 ? materials.grass : materials.stone;
+                        block.material = materials[blockType];
                         block.checkCollisions = true;
                         block.physicsImpostor = new BABYLON.PhysicsImpostor(
                             block,
@@ -165,6 +200,59 @@
                             scene
                         );
                         blocks.push(block);
+                    }
+                    // Add flowers on grass
+                    if (Math.random() < 0.02 && height > 0) {
+                        const block = BABYLON.MeshBuilder.CreateBox(`block_${x}_${height + 1}_${z}`, { size: 0.5 }, scene);
+                        block.position = new BABYLON.Vector3(x, height + 0.5, z);
+                        block.material = materials.flower;
+                        block.checkCollisions = false;
+                        blocks.push(block);
+                    }
+                }
+            }
+
+            // Generate trees
+            for (let i = 0; i < worldSize * 0.2; i++) {
+                const x = Math.floor(Math.random() * worldSize) - worldSize / 2;
+                const z = Math.floor(Math.random() * worldSize) - worldSize / 2;
+                const height = Math.floor(Math.sin(x * 0.1) + Math.cos(z * 0.1) + 2);
+                if (height > 0 && Math.random() < 0.3) {
+                    // Tree trunk (3-5 blocks high)
+                    const treeHeight = Math.floor(Math.random() * 3) + 3;
+                    for (let y = height + 1; y <= height + treeHeight; y++) {
+                        const block = BABYLON.MeshBuilder.CreateBox(`block_${x}_${y}_${z}`, { size: 1 }, scene);
+                        block.position = new BABYLON.Vector3(x, y, z);
+                        block.material = materials.wood;
+                        block.checkCollisions = true;
+                        block.physicsImpostor = new BABYLON.PhysicsImpostor(
+                            block,
+                            BABYLON.PhysicsImpostor.BoxImpostor,
+                            { mass: 0, restitution: 0 },
+                            scene
+                        );
+                        blocks.push(block);
+                    }
+                    // Tree canopy (layered shape)
+                    for (let dy = 0; dy <= 3; dy++) {
+                        const radius = dy < 2 ? 2 : 1;
+                        for (let dx = -radius; dx <= radius; dx++) {
+                            for (let dz = -radius; dz <= radius; dz++) {
+                                if (Math.random() < 0.85 && !(dx === 0 && dz === 0 && dy < 2)) {
+                                    const block = BABYLON.MeshBuilder.CreateBox(`block_${x + dx}_${height + treeHeight + dy}_${z + dz}`, { size: 1 }, scene);
+                                    block.position = new BABYLON.Vector3(x + dx, height + treeHeight + dy, z + dz);
+                                    block.material = materials.leaves;
+                                    block.checkCollisions = true;
+                                    block.physicsImpostor = new BABYLON.PhysicsImpostor(
+                                        block,
+                                        BABYLON.PhysicsImpostor.BoxImpostor,
+                                        { mass: 0, restitution: 0 },
+                                        scene
+                                    );
+                                    blocks.push(block);
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -200,7 +288,6 @@
                         slot.className = 'inventory-slot';
                         slot.textContent = type.charAt(0).toUpperCase() + type.slice(1);
                         slot.addEventListener('click', () => {
-                            // Replace first hotbar slot with clicked block
                             hotbarSlots[0].textContent = type.charAt(0).toUpperCase() + type.slice(1);
                             selectedHotbarIndex = 0;
                             updateHotbarSelection();
@@ -217,10 +304,11 @@
                 updateInventory(searchInput.value);
             });
 
-            // Block interaction
+            // Block interaction (using crosshair center)
             scene.onPointerDown = (evt) => {
                 if (isInventoryOpen) return;
-                const pickResult = scene.pick(scene.pointerX, scene.pointerY);
+                // Raycast from camera through crosshair (screen center)
+                const pickResult = scene.pick(window.innerWidth / 2, window.innerHeight / 2, null, false, camera);
                 if (pickResult.hit && pickResult.pickedMesh.name.startsWith("block_")) {
                     const mesh = pickResult.pickedMesh;
                     if (evt.button === 0) { // Left-click: Break block
@@ -253,8 +341,10 @@
                     isInventoryOpen = !isInventoryOpen;
                     inventoryDiv.style.display = isInventoryOpen ? 'block' : 'none';
                     searchInput.focus();
-                    scene.activeCamera.detachControl(canvas);
-                    if (!isInventoryOpen) {
+                    if (isInventoryOpen) {
+                        engine.exitPointerlock();
+                        scene.activeCamera.detachControl(canvas);
+                    } else {
                         scene.activeCamera.attachControl(canvas, true);
                         engine.enterPointerlock();
                     }
@@ -262,13 +352,17 @@
                     selectedHotbarIndex = parseInt(evt.key) - 1;
                     updateHotbarSelection();
                 } else if (!isInventoryOpen && evt.key === ' ' && camera.position.y <= camera.position.y + 0.1) {
-                    // Jump by applying upward impulse
                     camera.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 5, 0), camera.position);
-                    evt.preventDefault(); // Prevent scrolling
+                    evt.preventDefault();
                 }
             });
 
-            // Lock pointer for FPS controls
+            // Lock pointer automatically on scene load
+            scene.onAfterRenderObservable.addOnce(() => {
+                engine.enterPointerlock();
+            });
+
+            // Re-lock pointer after clicking if not in inventory
             canvas.addEventListener("click", () => {
                 if (!isInventoryOpen) {
                     engine.enterPointerlock();
