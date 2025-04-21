@@ -1,8 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minecraft-like Game with Babylon.js</title>
     <style>
         body { margin: 0; overflow: hidden; }
@@ -16,332 +15,278 @@
             background: rgba(0, 0, 0, 0.5);
             padding: 10px;
         }
-        #debug {
+        #hotbar {
             position: absolute;
-            bottom: 10px;
-            left: 10px;
-            color: yellow;
-            font-family: monospace;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
             background: rgba(0, 0, 0, 0.7);
             padding: 5px;
+            border: 2px solid gray;
+        }
+        .hotbar-slot {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #555;
+            margin: 0 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+            text-align: center;
+        }
+        .hotbar-slot.selected {
+            border-color: yellow;
+        }
+        #inventory {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            display: none;
+            color: white;
+            font-family: Arial, sans-serif;
+            border: 2px solid gray;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .inventory-slot {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #555;
+            margin: 5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 14px;
+        }
+        #inventory-search {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 10px;
+            background: #333;
+            color: white;
+            border: 1px solid #555;
         }
     </style>
 </head>
 <body>
-    <div id="ui">Click to lock cursor. WASD to move, Space to jump, Mouse to look, Left-click to break, Right-click to place.</div>
-    <div id="debug"></div>
+    <div id="ui">
+        Left-click: Break block<br>
+        Right-click: Place block<br>
+        E: Toggle Inventory<br>
+        1-4: Select Hotbar Slot<br>
+        Space: Jump
+    </div>
+    <div id="hotbar">
+        <div class="hotbar-slot selected" data-index="0">Dirt</div>
+        <div class="hotbar-slot" data-index="1">Stone</div>
+        <div class="hotbar-slot" data-index="2">Grass</div>
+        <div class="hotbar-slot" data-index="3">Sand</div>
+    </div>
+    <div id="inventory">
+        <h2>Inventory</h2>
+        <input type="text" id="inventory-search" placeholder="Search blocks...">
+        <div id="inventory-slots"></div>
+    </div>
     <canvas id="renderCanvas"></canvas>
-    <!-- Using a stable Babylon.js CDN for GitHub Pages compatibility -->
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/ammo.js"></script>
     <script>
-        // Initialize canvas and debug elements
         const canvas = document.getElementById("renderCanvas");
-        const debugDiv = document.getElementById("debug");
-        let engine, scene, camera, world, selectedBlockType = 1;
-
-        // Debug logging for troubleshooting
-        function logDebug(message) {
-            console.log(message);
-            debugDiv.innerText = message;
-        }
-
-        // Initialize Babylon.js engine
-        try {
-            engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
-            logDebug("Engine initialized");
-        } catch (e) {
-            logDebug("Engine init failed: " + e.message);
-            alert("Failed to initialize game engine. Please check console for details.");
-            throw e;
-        }
+        const engine = new BABYLON.Engine(canvas, true);
 
         function createScene() {
-            try {
-                scene = new BABYLON.Scene(engine);
-                scene.clearColor = new BABYLON.Color4(0.5, 0.8, 1, 1);
-                logDebug("Scene created");
+            const scene = new BABYLON.Scene(engine);
+            scene.clearColor = new BABYLON.Color4(0.5, 0.8, 1, 1);
 
-                // Camera setup
-                camera = new BABYLON.UniversalCamera("camera", new BABYLON.Vector3(0, 5, -10), scene);
-                camera.setTarget(BABYLON.Vector3.Zero());
-                camera.applyGravity = true;
-                camera.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
-                camera.checkCollisions = true;
-                camera.speed = 0.3;
-                camera.angularSensibility = 2000;
-                camera.keysUp.push(87); // W
-                camera.keysDown.push(83); // S
-                camera.keysLeft.push(65); // A
-                camera.keysRight.push(68); // D
-                camera.keysUpward.push(32); // Space
-                logDebug("Camera set up");
+            // Enable physics
+            scene.enablePhysics(new BABYLON.Vector3(0, -9.81, 0), new BABYLON.AmmoJSPlugin());
 
-                // Lighting
-                const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-                light.intensity = 0.8;
+            // Camera
+            const camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 5, -10), scene);
+            camera.setTarget(BABYLON.Vector3.Zero());
+            camera.attachControl(canvas, true);
+            camera.speed = 0.2;
+            camera.angularSensibility = 4000;
+            camera.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
+            camera.checkCollisions = true;
+            camera.applyGravity = true;
 
-                // Materials for blocks
-                const grassMat = new BABYLON.StandardMaterial("grassMat", scene);
-                grassMat.diffuseColor = new BABYLON.Color3(0, 0.6, 0);
-                const dirtMat = new BABYLON.StandardMaterial("dirtMat", scene);
-                dirtMat.diffuseColor = new BABYLON.Color3(0.4, 0.2, 0);
-                const stoneMat = new BABYLON.StandardMaterial("stoneMat", scene);
-                stoneMat.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
-                const waterMat = new BABYLON.StandardMaterial("waterMat", scene);
-                waterMat.diffuseColor = new BABYLON.Color3(0, 0.2, 0.8);
-                waterMat.alpha = 0.6;
-                const woodMat = new BABYLON.StandardMaterial("woodMat", scene);
-                woodMat.diffuseColor = new BABYLON.Color3(0.4, 0.2, 0.1);
-                const leavesMat = new BABYLON.StandardMaterial("leavesMat", scene);
-                leavesMat.diffuseColor = new BABYLON.Color3(0.1, 0.5, 0.1);
+            // Lighting
+            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+            light.intensity = 0.7;
 
-                // World management
-                world = {
-                    chunks: {},
-                    blockTypes: { 1: grassMat, 2: dirtMat, 3: stoneMat, 4: waterMat, 5: woodMat, 6: leavesMat },
-                    chunkSize: 8,
-                    blockSize: 1,
-                    getBlock(x, y, z) {
-                        const chunkX = Math.floor(x / this.chunkSize);
-                        const chunkZ = Math.floor(z / this.chunkSize);
-                        const chunkId = `${chunkX},${chunkZ}`;
-                        if (!this.chunks[chunkId]) return 0;
-                        const localX = Math.floor((x % this.chunkSize + this.chunkSize) % this.chunkSize);
-                        const localZ = Math.floor((z % this.chunkSize + this.chunkSize) % this.chunkSize);
-                        return this.chunks[chunkId].blocks[localX]?.[Math.floor(y)]?.[localZ] || 0;
-                    },
-                    setBlock(x, y, z, type) {
-                        try {
-                            const chunkX = Math.floor(x / this.chunkSize);
-                            const chunkZ = Math.floor(z / this.chunkSize);
-                            const chunkId = `${chunkX},${chunkZ}`;
-                            if (!this.chunks[chunkId]) {
-                                this.chunks[chunkId] = {
-                                    blocks: Array(this.chunkSize).fill().map(() => Array(16).fill().map(() => Array(this.chunkSize).fill(0))),
-                                    mesh: null
-                                };
-                            }
-                            const localX = Math.floor((x % this.chunkSize + this.chunkSize) % this.chunkSize);
-                            const localZ = Math.floor((z % this.chunkSize + this.chunkSize) % this.chunkSize);
-                            this.chunks[chunkId].blocks[localX][Math.floor(y)][localZ] = type;
-                            updateChunkMesh(chunkX, chunkZ);
-                            logDebug(`Set block at (${x},${y},${z}) to type ${type}`);
-                        } catch (e) {
-                            logDebug("Set block failed: " + e.message);
-                        }
-                    }
-                };
+            // Block types and materials
+            const blockTypes = [
+                'dirt', 'stone', 'grass', 'sand', 'wood', 'coal', 'iron', 'gold', 'diamond', 'redstone',
+                'clay', 'gravel', 'obsidian', 'brick', 'cobblestone'
+            ];
+            const materials = {};
+            blockTypes.forEach(type => {
+                materials[type] = new BABYLON.StandardMaterial(`${type}Mat`, scene);
+            });
+            materials.dirt.diffuseColor = new BABYLON.Color3(0.5, 0.3, 0.1);
+            materials.stone.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+            materials.grass.diffuseColor = new BABYLON.Color3(0.2, 0.6, 0.2);
+            materials.sand.diffuseColor = new BABYLON.Color3(0.8, 0.7, 0.4);
+            materials.wood.diffuseColor = new BABYLON.Color3(0.6, 0.4, 0.2);
+            materials.coal.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+            materials.iron.diffuseColor = new BABYLON.Color3(0.7, 0.7, 0.7);
+            materials.gold.diffuseColor = new BABYLON.Color3(0.9, 0.7, 0.2);
+            materials.diamond.diffuseColor = new BABYLON.Color3(0.3, 0.8, 0.8);
+            materials.redstone.diffuseColor = new BABYLON.Color3(0.8, 0.1, 0.1);
+            materials.clay.diffuseColor = new BABYLON.Color3(0.6, 0.5, 0.5);
+            materials.gravel.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+            materials.obsidian.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.2);
+            materials.brick.diffuseColor = new BABYLON.Color3(0.7, 0.3, 0.2);
+            materials.cobblestone.diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.3);
 
-                // Tree generation
-                function generateTree(x, y, z) {
-                    for (let dy = 0; dy < 4; dy++) {
-                        world.setBlock(x, y + dy, z, 5); // Wood
-                    }
-                    for (let dx = -2; dx <= 2; dx++) {
-                        for (let dy = 2; dy <= 4; dy++) {
-                            for (let dz = -2; dz <= 2; dz++) {
-                                if (Math.abs(dx) === 2 && Math.abs(dz) === 2) continue;
-                                if (Math.random() < 0.8) {
-                                    world.setBlock(x + dx, y + dy, z + dz, 6); // Leaves
-                                }
-                            }
-                        }
+            // Generate terrain
+            const worldSize = 20;
+            const blocks = [];
+            for (let x = -worldSize / 2; x < worldSize / 2; x++) {
+                for (let z = -worldSize / 2; z < worldSize / 2; z++) {
+                    const height = Math.floor(Math.sin(x * 0.1) + Math.cos(z * 0.1) + 2);
+                    for (let y = 0; y < height; y++) {
+                        const block = BABYLON.MeshBuilder.CreateBox(`block_${x}_${y}_${z}`, { size: 1 }, scene);
+                        block.position = new BABYLON.Vector3(x, y, z);
+                        block.material = y === height - 1 ? materials.grass : materials.stone;
+                        block.checkCollisions = true;
+                        block.physicsImpostor = new BABYLON.PhysicsImpostor(
+                            block,
+                            BABYLON.PhysicsImpostor.BoxImpostor,
+                            { mass: 0, restitution: 0 },
+                            scene
+                        );
+                        blocks.push(block);
                     }
                 }
-
-                // Chunk generation with terrain, water, and trees
-                function generateChunk(chunkX, chunkZ) {
-                    try {
-                        // Terrain
-                        for (let x = chunkX * world.chunkSize; x < (chunkX + 1) * world.chunkSize; x++) {
-                            for (let z = chunkZ * world.chunkSize; z < (chunkZ + 1) * world.chunkSize; z++) {
-                                const height = Math.floor(4 + Math.sin(x * 0.2) + Math.cos(z * 0.2));
-                                for (let y = 0; y < 16; y++) {
-                                    if (y === height) world.setBlock(x, y, z, 1); // Grass
-                                    else if (y > height - 2 && y < height) world.setBlock(x, y, z, 2); // Dirt
-                                    else if (y < height - 1) world.setBlock(x, y, z, 3); // Stone
-                                }
-                            }
-                        }
-                        // Water
-                        for (let x = chunkX * world.chunkSize; x < (chunkX + 1) * world.chunkSize; x++) {
-                            for (let z = chunkZ * world.chunkSize; z < (chunkZ + 1) * world.chunkSize; z++) {
-                                const height = Math.floor(4 + Math.sin(x * 0.2) + Math.cos(z * 0.2));
-                                if (height < 3) {
-                                    for (let y = height; y <= 3; y++) {
-                                        world.setBlock(x, y, z, 4); // Water
-                                    }
-                                }
-                            }
-                        }
-                        // Trees
-                        for (let x = chunkX * world.chunkSize; x < (chunkX + 1) * world.chunkSize; x++) {
-                            for (let z = chunkZ * world.chunkSize; z < (chunkZ + 1) * world.chunkSize; z++) {
-                                const height = Math.floor(4 + Math.sin(x * 0.2) + Math.cos(z * 0.2));
-                                if (world.getBlock(x, height, z) === 1 && Math.random() < 0.05) {
-                                    generateTree(x, height + 1, z);
-                                }
-                            }
-                        }
-                        logDebug(`Generated chunk ${chunkX},${chunkZ}`);
-                    } catch (e) {
-                        logDebug("Chunk generation failed: " + e.message);
-                    }
-                }
-
-                // Update chunk mesh for rendering
-                function updateChunkMesh(chunkX, chunkZ) {
-                    try {
-                        const chunkId = `${chunkX},${chunkZ}`;
-                        if (world.chunks[chunkId].mesh) world.chunks[chunkId].mesh.dispose();
-                        const positions = [];
-                        const indices = [];
-                        const colors = [];
-                        let index = 0;
-
-                        for (let x = 0; x < world.chunkSize; x++) {
-                            for (let y = 0; y < 16; y++) {
-                                for (let z = 0; z < world.chunkSize; z++) {
-                                    const block = world.chunks[chunkId].blocks[x][y][z];
-                                    if (block === 0) continue;
-
-                                    const wx = x + chunkX * world.chunkSize;
-                                    const wz = z + chunkZ * world.chunkSize;
-
-                                    const faces = [
-                                        !world.getBlock(wx + 1, y, wz),
-                                        !world.getBlock(wx - 1, y, wz),
-                                        !world.getBlock(wx, y + 1, wz),
-                                        !world.getBlock(wx, y - 1, wz),
-                                        !world.getBlock(wx, y, wz + 1),
-                                        !world.getBlock(wx, y, wz - 1)
-                                    ];
-
-                                    if (faces.some(f => f)) {
-                                        const blockMat = world.blockTypes[block];
-                                        const color = blockMat.diffuseColor;
-
-                                        const v = [
-                                            [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],
-                                            [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]
-                                        ].map(([vx, vy, vz]) => [vx + wx, vy + y, vz + wz]);
-
-                                        const faceIndices = [
-                                            [0, 1, 2, 3], [5, 4, 7, 6], [1, 5, 6, 2],
-                                            [4, 0, 3, 7], [3, 2, 6, 7], [4, 5, 1, 0]
-                                        ];
-
-                                        faces.forEach((visible, f) => {
-                                            if (!visible) return;
-                                            const fi = faceIndices[f];
-                                            positions.push(...v[fi[0]], ...v[fi[1]], ...v[fi[2]], ...v[fi[3]]);
-                                            indices.push(index, index + 1, index + 2, index, index + 2, index + 3);
-                                            colors.push(...[color.r, color.g, color.b, block === 4 ? 0.6 : 1].repeat(4));
-                                            index += 4;
-                                        });
-                                    }
-                                }
-                            }
-                        }
-
-                        if (positions.length === 0) return;
-                        const mesh = new BABYLON.Mesh(`chunk_${chunkId}`, scene);
-                        const vertexData = new BABYLON.VertexData();
-                        vertexData.positions = positions;
-                        vertexData.indices = indices;
-                        vertexData.colors = colors;
-                        vertexData.applyToMesh(mesh);
-                        mesh.checkCollisions = true;
-                        world.chunks[chunkId].mesh = mesh;
-                        logDebug(`Updated mesh for chunk ${chunkId}`);
-                    } catch (e) {
-                        logDebug("Mesh update failed: " + e.message);
-                    }
-                }
-
-                // Generate initial chunks
-                try {
-                    for (let x = -1; x <= 1; x++) {
-                        for (let z = -1; z <= 1; z++) {
-                            generateChunk(x, z);
-                        }
-                    }
-                } catch (e) {
-                    logDebug("Initial chunk generation failed: " + e.message);
-                }
-
-                // Pointer lock for mouse control
-                canvas.addEventListener("click", () => {
-                    try {
-                        if (!document.pointerLockElement) {
-                            canvas.requestPointerLock();
-                            logDebug("Requested pointer lock");
-                        }
-                    } catch (e) {
-                        logDebug("Pointer lock failed: " + e.message);
-                    }
-                });
-
-                document.addEventListener("pointerlockchange", () => {
-                    logDebug(document.pointerLockElement ? "Pointer locked" : "Pointer unlocked");
-                });
-
-                // Block interaction (break/place)
-                scene.onPointerDown = (evt) => {
-                    if (!document.pointerLockElement) return;
-                    try {
-                        const pick = scene.pickWithRay(camera.getForwardRay(5));
-                        if (!pick.hit) {
-                            logDebug("No block hit");
-                            return;
-                        }
-                        const pos = pick.pickedPoint.clone();
-                        pos.x = Math.floor(pos.x);
-                        pos.y = Math.floor(pos.y);
-                        pos.z = Math.floor(pos.z);
-                        if (evt.button === 0) {
-                            world.setBlock(pos.x, pos.y, pos.z, 0); // Break
-                        } else if (evt.button === 2) {
-                            const normal = pick.getNormal(true);
-                            const newPos = pos.add(new BABYLON.Vector3(
-                                Math.round(normal.x),
-                                Math.round(normal.y),
-                                Math.round(normal.z)
-                            ));
-                            if (!world.getBlock(newPos.x, newPos.y, newPos.z)) {
-                                world.setBlock(newPos.x, newPos.y, newPos.z, selectedBlockType); // Place
-                            }
-                        }
-                    } catch (e) {
-                        logDebug("Block interaction failed: " + e.message);
-                    }
-                };
-
-                return scene;
-            } catch (e) {
-                logDebug("Scene creation failed: " + e.message);
-                throw e;
             }
-        }
 
-        // Start game
-        try {
-            scene = createScene();
-            engine.runRenderLoop(() => {
-                try {
-                    scene.render();
-                    camera.position.y = Math.max(camera.position.y, 0); // Prevent falling through
-                } catch (e) {
-                    logDebug("Render loop error: " + e.message);
-                    engine.stopRenderLoop();
+            // Add physics to camera
+            camera.physicsImpostor = new BABYLON.PhysicsImpostor(
+                camera,
+                BABYLON.PhysicsImpostor.SphereImpostor,
+                { mass: 1, restitution: 0 },
+                scene
+            );
+
+            // Hotbar and Inventory
+            let selectedHotbarIndex = 0;
+            const hotbarSlots = document.querySelectorAll('.hotbar-slot');
+            const inventoryDiv = document.getElementById('inventory');
+            const inventorySlotsDiv = document.getElementById('inventory-slots');
+            const searchInput = document.getElementById('inventory-search');
+            let isInventoryOpen = false;
+
+            function updateHotbarSelection() {
+                hotbarSlots.forEach((slot, index) => {
+                    slot.classList.toggle('selected', index === selectedHotbarIndex);
+                });
+            }
+
+            function updateInventory(searchTerm = '') {
+                inventorySlotsDiv.innerHTML = '';
+                blockTypes
+                    .filter(type => type.toLowerCase().includes(searchTerm.toLowerCase()))
+                    .forEach(type => {
+                        const slot = document.createElement('div');
+                        slot.className = 'inventory-slot';
+                        slot.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+                        slot.addEventListener('click', () => {
+                            // Replace first hotbar slot with clicked block
+                            hotbarSlots[0].textContent = type.charAt(0).toUpperCase() + type.slice(1);
+                            selectedHotbarIndex = 0;
+                            updateHotbarSelection();
+                        });
+                        inventorySlotsDiv.appendChild(slot);
+                    });
+            }
+
+            // Initial inventory population
+            updateInventory();
+
+            // Search functionality
+            searchInput.addEventListener('input', () => {
+                updateInventory(searchInput.value);
+            });
+
+            // Block interaction
+            scene.onPointerDown = (evt) => {
+                if (isInventoryOpen) return;
+                const pickResult = scene.pick(scene.pointerX, scene.pointerY);
+                if (pickResult.hit && pickResult.pickedMesh.name.startsWith("block_")) {
+                    const mesh = pickResult.pickedMesh;
+                    if (evt.button === 0) { // Left-click: Break block
+                        mesh.dispose();
+                        blocks.splice(blocks.indexOf(mesh), 1);
+                    } else if (evt.button === 2) { // Right-click: Place block
+                        const normal = pickResult.getNormal(true);
+                        const newPos = pickResult.pickedPoint.add(normal);
+                        newPos.x = Math.round(newPos.x);
+                        newPos.y = Math.round(newPos.y);
+                        newPos.z = Math.round(newPos.z);
+                        const newBlock = BABYLON.MeshBuilder.CreateBox(`block_${newPos.x}_${newPos.y}_${newPos.z}`, { size: 1 }, scene);
+                        newBlock.position = newPos;
+                        newBlock.material = materials[blockTypes[selectedHotbarIndex]];
+                        newBlock.checkCollisions = true;
+                        newBlock.physicsImpostor = new BABYLON.PhysicsImpostor(
+                            newBlock,
+                            BABYLON.PhysicsImpostor.BoxImpostor,
+                            { mass: 0, restitution: 0 },
+                            scene
+                        );
+                        blocks.push(newBlock);
+                    }
+                }
+            };
+
+            // Keyboard controls
+            document.addEventListener('keydown', (evt) => {
+                if (evt.key === 'e' || evt.key === 'E') {
+                    isInventoryOpen = !isInventoryOpen;
+                    inventoryDiv.style.display = isInventoryOpen ? 'block' : 'none';
+                    searchInput.focus();
+                    scene.activeCamera.detachControl(canvas);
+                    if (!isInventoryOpen) {
+                        scene.activeCamera.attachControl(canvas, true);
+                        engine.enterPointerlock();
+                    }
+                } else if (!isInventoryOpen && evt.key >= '1' && evt.key <= '4') {
+                    selectedHotbarIndex = parseInt(evt.key) - 1;
+                    updateHotbarSelection();
+                } else if (!isInventoryOpen && evt.key === ' ' && camera.position.y <= camera.position.y + 0.1) {
+                    // Jump by applying upward impulse
+                    camera.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 5, 0), camera.position);
+                    evt.preventDefault(); // Prevent scrolling
                 }
             });
-            logDebug("Game loop started");
-        } catch (e) {
-            logDebug("Game init failed: " + e.message);
+
+            // Lock pointer for FPS controls
+            canvas.addEventListener("click", () => {
+                if (!isInventoryOpen) {
+                    engine.enterPointerlock();
+                }
+            });
+
+            // Initialize hotbar
+            updateHotbarSelection();
+
+            return scene;
         }
 
-        // Handle window resize
+        const scene = createScene();
+
+        engine.runRenderLoop(() => {
+            scene.render();
+        });
+
         window.addEventListener("resize", () => {
             engine.resize();
         });
