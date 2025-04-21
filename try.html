@@ -135,7 +135,8 @@
             // Block types and materials
             const blockTypes = [
                 'dirt', 'stone', 'grass', 'sand', 'wood', 'leaves', 'coal', 'iron', 'gold', 'diamond',
-                'redstone', 'clay', 'gravel', 'obsidian', 'brick', 'cobblestone', 'water', 'flower'
+                'redstone', 'clay', 'gravel', 'obsidian', 'brick', 'cobblestone', 'water', 'flower',
+                'piston', 'redstone_dust', 'bucket'
             ];
             const materials = {};
             blockTypes.forEach(type => {
@@ -179,6 +180,12 @@
                     materials[type].specularColor = new BABYLON.Color3(0, 0, 0);
                 } else if (type === 'flower') {
                     materials[type].diffuseColor = new BABYLON.Color3(1, 1, 0);
+                } else if (type === 'piston') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.6, 0.6, 0.4);
+                } else if (type === 'redstone_dust') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.8, 0, 0);
+                } else if (type === 'bucket') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
                 }
             });
 
@@ -319,10 +326,22 @@
                 const pickResult = scene.pick(window.innerWidth / 2, window.innerHeight / 2, null, false, camera);
                 if (pickResult.hit && pickResult.pickedMesh.name.startsWith("block_")) {
                     const mesh = pickResult.pickedMesh;
+                    const selectedBlockType = blockTypes[selectedHotbarIndex];
                     if (evt.button === 0) { // Left-click: Break block
-                        mesh.dispose();
-                        blocks.splice(blocks.indexOf(mesh), 1);
-                    } else if (evt.button === 2) { // Right-click: Place block
+                        if (mesh.material === materials.water) {
+                            if (selectedBlockType === 'bucket') {
+                                mesh.dispose();
+                                blocks.splice(blocks.indexOf(mesh), 1);
+                                // Add water to inventory
+                                hotbarSlots[0].textContent = 'Water';
+                                selectedHotbarIndex = 0;
+                                updateHotbarSelection();
+                            }
+                        } else {
+                            mesh.dispose();
+                            blocks.splice(blocks.indexOf(mesh), 1);
+                        }
+                    } else if (evt.button === 2 && selectedBlockType !== 'bucket') { // Right-click: Place block
                         const normal = pickResult.getNormal(true);
                         const newPos = pickResult.pickedPoint.add(normal);
                         newPos.x = Math.round(newPos.x);
@@ -330,7 +349,7 @@
                         newPos.z = Math.round(newPos.z);
                         const newBlock = BABYLON.MeshBuilder.CreateBox(`block_${newPos.x}_${newPos.y}_${newPos.z}`, { size: 1 }, scene);
                         newBlock.position = newPos;
-                        newBlock.material = materials[blockTypes[selectedHotbarIndex]];
+                        newBlock.material = materials[selectedBlockType];
                         newBlock.checkCollisions = true;
                         newBlock.physicsImpostor = new BABYLON.PhysicsImpostor(
                             newBlock,
@@ -346,7 +365,7 @@
             // Keyboard controls
             document.addEventListener('keydown', (evt) => {
                 if (evt.key === 'e' || evt.key === 'E') {
-                    isInventoryOpen = !isInventoryOpen;
+                    isInventoryOpen = !isRunnerInventoryOpen;
                     inventoryDiv.style.display = isInventoryOpen ? 'block' : 'none';
                     searchInput.focus();
                     if (isInventoryOpen) {
@@ -359,9 +378,18 @@
                 } else if (!isInventoryOpen && evt.key >= '1' && evt.key <= '4') {
                     selectedHotbarIndex = parseInt(evt.key) - 1;
                     updateHotbarSelection();
-                } else if (!isInventoryOpen && evt.key === ' ' && camera.position.y <= camera.position.y + 0.1) {
-                    camera.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 5, 0), camera.position);
-                    evt.preventDefault();
+                } else if (!isInventoryOpen && evt.key === ' ') {
+                    // Raycast downward to check for ground
+                    const ray = new BABYLON.Ray(
+                        camera.position,
+                        new BABYLON.Vector3(0, -1, 0),
+                        1.1 // Check for ground within 1.1 units
+                    );
+                    const pickResult = scene.pickWithRay(ray);
+                    if (pickResult.hit && pickResult.pickedMesh.name.startsWith("block_")) {
+                        camera.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 5, 0), camera.position);
+                        evt.preventDefault();
+                    }
                 }
             });
 
