@@ -132,45 +132,53 @@
             const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
             light.intensity = 0.7;
 
-            // Block types and materials with textures
+            // Block types and materials
             const blockTypes = [
                 'dirt', 'stone', 'grass', 'sand', 'wood', 'leaves', 'coal', 'iron', 'gold', 'diamond',
                 'redstone', 'clay', 'gravel', 'obsidian', 'brick', 'cobblestone', 'water', 'flower'
             ];
             const materials = {};
-            const textureUrls = {
-                dirt: 'https://textures.minecraft.net/texture/dirt.png',
-                stone: 'https://textures.minecraft.net/texture/stone.png',
-                grass: 'https://textures.minecraft.net/texture/grass_block_top.png',
-                sand: 'https://textures.minecraft.net/texture/sand.png',
-                wood: 'https://textures.minecraft.net/texture/oak_log.png',
-                leaves: 'https://textures.minecraft.net/texture/oak_leaves.png',
-                coal: 'https://textures.minecraft.net/texture/coal_ore.png',
-                iron: 'https://textures.minecraft.net/texture/iron_ore.png',
-                gold: 'https://textures.minecraft.net/texture/gold_ore.png',
-                diamond: 'https://textures.minecraft.net/texture/diamond_ore.png',
-                redstone: 'https://textures.minecraft.net/texture/redstone_ore.png',
-                clay: 'https://textures.minecraft.net/texture/clay.png',
-                gravel: 'https://textures.minecraft.net/texture/gravel.png',
-                obsidian: 'https://textures.minecraft.net/texture/obsidian.png',
-                brick: 'https://textures.minecraft.net/texture/bricks.png',
-                cobblestone: 'https://textures.minecraft.net/texture/cobblestone.png',
-                water: 'https://textures.minecraft.net/texture/water_still.png',
-                flower: 'https://textures.minecraft.net/texture/dandelion.png'
-            };
             blockTypes.forEach(type => {
                 materials[type] = new BABYLON.StandardMaterial(`${type}Mat`, scene);
-                const texture = new BABYLON.Texture(textureUrls[type], scene);
-                materials[type].diffuseTexture = texture;
                 if (type === 'grass') {
-                    materials[type].diffuseTexture = new BABYLON.Texture('https://textures.minecraft.net/texture/grass_block_side.png', scene);
-                    materials[type].diffuseTexture.hasAlpha = false;
+                    materials[type].diffuseColor = new BABYLON.Color3(0.2, 0.6, 0.2); // Green
+                } else if (type === 'stone') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4); // Gray
+                } else if (type === 'dirt') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.5, 0.3, 0.1);
+                } else if (type === 'sand') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.8, 0.7, 0.4);
+                } else if (type === 'wood') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.6, 0.4, 0.2);
                 } else if (type === 'leaves') {
-                    materials[type].diffuseTexture.hasAlpha = true;
+                    materials[type].diffuseColor = new BABYLON.Color3(0.3, 0.5, 0.3);
                     materials[type].alpha = 0.9;
+                } else if (type === 'coal') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+                } else if (type === 'iron') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.7, 0.7, 0.7);
+                } else if (type === 'gold') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.9, 0.7, 0.2);
+                } else if (type === 'diamond') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.3, 0.8, 0.8);
+                } else if (type === 'redstone') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.8, 0.1, 0.1);
+                } else if (type === 'clay') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.6, 0.5, 0.5);
+                } else if (type === 'gravel') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+                } else if (type === 'obsidian') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.2);
+                } else if (type === 'brick') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.7, 0.3, 0.2);
+                } else if (type === 'cobblestone') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.3);
                 } else if (type === 'water') {
+                    materials[type].diffuseColor = new BABYLON.Color3(0.2, 0.4, 0.8);
                     materials[type].alpha = 0.6;
                     materials[type].specularColor = new BABYLON.Color3(0, 0, 0);
+                } else if (type === 'flower') {
+                    materials[type].diffuseColor = new BABYLON.Color3(1, 1, 0);
                 }
             });
 
