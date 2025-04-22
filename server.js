@@ -16,8 +16,10 @@ wss.on('connection', (ws) => {
 
     ws.on('message', (message) => {
         try {
+            console.log('Received:', message.toString());
             const data = JSON.parse(message);
             if (data.type === 'ping') {
+                console.log('Ping received from client');
                 return; // Ignore ping
             }
             if (data.type === 'join') {
@@ -39,7 +41,7 @@ wss.on('connection', (ws) => {
                 broadcast(data.room, data);
             }
         } catch (e) {
-            console.error('Error processing message:', e);
+            console.error('Error processing message:', e, 'Message:', message.toString());
         }
     });
 
@@ -62,6 +64,10 @@ wss.on('connection', (ws) => {
             console.log(`${ws.username} disconnected from room ${ws.room}`);
         }
     });
+
+    ws.on('error', (error) => {
+        console.error('WebSocket error:', error);
+    });
 });
 
 function broadcast(room, message, sender = null) {
@@ -69,7 +75,11 @@ function broadcast(room, message, sender = null) {
     if (roomClients) {
         roomClients.forEach((client) => {
             if (client !== sender && client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify(message));
+                try {
+                    client.send(JSON.stringify(message));
+                } catch (e) {
+                    console.error('Error sending message to client:', e);
+                }
             }
         });
     }
