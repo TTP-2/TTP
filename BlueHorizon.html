@@ -37,6 +37,20 @@
       min-height: calc(100vh - 4rem);
       resize: none;
     }
+    /* Full-screen preview */
+    .preview-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
   </style>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -106,9 +120,15 @@
   <section id="app-creation" class="hidden bg-gray-100">
     <div class="relative h-screen">
       <button onclick="runApp()" class="fixed top-4 right-4 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 hover-scale transition">Run</button>
-      <textarea id="app-input" class="full-textarea w-full p-4 text-gray-800 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter your app code or configuration here..."></textarea>
+      <textarea id="app-input" class="full-textarea w-full p-4 text-gray-800 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter your HTML code here..."></textarea>
     </div>
   </section>
+
+  <!-- Preview Overlay -->
+  <div id="preview-overlay" class="preview-overlay hidden">
+    <button onclick="closePreview()" class="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 hover-scale transition">Close</button>
+    <iframe id="preview-iframe" class="w-4/5 h-4/5 bg-white border border-gray-300 rounded-lg"></iframe>
+  </div>
 
   <!-- Footer -->
   <footer class="bg-blue-600 text-white py-8 text-center">
@@ -157,11 +177,40 @@
     function runApp() {
       const input = document.getElementById('app-input').value;
       if (!input.trim()) {
-        alert('Please enter some content to run.');
+        alert('Please enter some HTML code to preview.');
         return;
       }
-      alert('Running your app:\n' + input.substring(0, 100) + (input.length > 100 ? '...' : ''));
-      // In a real app, this would send the input to a backend for processing
+      // Show preview overlay
+      const previewOverlay = document.getElementById('preview-overlay');
+      previewOverlay.classList.remove('hidden');
+      // Render HTML in iframe
+      const iframe = document.getElementById('preview-iframe');
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      iframeDoc.open();
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+          </style>
+        </head>
+        <body>
+          ${input}
+        </body>
+        </html>
+      `);
+      iframeDoc.close();
+    }
+
+    function closePreview() {
+      document.getElementById('preview-overlay').classList.add('hidden');
+      // Clear iframe content
+      const iframe = document.getElementById('preview-iframe');
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      iframeDoc.open();
+      iframeDoc.write('');
+      iframeDoc.close();
     }
   </script>
 </body>
