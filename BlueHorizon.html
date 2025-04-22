@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bluehorizon - Welcome</title>
+  <title>BlueHorizon - Welcome</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Prism.js for syntax highlighting -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
@@ -81,19 +81,13 @@
       border-color: #3b82f6;
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
     }
-    /* Live site styling */
-    .live-site {
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    .url-bar {
-      background: #f3f4f6;
-      padding: 0.5rem 1rem;
-      border-bottom: 1px solid #d1d5db;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    /* App card styling */
+    .app-card {
+      background: white;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -148,7 +142,7 @@
           </div>
         </div>
 
-        <!-- Dashboard with Buttons -->
+        <!-- Dashboard with Buttons and Launcher -->
         <div id="dashboard" class="hidden text-center">
           <p class="mb-6 text-green-600 font-medium text-lg">You're in! Welcome!</p>
           <div class="flex flex-col items-center space-y-6">
@@ -160,6 +154,7 @@
               <button onclick="alert('View your apps (placeholder action)')" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 hover-scale transition">View Apps</button>
               <button onclick="alert('Open settings (placeholder action)')" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 hover-scale transition">Settings</button>
             </div>
+            <div id="app-launcher" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-6"></div>
           </div>
         </div>
       </div>
@@ -177,15 +172,6 @@
     </div>
   </section>
 
-  <!-- Live Site Simulation -->
-  <section id="live-site" class="hidden live-site">
-    <div class="url-bar">
-      <span id="live-url" class="text-gray-700"></span>
-      <button onclick="backToAppCreation()" class="bg-blue-500 text-white px-4 py-1 rounded-lg hover:bg-blue-600 hover-scale transition">Back</button>
-    </div>
-    <iframe id="live-iframe" class="flex-1 w-full bg-white"></iframe>
-  </section>
-
   <!-- Preview Overlay -->
   <div id="preview-overlay" class="preview-overlay hidden">
     <button onclick="closePreview()" class="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 hover-scale transition">Close</button>
@@ -199,6 +185,8 @@
 
   <script>
     let generatedCode = null;
+    let apps = [];
+    let appCounter = 1;
 
     function generateCode() {
       // Generate a random 6-digit code
@@ -359,17 +347,39 @@
         alert('Please enter some HTML code to launch.');
         return;
       }
-      // Generate a simulated URL
-      const randomId = Math.random().toString(36).substring(2, 8);
-      const liveUrl = `https://bluehorizon.example.com/app/${randomId}`;
-      // Show live site section
+      // Add app to launcher
+      const appName = `App ${appCounter++}`;
+      apps.push({ name: appName, html: input });
+      updateLauncher();
+      // Return to dashboard
       document.getElementById('app-creation').classList.add('hidden');
-      const liveSite = document.getElementById('live-site');
-      liveSite.classList.remove('hidden');
-      // Set URL in the fake URL bar
-      document.getElementById('live-url').textContent = liveUrl;
+      document.getElementById('login-section').classList.remove('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+      document.querySelector('nav').classList.remove('hidden');
+      document.querySelector('header').classList.remove('hidden');
+      document.querySelector('footer').classList.remove('hidden');
+      alert(`App "${appName}" has been added to your launcher!`);
+    }
+
+    function updateLauncher() {
+      const launcher = document.getElementById('app-launcher');
+      launcher.innerHTML = '';
+      apps.forEach((app, index) => {
+        const appCard = document.createElement('div');
+        appCard.className = 'app-card hover-scale';
+        appCard.innerHTML = `<p class="text-lg font-semibold text-gray-800">${app.name}</p>`;
+        appCard.onclick = () => viewApp(index);
+        launcher.appendChild(appCard);
+      });
+    }
+
+    function viewApp(index) {
+      const app = apps[index];
+      // Show preview overlay
+      const previewOverlay = document.getElementById('preview-overlay');
+      previewOverlay.classList.remove('hidden');
       // Render HTML in iframe
-      const iframe = document.getElementById('live-iframe');
+      const iframe = document.getElementById('preview-iframe');
       const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
       iframeDoc.open();
       iframeDoc.write(`
@@ -381,21 +391,10 @@
           </style>
         </head>
         <body>
-          ${input}
+          ${app.html}
         </body>
         </html>
       `);
-      iframeDoc.close();
-    }
-
-    function backToAppCreation() {
-      document.getElementById('live-site').classList.add('hidden');
-      document.getElementById('app-creation').classList.remove('hidden');
-      // Clear iframe content
-      const iframe = document.getElementById('live-iframe');
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-      iframeDoc.open();
-      iframeDoc.write('');
       iframeDoc.close();
     }
 
