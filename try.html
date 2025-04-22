@@ -2,140 +2,231 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Minecraft-like Game with Babylon.js</title>
+    <title>Infinite Minecraft-like Game with Arrow Movement</title>
     <style>
-        body { margin: 0; }
-        canvas { width: 100%; height: 100%; display: block; }
-        #info {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: white;
-            font-family: Arial;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
         }
     </style>
 </head>
 <body>
-    <div id="info">
-        <p>Controls:</p>
-        <p>WASD: Move</p>
-        <p>Space: Jump</p>
-        <p>Left Click: Remove Block</p>
-        <p>Right Click: Place Block</p>
-    </div>
     <canvas id="renderCanvas"></canvas>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
     <script>
         const canvas = document.getElementById("renderCanvas");
         const engine = new BABYLON.Engine(canvas, true);
 
-        function createScene() {
+        const createScene = function () {
             const scene = new BABYLON.Scene(engine);
             scene.clearColor = new BABYLON.Color4(0.5, 0.8, 1, 1);
 
             // Camera
-            const camera = new BABYLON.UniversalCamera("camera", new BABYLON.Vector3(0, 5, -10), scene);
-            camera.setTarget(BABYLON.Vector3.Zero());
-            camera.attachControl(canvas, true);
-            camera.speed = 0.5;
-            camera.angularSensibility = 3000;
-            camera.applyGravity = true;
-            camera.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
-            scene.collisionsEnabled = true;
-            camera.checkCollisions = true;
+            const camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 5, 0), scene);
+            camera.rotation.y = Math.PI / 2; // Face forward
+            camera.speed = 0.2;
+            camera.minZ = 0.1;
 
-            // Lighting
+            // Disable default controls
+            camera.detachControl(canvas);
+
+            // Materials
+            const groundMaterial = new BABYLON.StandardMaterial("groundMat", scene);
+            groundMaterial.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+            const grassMaterial = new BABYLON.StandardMaterial("grassMat", scene);
+            grassMaterial.diffuseColor = new BABYLON.Color3(0, 1, 0);
+
+            // Light
             const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
             light.intensity = 0.7;
 
-            // Ground material
-            const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
-            groundMat.diffuseColor = new BABYLON.Color3(0.2, 0.8, 0.2);
-
-            // Block material
-            const blockMat = new BABYLON.StandardMaterial("blockMat", scene);
-            blockMat.diffuseColor = new BABYLON.Color3(0.6, 0.4, 0.2);
-
-            // World parameters
-            const worldSize = 16;
-            const worldHeight = 8;
+            // World settings
+            const chunkSize = 16;
+            const blockSize = 1;
+            const renderDistance = 2; // Chunks to render in each direction
             const blocks = {};
+            const chunks = {};
 
-            // Generate terrain
-            for (let x = -worldSize / 2; x < worldSize / 2; x++) {
-                for (let z = -worldSize / 2; z < worldSize / 2; z++) {
-                    const height = Math.floor(Math.sin(x * 0.1) + Math.cos(z * 0.1) * 2 + 4);
-                    for (let y = 0; y < height; y++) {
-                        const key = `${x},${y},${z}`;
-                        const block = BABYLON.MeshBuilder.CreateBox(key, { size: 1 }, scene);
-                        block.position = new BABYLON.Vector3(x, y, z);
-                        block.material = y === height - 1 ? groundMat : blockMat;
-                        block.checkCollisions = true;
-                        blocks[key] = block;
-                    }
-                }
-            }
+            // Generate terrain for a chunk
+            const generateChunk = (chunkX, chunkZ) => {
+                const chunkKey = `${chunkX}_${chunkZ}`;
+                if (chunks[chunkKey]) return;
 
-            // Player interaction
-            scene.onPointerDown = (evt) => {
-                if (evt.button === 0 || evt.button === 2) {
-                    const pickResult = scene.pick(scene.pointerX, scene.pointerY);
-                    if (pickResult.hit) {
-                        const pickedPoint = pickResult.pickedPoint;
-                        const normal = pickResult.getNormal(true);
-                        const blockPos = new BABYLON.Vector3(
-                            Math.round(pickedPoint.x - normal.x * 0.5),
-                            Math.round(pickedPoint.y - normal.y * 0.5),
-                            Math.round(pickedPoint.z - normal.z * 0.5)
-                        );
-
-                        if (evt.button === 0) {
-                            // Remove block
-                            const key = `${blockPos.x},${blockPos.y},${blockPos.z}`;
-                            if (blocks[key]) {
-                                blocks[key].dispose();
-                                delete blocks[key];
-                            }
-                        } else if (evt.button === 2) {
-                            // Place block
-                            const newPos = blockPos.add(normal);
-                            const key = `${newPos.x},${newPos.y},${newPos.z}`;
-                            if (!blocks[key]) {
-                                const block = BABYLON.MeshBuilder.CreateBox(key, { size: 1 }, scene);
-                                block.position = newPos;
-                                block.material = blockMat;
+                chunks[chunkKey] = true;
+                for (let x = chunkX * chunkSize; x < (chunkX + 1) * chunkSize; x++) {
+                    for (let z = chunkZ * chunkSize; z < (chunkZ + 1) * chunkSize; z++) {
+                        const height = Math.floor((Math.sin(x * 0.1) + Math.cos(z * 0.1)) * 2) + 1;
+                        for (let y = 0; y <= height; y++) {
+                            const blockKey = `${x}_${y}_${z}`;
+                            if (!blocks[blockKey]) {
+                                const block = BABYLON.MeshBuilder.CreateBox(`block_${x}_${y}_${z}`, { size: blockSize }, scene);
+                                block.position = new BABYLON.Vector3(x * blockSize, y * blockSize, z * blockSize);
+                                block.material = y === height ? grassMaterial : groundMaterial;
                                 block.checkCollisions = true;
-                                blocks[key] = block;
+                                blocks[blockKey] = block;
                             }
                         }
                     }
                 }
             };
 
-            // Simple physics for jumping
-            let isJumping = false;
-            scene.onKeyboardObservable.add((kbInfo) => {
-                if (kbInfo.type === BABYLON.KeyboardEventTypes.KEYDOWN) {
-                    if (kbInfo.event.key === " " && !isJumping) {
-                        camera.cameraDirection.y += 0.5;
-                        isJumping = true;
-                        setTimeout(() => { isJumping = false; }, 500);
+            // Unload distant chunks
+            const unloadChunks = (playerChunkX, playerChunkZ) => {
+                for (const chunkKey in chunks) {
+                    const [cx, cz] = chunkKey.split("_").map(Number);
+                    if (Math.abs(cx - playerChunkX) > renderDistance || Math.abs(cz - playerChunkZ) > renderDistance) {
+                        for (let x = cx * chunkSize; x < (cx + 1) * chunkSize; x++) {
+                            for (let z = cz * chunkSize; z < (cz + 1) * chunkSize; z++) {
+                                for (let y = -10; y <= 10; y++) { // Reasonable height range
+                                    const blockKey = `${x}_${y}_${z}`;
+                                    if (blocks[blockKey]) {
+                                        blocks[blockKey].dispose();
+                                        delete blocks[blockKey];
+                                    }
+                                }
+                            }
+                        }
+                        delete chunks[chunkKey];
                     }
                 }
+            };
+
+            // Initial chunks
+            const initialChunkX = 0;
+            const initialChunkZ = 0;
+            for (let cx = -renderDistance; cx <= renderDistance; cx++) {
+                for (let cz = -renderDistance; cz <= renderDistance; cz++) {
+                    generateChunk(cx + initialChunkX, cz + initialChunkZ);
+                }
+            }
+
+            // Skybox
+            const skybox = BABYLON.MeshBuilder.CreateBox("skybox", { size: 1000 }, scene);
+            const skyboxMaterial = new BABYLON.StandardMaterial("skyboxMat", scene);
+            skyboxMaterial.backFaceCulling = false;
+            skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture("https://playground.babylonjs.com/textures/skybox", scene);
+            skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+            skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+            skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+            skybox.material = skyboxMaterial;
+
+            // Arrow key movement
+            const keys = {};
+            window.addEventListener("keydown", (e) => {
+                keys[e.key] = true;
+            });
+            window.addEventListener("keyup", (e) => {
+                keys[e.key] = false;
+            });
+
+            // Mouse look
+            let isPointerLocked = false;
+            canvas.addEventListener("click", () => {
+                canvas.requestPointerLock();
+            });
+            document.addEventListener("pointerlockchange", () => {
+                isPointerLocked = document.pointerLockElement === canvas;
+            });
+            scene.onPointerMove = (evt) => {
+                if (isPointerLocked) {
+                    const movementX = evt.movementX || 0;
+                    const movementY = evt.movementY || 0;
+                    camera.rotation.y -= movementX * 0.002;
+                    camera.rotation.x -= movementY * 0.002;
+                    camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+                }
+            };
+
+            // Block interaction
+            scene.onPointerDown = (evt) => {
+                if (!isPointerLocked) return;
+                const pickResult = scene.pick(scene.pointerX, scene.pointerY);
+                if (pickResult.hit) {
+                    const mesh = pickResult.pickedMesh;
+                    if (mesh.name.startsWith("block_")) {
+                        if (evt.button === 0) { // Left click to remove
+                            const [x, y, z] = mesh.name.split("_").slice(1).map(Number);
+                            mesh.dispose();
+                            delete blocks[`${x}_${y}_${z}`];
+                        } else if (evt.button === 2) { // Right click to place
+                            const normal = pickResult.getNormal(true);
+                            const [x, y, z] = mesh.name.split("_").slice(1).map(Number);
+                            const newX = Math.round(x + normal.x);
+                            const newY = Math.round(y + normal.y);
+                            const newZ = Math.round(z + normal.z);
+                            const blockKey = `${newX}_${newY}_${newZ}`;
+                            if (!blocks[blockKey]) {
+                                const newBlock = BABYLON.MeshBuilder.CreateBox(`block_${newX}_${newY}_${newZ}`, { size: blockSize }, scene);
+                                newBlock.position = new BABYLON.Vector3(newX * blockSize, newY * blockSize, newZ * blockSize);
+                                newBlock.material = grassMaterial;
+                                newBlock.checkCollisions = true;
+                                blocks[blockKey] = newBlock;
+                            }
+                        }
+                    }
+                }
+            };
+
+            canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+            // Physics
+            scene.gravity = new BABYLON.Vector3(0, -0.1, 0);
+            camera.applyGravity = true;
+            camera.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
+            scene.collisionsEnabled = true;
+            camera.checkCollisions = true;
+
+            // Update loop
+            scene.registerBeforeRender(() => {
+                let moveX = 0, moveZ = 0;
+                const forward = new BABYLON.Vector3(Math.sin(camera.rotation.y), 0, Math.cos(camera.rotation.y));
+                const right = new BABYLON.Vector3(Math.cos(camera.rotation.y), 0, -Math.sin(camera.rotation.y));
+
+                if (keys["ArrowUp"]) {
+                    moveZ += 1;
+                }
+                if (keys["ArrowDown"]) {
+                    moveZ -= 1;
+                }
+                if (keys["ArrowLeft"]) {
+                    moveX -= 1;
+                }
+                if (keys["ArrowRight"]) {
+                    moveX += 1;
+                }
+
+                const move = forward.scale(moveZ).add(right.scale(moveX)).normalize().scale(camera.speed);
+                camera.position.x += move.x;
+                camera.position.z += move.z;
+
+                // Chunk management
+                const playerChunkX = Math.floor(camera.position.x / (chunkSize * blockSize));
+                const playerChunkZ = Math.floor(camera.position.z / (chunkSize * blockSize));
+                for (let cx = playerChunkX - renderDistance; cx <= playerChunkX + renderDistance; cx++) {
+                    for (let cz = playerChunkZ - renderDistance; cz <= playerChunkZ + renderDistance; cz++) {
+                        generateChunk(cx, cz);
+                    }
+                }
+                unloadChunks(playerChunkX, playerChunkZ);
             });
 
             return scene;
-        }
+        };
 
         const scene = createScene();
-        engine.runRenderLoop(() => {
+        engine.runRenderLoop(function () {
             scene.render();
         });
 
-        window.addEventListener("resize", () => {
+        window.addEventListener("resize", function () {
             engine.resize();
         });
     </script>
