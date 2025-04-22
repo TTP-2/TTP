@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Infinite Minecraft-like Game with Babylon.js</title>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script>
+        const canvas = document.getElementById("renderCanvas");
+        const engine = new BABYLON.Engine(canvas, true);
+
+        const createScene = function () {
+            const scene = new BABYLON.Scene(engine);
+
+            // Camera
+            const camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 5, -10), scene);
+            camera.setTarget(BABYLON.Vector3.Zero());
+            camera.attachControl(canvas, true);
+            camera.speed = 0.2;
+            camera.angularSensibility = 1000;
+
+            // Lighting
+            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+            light.intensity = 0.7;
+
+            // Materials
+            const groundMaterial = new BABYLON.StandardMaterial("groundMat", scene);
+            groundMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.8, 0.2); // Green grass
+            const stoneMaterial = new BABYLON.StandardMaterial("stoneMat", scene);
+            stoneMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5); // Gray stone
+
+            // World parameters
+            const chunkSize = 16; // Each chunk is 16x16 blocks
+            const blockSize = 1;
+            const viewDistance = 2; // Number of chunks in each direction
+            const chunks = new Map(); // Store chunks by "x,z" key
+            const blocks = new Map(); // Store blocks by "x,y,z" key
+
+            // Generate terrain for a single chunk
+            const generateChunk = (chunkX, chunkZ) => {
+                const chunkKey = `${chunkX},${chunkZ}`;
+                if (chunks.has(chunkKey)) return;
+
+                const chunkBlocks = [];
+                for (let x = chunkX * chunkSize; x < (chunkX + 1) * chunkSize; x++) {
+                    for (let z = chunkZ * chunkSize; z < (chunkZ + 1) * chunkSize; z++) {
+                        // Simple heightmap using Perlin-like noise
+                        const height = Math.floor(Math.sin(x * 0.1) * Math.cos(z * 0.1) * 2 + 2);
+                        for (let y = 0; y <= height; y++) {
+                            const blockKey = `${x},${y},${z}`;
+                            const block = BABYLON.MeshBuilder.CreateBox(`block_${x}_${y}_${z}`, { size: blockSize }, scene);
+                            block.position = new BABYLON.Vector3(x * blockSize, y * blockSize, z * blockSize);
+                            block.material = y === height ? groundMaterial : stoneMaterial- Player interaction
+            scene.onPointerDown = function (evt) {
+                const pickResult = scene.pick(scene.pointerX, scene.pointerY);
+                if (pickResult.hit && pickResult.pickedMesh.name.startsWith("block_")) {
+                    if (evt.button === 0) { // Left click to remove block
+                        const block = pickResult.pickedMesh;
+                        const blockKey = block.name.replace("block_", "");
+                        block.dispose();
+                        blocks.delete(blockKey);
+                    } else if (evt.button === 2) { // Right click to place block
+                        const normal = pickResult.getNormal(true);
+                        const pos = pickResult.pickedMesh.position.add(normal.scale(blockSize));
+                        const x = Math.round(pos.x / blockSize);
+                        const y = Math.round(pos.y / blockSize);
+                        const z = Math.round(pos.z / blockSize);
+                        const blockKey = `${x},${y},${z}`;
+                        if (!blocks.has(blockKey)) {
+                            const newBlock = BABYLON.MeshBuilder.CreateBox(`block_${x}_${y}_${z}`, { size: blockSize }, scene);
+                            newBlock.position = new BABYLON.Vector3(x * blockSize, y * blockSize, z * blockSize);
+                            newBlock.material = selectedBlockType;
+                            newBlock.isPickable = true;
+                            blocks.set(blockKey, newBlock);
+                        }
+                    }
+                }
+            };
+
+            // Prevent context menu on right-click
+            canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+            // Block type selector
+            let selectedBlockType = stoneMaterial;
+            window.addEventListener("keydown", (evt) => {
+                if (evt.key === "t") {
+                    selectedBlockType = selectedBlockType === stoneMaterial ? groundMaterial : stoneMaterial;
+                }
+            });
+
+            // Gravity and collisions
+            scene.gravity = new BABYLON.Vector3(0, -0.1, 0);
+            camera.applyGravity = true;
+            camera.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
+            scene.collisionsEnabled = true;
+            camera.checkCollisions = true;
+            blocks.forEach(block => block.checkCollisions = true);
+
+            // Chunk management
+            const updateChunks = () => {
+                const playerChunkX = Math.floor(camera.position.x / (chunkSize * blockSize));
+                const playerChunkZ = Math.floor(camera.position.z / (chunkSize * blockSize));
+
+                // Load chunks within view distance
+                for (let cx = playerChunkX - viewDistance; cx <= playerChunkX + viewDistance; cx++) {
+                    for (let cz = playerChunkZ - viewDistance; cz <= playerChunkZ + viewDistance; cz++) {
+                        generateChunk(cx, cz);
+                    }
+                }
+
+                // Unload distant chunks
+                for (const [chunkKey, chunkBlocks] of chunks) {
+                    const [cx, cz] = chunkKey.split(",").map(Number);
+                    if (Math.abs(cx - playerChunkX) > viewDistance || Math.abs(cz - playerChunkZ) > viewDistance) {
+                        chunkBlocks.forEach(block => {
+                            const blockKey = block.name.replace("block_", "");
+                            blocks.delete(blockKey);
+                            block.dispose();
+                        });
+                        chunks.delete(chunkKey);
+                    }
+                }
+            };
+
+            // Initial chunk load
+            updateChunks();
+
+            // Update chunks as player moves
+            scene.registerBeforeRender(() => {
+                updateChunks();
+            });
+
+            return scene;
+        };
+
+        const scene = createScene();
+
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+    </script>
+</body>
+</html>
