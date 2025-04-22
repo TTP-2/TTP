@@ -16,10 +16,21 @@
     }
     /* Smooth hover effects */
     .hover-scale {
-      transition: transform 0.3s ease;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
     .hover-scale:hover {
       transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    /* Plus button styling */
+    .plus-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
     }
   </style>
 </head>
@@ -68,10 +79,19 @@
           <button onclick="verifyCode()" class="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 hover-scale transition">Verify Code</button>
         </div>
 
-        <!-- Launch App Button -->
-        <div id="launch-app" class="hidden text-center">
+        <!-- Dashboard with Buttons -->
+        <div id="dashboard" class="hidden text-center">
           <p class="mb-6 text-green-600 font-medium text-lg">You're in! Welcome!</p>
-          <a href="https://app.bluehorizon.example.com" target="_blank" class="inline-block bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 hover-scale transition">Launch BlueHorizon</a>
+          <div class="flex flex-col items-center space-y-6">
+            <button onclick="createNewApp()" class="bg-blue-500 text-white plus-button hover:bg-blue-600 hover-scale transition">
+              +
+            </button>
+            <p class="text-sm text-gray-600">Create a New App</p>
+            <div class="flex space-x-4">
+              <button onclick="alert('View your apps (placeholder action)')" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 hover-scale transition">View Apps</button>
+              <button onclick="alert('Open settings (placeholder action)')" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 hover-scale transition">Settings</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -107,10 +127,15 @@
       const code = document.getElementById('code').value;
       if (code === generatedCode) {
         document.getElementById('verification-form').classList.add('hidden');
-        document.getElementById('launch-app').classList.remove('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
       } else {
         alert('Invalid code. Please try again.');
       }
+    }
+
+    function createNewApp() {
+      alert('Creating a new app! (Placeholder action)');
+      // In a real app, this could open a form or redirect to an app creation page
     }
   </script>
 </body>
