@@ -26,6 +26,7 @@
             <input id="message" type="text" placeholder="Type a message" class="w-full p-2 mb-2 border rounded">
             <button onclick="sendMessage()" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Send</button>
             <button onclick="leaveRoom()" class="w-full bg-red-500 text-white p-2 rounded mt-2 hover:bg-red-600">Leave Room</button>
+            <button id="reconnect" onclick="reconnect()" class="hidden w-full bg-yellow-500 text-white p-2 rounded mt-2 hover:bg-yellow-600">Reconnect</button>
         </div>
     </div>
 
@@ -33,12 +34,15 @@
         let ws = null;
         let currentRoom = '';
         let username = '';
+        let pingInterval = null;
 
         function createRoom() {
             username = document.getElementById('username').value.trim();
             currentRoom = document.getElementById('room').value.trim();
             if (username && currentRoom) {
-                connectWebSocket();
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    connectWebSocket();
+                }
                 document.getElementById('setup').classList.add('hidden');
                 document.getElementById('chat').classList.remove('hidden');
                 document.getElementById('roomInfo').textContent = `Room: ${currentRoom}`;
@@ -51,7 +55,9 @@
             username = document.getElementById('username').value.trim();
             currentRoom = document.getElementById('room').value.trim();
             if (username && currentRoom) {
-                connectWebSocket();
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    connectWebSocket();
+                }
                 document.getElementById('setup').classList.add('hidden');
                 document.getElementById('chat').classList.remove('hidden');
                 document.getElementById('roomInfo').textContent = `Room: ${currentRoom}`;
@@ -65,12 +71,13 @@
             ws.onopen = () => {
                 console.log('Connected to WebSocket');
                 ws.send(JSON.stringify({ type: 'join', room: currentRoom, username }));
-                // Keep-alive ping
-                setInterval(() => {
+                document.getElementById('reconnect').classList.add('hidden');
+                // Start keep-alive ping
+                pingInterval = setInterval(() => {
                     if (ws.readyState === WebSocket.OPEN) {
                         ws.send(JSON.stringify({ type: 'ping' }));
                     }
-                }, 30000);
+                }, 15000); // Ping every 15 seconds
             };
             ws.onmessage = (event) => {
                 try {
@@ -84,16 +91,28 @@
             };
             ws.onclose = () => {
                 console.log('WebSocket disconnected');
+                clearInterval(pingInterval);
                 displayMessage({
                     username: 'System',
-                    message: 'Disconnected from server. Reconnecting...',
+                    message: 'Disconnected from server. Click Reconnect to try again.',
                     timestamp: new Date().toLocaleTimeString()
                 });
-                setTimeout(connectWebSocket, 5000); // Reconnect after 5s
+                document.getElementById('reconnect').classList.remove('hidden');
             };
             ws.onerror = (error) => {
                 console.error('WebSocket error:', error);
+                displayMessage({
+                    username: 'System',
+                    message: 'Connection error. Please try reconnecting.',
+                    timestamp: new Date().toLocaleTimeString()
+                });
             };
+        }
+
+        function reconnect() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                connectWebSocket();
+            }
         }
 
         function sendMessage() {
@@ -109,6 +128,13 @@
                 };
                 ws.send(JSON.stringify(data));
                 messageInput.value = '';
+            } else {
+                displayMessage({
+                    username: 'System',
+                    message: 'Not connected. Please reconnect.',
+                    timestamp: new Date().toLocaleTimeString()
+                });
+                document.getElementById('reconnect').classList.remove('hidden');
             }
         }
 
@@ -122,12 +148,14 @@
         }
 
         function leaveRoom() {
-            if (ws) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.close();
             }
+            clearInterval(pingInterval);
             document.getElementById('chat').classList.add('hidden');
             document.getElementById('setup').classList.remove('hidden');
             document.getElementById('messages').innerHTML = '';
+            document.getElementById('reconnect').classList.add('hidden');
             currentRoom = '';
             username = '';
         }
