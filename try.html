@@ -1,434 +1,127 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Minecraft-like Game with Full Features</title>
-    <style>
-        body { margin: 0; overflow: hidden; }
-        canvas { width: 100%; height: 100vh; display: block; }
-        #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; }
-        .hotbar-slot { width: 50px; height: 50px; border: 2px solid #333; background: #555; margin: 0 5px; text-align: center; color: white; font-family: Arial; }
-        .hotbar-slot.selected { border-color: #fff; }
-        #health, #hunger { position: absolute; top: 20px; left: 20px; color: white; font-family: Arial; }
-        #inventory { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #777; padding: 20px; border: 2px solid #333; }
-        .inventory-slot { width: 50px; height: 50px; border: 1px solid #333; background: #555; margin: 5px; display: inline-block; text-align: center; color: white; }
-        #crafting-grid { display: grid; grid-template-columns: repeat(2, 50px); gap: 5px; margin-top: 10px; }
-        #crafting-result { width: 50px; height: 50px; border: 1px solid #333; background: #555; margin: 5px; text-align: center; color: white; }
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; background: white; transform: translate(-50%, -50%); }
-    </style>
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messaging App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <canvas id="renderCanvas"></canvas>
-    <div id="crosshair"></div>
-    <div id="hotbar"></div>
-    <div id="health"></div>
-    <div id="hunger"></div>
-    <div id="inventory">
-        <div id="inventory-slots"></div>
-        <div id="crafting-grid"></div>
-        <div id="crafting-result"></div>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+        <h1 class="text-2xl font-bold mb-4 text-center">Messaging App</h1>
+        
+        <!-- Username and Room Input -->
+        <div id="setup" class="mb-4">
+            <input id="username" type="text" placeholder="Enter your username" class="w-full p-2 mb-2 border rounded">
+            <input id="room" type="text" placeholder="Enter room name" class="w-full p-2 mb-2 border rounded">
+            <button onclick="createRoom()" class="w-full bg-blue-500 text-white p-2 rounded mb-2 hover:bg-blue-600">Create Room</button>
+            <button onclick="joinRoom()" class="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600">Join Room</button>
+        </div>
+
+        <!-- Chat Interface -->
+        <div id="chat" class="hidden">
+            <div id="roomInfo" class="text-lg font-semibold mb-2"></div>
+            <div id="messages" class="h-64 overflow-y-auto border p-2 mb-2 bg-gray-50"></div>
+            <input id="message" type="text" placeholder="Type a message" class="w-full p-2 mb-2 border rounded">
+            <button onclick="sendMessage()" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Send</button>
+            <button onclick="leaveRoom()" class="w-full bg-red-500 text-white p-2 rounded mt-2 hover:bg-red-600">Leave Room</button>
+        </div>
     </div>
+
     <script>
-        const canvas = document.getElementById("renderCanvas");
-        const engine = new BABYLON.Engine(canvas, true);
+        let ws = null;
+        let currentRoom = '';
+        let username = '';
 
-        const createScene = function () {
-            const scene = new BABYLON.Scene(engine);
-            scene.clearColor = new BABYLON.Color3(0.5, 0.8, 1);
-            scene.collisionsEnabled = true;
+        function createRoom() {
+            username = document.getElementById('username').value.trim();
+            currentRoom = document.getElementById('room').value.trim();
+            if (username && currentRoom) {
+                connectWebSocket();
+                document.getElementById('setup').classList.add('hidden');
+                document.getElementById('chat').classList.remove('hidden');
+                document.getElementById('roomInfo').textContent = `Room: ${currentRoom}`;
+            } else {
+                alert('Please enter a username and room name.');
+            }
+        }
 
-            // Camera
-            const camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 2, -10), scene);
-            camera.setTarget(new BABYLON.Vector3(0, 2, 0));
-            camera.attachControl(canvas, true);
-            camera.speed = 0.2;
-            camera.angularSensibility = 4000;
-            camera.minZ = 0.1;
-            camera.position.y = 2;
-            camera.checkCollisions = true;
-            camera.applyGravity = false;
-            camera.upperBetaLimit = Math.PI / 2;
-            camera.lowerBetaLimit = Math.PI / 2;
-            camera.beta = Math.PI / 2;
+        function joinRoom() {
+            username = document.getElementById('username').value.trim();
+            currentRoom = document.getElementById('room').value.trim();
+            if (username && currentRoom) {
+                connectWebSocket();
+                document.getElementById('setup').classList.add('hidden');
+                document.getElementById('chat').classList.remove('hidden');
+                document.getElementById('roomInfo').textContent = `Room: ${currentRoom}`;
+                sendMessage(`joined the room`, true);
+            } else {
+                alert('Please enter a username and room name.');
+            }
+        }
 
-            // Lock cursor
-            canvas.addEventListener("click", () => {
-                canvas.requestPointerLock = canvas.requestPointerLock || canvas.msRequestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
-                if (canvas.requestPointerLock) {
-                    canvas.requestPointerLock();
-                }
-            });
-
-            // Lighting
-            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-            light.intensity = 0.7;
-            const sun = new BABYLON.DirectionalLight("sun", new BABYLON.Vector3(-1, -2, -1), scene);
-            sun.position = new BABYLON.Vector3(20, 40, 20);
-            sun.intensity = 0.5;
-
-            // Shadows
-            const shadowGenerator = new BABYLON.ShadowGenerator(1024, sun);
-            shadowGenerator.useBlurExponentialShadowMap = true;
-
-            // World parameters
-            const chunkSize = 16;
-            const blockSize = 1;
-            const chunks = {};
-            const blocks = {};
-            const renderDistance = 4;
-
-            // Materials
-            const materialGrassTop = new BABYLON.StandardMaterial("grassTop", scene);
-            materialGrassTop.diffuseColor = new BABYLON.Color3(0, 1, 0);
-            const materialGrassSide = new BABYLON.StandardMaterial("grassSide", scene);
-            materialGrassSide.diffuseColor = new BABYLON.Color3(0.4, 0.2, 0);
-            const materialGrassBottom = new BABYLON.StandardMaterial("grassBottom", scene);
-            materialGrassBottom.diffuseColor = new BABYLON.Color3(0.4, 0.2, 0);
-            const grassMultiMaterial = new BABYLON.MultiMaterial("grassMulti", scene);
-            grassMultiMaterial.subMaterials = [materialGrassTop, materialGrassSide, materialGrassBottom];
-
-            const materialDirtTop = new BABYLON.StandardMaterial("dirtTop", scene);
-            materialDirtTop.diffuseColor = new BABYLON.Color3(0, 0.6, 0);
-            const materialDirtSide = new BABYLON.StandardMaterial("dirtSide", scene);
-            materialDirtSide.diffuseColor = new BABYLON.Color3(0.3, 0.15, 0);
-            const materialDirtBottom = new BABYLON.StandardMaterial("dirtBottom", scene);
-            materialDirtBottom.diffuseColor = new BABYLON.Color3(0.3, 0.15, 0);
-            const dirtMultiMaterial = new BABYLON.MultiMaterial("dirtMulti", scene);
-            dirtMultiMaterial.subMaterials = [materialDirtTop, materialDirtSide, materialDirtBottom];
-
-            const materialStoneTop = new BABYLON.StandardMaterial("stoneTop", scene);
-            materialStoneTop.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
-            const materialStoneSide = new BABYLON.StandardMaterial("stoneSide", scene);
-            materialStoneSide.diffuseColor = new BABYLON.Color3(0.45, 0.45, 0.45);
-            const materialStoneBottom = new BABYLON.StandardMaterial("stoneBottom", scene);
-            materialStoneBottom.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
-            const stoneMultiMaterial = new BABYLON.MultiMaterial("stoneMulti", scene);
-            stoneMultiMaterial.subMaterials = [materialStoneTop, materialStoneSide, materialStoneBottom];
-
-            const materialSandTop = new BABYLON.StandardMaterial("sandTop", scene);
-            materialSandTop.diffuseColor = new BABYLON.Color3(0.76, 0.7, 0.5);
-            const materialSandSide = new BABYLON.StandardMaterial("sandSide", scene);
-            materialSandSide.diffuseColor = new BABYLON.Color3(0.7, 0.65, 0.45);
-            const materialSandBottom = new BABYLON.StandardMaterial("sandBottom", scene);
-            materialSandBottom.diffuseColor = new BABYLON.Color3(0.7, 0.65, 0.45);
-            const sandMultiMaterial = new BABYLON.MultiMaterial("sandMulti", scene);
-            sandMultiMaterial.subMaterials = [materialSandTop, materialSandSide, materialSandBottom];
-
-            const materialCobblestone = new BABYLON.StandardMaterial("cobblestone", scene);
-            materialCobblestone.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
-
-            // Player state
-            let health = 20; // 10 hearts
-            let hunger = 20; // 10 drumsticks
-            let selectedSlot = 0;
-            const hotbar = [
-                { type: "grass", count: 64 },
-                { type: "dirt", count: 64 },
-                { type: "stone", count: 64 },
-                { type: "sand", count: 64 },
-                { type: "pickaxe", durability: 131 },
-                { type: "shovel", durability: 131 },
-                { type: "axe", durability: 131 },
-                { type: null, count: 0 },
-                { type: null, count: 0 }
-            ];
-            const inventory = Array(27).fill(null).map(() => ({ type: null, count: 0 }));
-            const craftingGrid = Array(4).fill(null).map(() => ({ type: null, count: 0 }));
-            let isInventoryOpen = false;
-
-            // Tools
-            const toolSpeeds = {
-                pickaxe: { stone: 2, cobblestone: 2, dirt: 1, grass: 1, sand: 1 },
-                shovel: { dirt: 2, grass: 2, sand: 2, stone: 1, cobblestone: 1 },
-                axe: { grass: 1.5, dirt: 1, stone: 1, sand: 1, cobblestone: 1 },
-                hand: { grass: 1, dirt: 1, stone: 1, sand: 1, cobblestone: 1 }
+        function connectWebSocket() {
+            ws = new WebSocket('wss://echo.websocket.org');
+            ws.onopen = () => {
+                console.log('Connected to WebSocket');
             };
-
-            // Chunk generation
-            function generateChunk(chunkX, chunkZ) {
-                const chunkKey = `${chunkX}_${chunkZ}`;
-                if (chunks[chunkKey]) return;
-                chunks[chunkKey] = [];
-                const biome = Math.random();
-                const blockType = biome < 0.4 ? "grass" : biome < 0.7 ? "dirt" : "sand";
-                const material = blockType === "grass" ? grassMultiMaterial : blockType === "dirt" ? dirtMultiMaterial : sandMultiMaterial;
-
-                for (let x = 0; x < chunkSize; x++) {
-                    for (let z = 0; z < chunkSize; z++) {
-                        const globalX = chunkX * chunkSize + x;
-                        const globalZ = chunkZ * chunkSize + z;
-                        const y = 0;
-                        const block = BABYLON.MeshBuilder.CreateBox(`block_${globalX}_${y}_${globalZ}`, { size: blockSize }, scene);
-                        block.position = new BABYLON.Vector3(globalX, y, globalZ);
-                        block.receiveShadows = true;
-                        block.checkCollisions = true;
-                        shadowGenerator.addShadowCaster(block);
-
-                        block.subMeshes = [];
-                        const verticesCount = block.getVerticesData(BABYLON.VertexBuffer.PositionKind).length / 3;
-                        block.subMeshes.push(new BABYLON.SubMesh(0, 0, verticesCount, 0, 6, block));
-                        block.subMeshes.push(new BABYLON.SubMesh(1, 0, verticesCount, 6, 18, block));
-                        block.subMeshes.push(new BABYLON.SubMesh(2, 0, verticesCount, 24, 6, block));
-                        block.material = material;
-
-                        blocks[`${globalX}_${y}_${globalZ}`] = block;
-                        chunks[chunkKey].push(block);
-                    }
-                }
-            }
-
-            function updateChunks() {
-                const chunkX = Math.floor(camera.position.x / chunkSize);
-                const chunkZ = Math.floor(camera.position.z / chunkSize);
-                for (let x = chunkX - renderDistance; x <= chunkX + renderDistance; x++) {
-                    for (let z = chunkZ - renderDistance; z <= chunkZ + renderDistance; z++) {
-                        generateChunk(x, z);
-                    }
-                }
-                for (let key in chunks) {
-                    const [cx, cz] = key.split("_").map(Number);
-                    if (Math.abs(cx - chunkX) > renderDistance || Math.abs(cz - chunkZ) > renderDistance) {
-                        chunks[key].forEach(block => {
-                            const pos = block.position;
-                            delete blocks[`${pos.x}_${pos.y}_${pos.z}`];
-                            block.dispose();
-                        });
-                        delete chunks[key];
-                    }
-                }
-            }
-
-            // Initial chunk
-            generateChunk(0, 0);
-            updateChunks();
-
-            // Hotbar UI
-            const hotbarDiv = document.getElementById("hotbar");
-            hotbar.forEach((slot, index) => {
-                const slotDiv = document.createElement("div");
-                slotDiv.className = "hotbar-slot";
-                slotDiv.id = `hotbar-${index}`;
-                hotbarDiv.appendChild(slotDiv);
-            });
-
-            function updateHotbar() {
-                hotbar.forEach((slot, index) => {
-                    const slotDiv = document.getElementById(`hotbar-${index}`);
-                    slotDiv.innerText = slot.type ? `${slot.type} (${slot.count || slot.durability})` : "";
-                    slotDiv.className = index === selectedSlot ? "hotbar-slot selected" : "hotbar-slot";
-                });
-            }
-            updateHotbar();
-
-            // Health and Hunger UI
-            function updateHealthHunger() {
-                document.getElementById("health").innerText = `Health: ${"❤️".repeat(health / 2)}`;
-                document.getElementById("hunger").innerText = `Hunger: ${"🍗".repeat(hunger / 2)}`;
-            }
-            updateHealthHunger();
-
-            // Inventory UI
-            const inventoryDiv = document.getElementById("inventory-slots");
-            for (let i = 0; i < 27; i++) {
-                const slotDiv = document.createElement("div");
-                slotDiv.className = "inventory-slot";
-                slotDiv.id = `inventory-${i}`;
-                inventoryDiv.appendChild(slotDiv);
-            }
-            const craftingGridDiv = document.getElementById("crafting-grid");
-            for (let i = 0; i < 4; i++) {
-                const slotDiv = document.createElement("div");
-                slotDiv.className = "inventory-slot";
-                slotDiv.id = `crafting-${i}`;
-                craftingGridDiv.appendChild(slotDiv);
-            }
-
-            function updateInventory() {
-                inventory.forEach((slot, index) => {
-                    const slotDiv = document.getElementById(`inventory-${index}`);
-                    slotDiv.innerText = slot.type ? `${slot.type} (${slot.count})` : "";
-                });
-                craftingGrid.forEach((slot, index) => {
-                    const slotDiv = document.getElementById(`crafting-${i}`);
-                    slotDiv.innerText = slot.type ? `${slot.type} (${slot.count})` : "";
-                });
-                const result = checkCrafting();
-                document.getElementById("crafting-result").innerText = result ? `${result} (1)` : "";
-            }
-
-            // Crafting
-            function checkCrafting() {
-                const grid = craftingGrid.map(slot => slot.type);
-                if (grid[0] === "dirt" && grid[1] === "stone" && !grid[2] && !grid[3]) {
-                    return "cobblestone";
-                }
-                return null;
-            }
-
-            // Mobs
-            const mobs = [];
-            function spawnMob() {
-                const x = camera.position.x + (Math.random() - 0.5) * 20;
-                const z = camera.position.z + (Math.random() - 0.5) * 20;
-                const mob = BABYLON.MeshBuilder.CreateBox(`mob_${x}_${z}`, { size: 0.8 }, scene);
-                mob.position = new BABYLON.Vector3(x, 1.4, z);
-                mob.material = new BABYLON.StandardMaterial("cow", scene);
-                mob.material.diffuseColor = new BABYLON.Color3(0.3, 0.2, 0.1);
-                mob.checkCollisions = true;
-                mobs.push({ mesh: mob, velocity: new BABYLON.Vector3(0, 0, 0) });
-            }
-            for (let i = 0; i < 5; i++) spawnMob();
-
-            // Day-night cycle
-            let time = 0;
-            function updateTime() {
-                time += 0.0001;
-                const cycle = Math.sin(time) * 0.5 + 0.5;
-                light.intensity = 0.3 + cycle * 0.4;
-                sun.intensity = cycle * 0.5;
-                scene.clearColor = new BABYLON.Color3(0.5 * cycle, 0.8 * cycle, 1 * cycle);
-            }
-
-            // Player interaction
-            scene.onPointerDown = function (evt) {
-                if (isInventoryOpen) return;
-                const tool = hotbar[selectedSlot].type;
-                const isTool = ["pickaxe", "shovel", "axe"].includes(tool);
-                if (evt.button === 0) { // Break block
-                    const pickResult = scene.pick(scene.pointerX, scene.pointerY);
-                    if (pickResult.hit && pickResult.pickedMesh.name.startsWith("block_")) {
-                        const pos = pickResult.pickedMesh.position;
-                        const key = `${Math.floor(pos.x)}_${Math.floor(pos.y)}_${Math.floor(pos.z)}`;
-                        const blockType = Object.values(blocks).find(b => b === pickResult.pickedMesh).material === grassMultiMaterial ? "grass" : dirtMultiMaterial ? "dirt" : sandMultiMaterial ? "sand" : "stone";
-                        const speed = tool ? toolSpeeds[tool][blockType] || 1 : toolSpeeds.hand[blockType];
-                        pickResult.pickedMesh.dispose();
-                        delete blocks[key];
-                        if (isTool) hotbar[selectedSlot].durability -= 1;
-                        if (hotbar[selectedSlot].durability <= 0) hotbar[selectedSlot] = { type: null, count: 0 };
-                        for (let i = 0; i < inventory.length; i++) {
-                            if (!inventory[i].type) {
-                                inventory[i] = { type: blockType, count: 1 };
-                                break;
-                            } else if (inventory[i].type === blockType) {
-                                inventory[i].count += 1;
-                                break;
-                            }
-                        }
-                        health -= 0.5; // Damage from breaking
-                        updateHotbar();
-                        updateInventory();
-                    }
-                } else if (evt.button === 2 && hotbar[selectedSlot].type && !isTool) { // Place block
-                    const pickResult = scene.pick(scene.pointerX, scene.pointerY);
-                    if (pickResult.hit && pickResult.pickedMesh.name.startsWith("block_")) {
-                        const normal = pickResult.getNormal(true);
-                        const pos = pickResult.pickedMesh.position;
-                        const newPos = pos.add(normal);
-                        const key = `${Math.floor(newPos.x)}_${Math.floor(newPos.y)}_${Math.floor(newPos.z)}`;
-                        if (!blocks[key]) {
-                            const block = BABYLON.MeshBuilder.CreateBox(`block_${newPos.x}_${newPos.y}_${newPos.z}`, { size: blockSize }, scene);
-                            block.position = newPos;
-                            block.receiveShadows = true;
-                            block.checkCollisions = true;
-                            shadowGenerator.addShadowCaster(block);
-
-                            block.subMeshes = [];
-                            const verticesCount = block.getVerticesData(BABYLON.VertexBuffer.PositionKind).length / 3;
-                            block.subMeshes.push(new BABYLON.SubMesh(0, 0, verticesCount, 0, 6, block));
-                            block.subMeshes.push(new BABYLON.SubMesh(1, 0, verticesCount, 6, 18, block));
-                            block.subMeshes.push(new BABYLON.SubMesh(2, 0, verticesCount, 24, 6, block));
-
-                            block.material = hotbar[selectedSlot].type === "grass" ? grassMultiMaterial : hotbar[selectedSlot].type === "dirt" ? dirtMultiMaterial : hotbar[selectedSlot].type === "sand" ? sandMultiMaterial : stoneMultiMaterial;
-                            blocks[key] = block;
-                            hotbar[selectedSlot].count -= 1;
-                            if (hotbar[selectedSlot].count <= 0) hotbar[selectedSlot] = { type: null, count: 0 };
-                            updateHotbar();
-                        }
-                    }
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.room === currentRoom) {
+                    displayMessage(data);
                 }
             };
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+            };
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        }
 
-            // Controls
-            camera.keysUp = [87]; // W
-            camera.keysDown = [83]; // S
-            camera.keysLeft = [65]; // A
-            camera.keysRight = [68]; // D
-            let isSprinting = false;
-            let lastWPress = 0;
-
-            window.addEventListener("keydown", (evt) => {
-                if (evt.key === "1") selectedSlot = 0;
-                if (evt.key === "2") selectedSlot = 1;
-                if (evt.key === "3") selectedSlot = 2;
-                if (evt.key === "4") selectedSlot = 3;
-                if (evt.key === "5") selectedSlot = 4;
-                if (evt.key === "6") selectedSlot = 5;
-                if (evt.key === "7") selectedSlot = 6;
-                if (evt.key === "8") selectedSlot = 7;
-                if (evt.key === "9") selectedSlot = 8;
-                if (evt.key === "e" || evt.key === "E") {
-                    isInventoryOpen = !isInventoryOpen;
-                    document.getElementById("inventory").style.display = isInventoryOpen ? "block" : "none";
-                    updateInventory();
+        function sendMessage(systemMessage = false) {
+            const messageInput = document.getElementById('message');
+            const message = systemMessage ? systemMessage : messageInput.value.trim();
+            if (message && ws && ws.readyState === WebSocket.OPEN) {
+                const data = {
+                    room: currentRoom,
+                    username: systemMessage ? 'System' : username,
+                    message: message,
+                    timestamp: new Date().toLocaleTimeString()
+                };
+                ws.send(JSON.stringify(data));
+                if (!systemMessage) {
+                    messageInput.value = '';
                 }
-                if (evt.key === " " && !isInventoryOpen) {
-                    camera.position.y += 0.5; // Jump
-                    setTimeout(() => camera.position.y = 2, 500);
-                }
-                if (evt.key === "w" || evt.key === "W") {
-                    const now = Date.now();
-                    if (now - lastWPress < 300) {
-                        isSprinting = true;
-                        camera.speed = 0.4;
-                    }
-                    lastWPress = now;
-                }
-                updateHotbar();
-            });
+            }
+        }
 
-            window.addEventListener("keyup", (evt) => {
-                if (evt.key === "w" || evt.key === "W") {
-                    isSprinting = false;
-                    camera.speed = 0.2;
-                }
-            });
+        function displayMessage(data) {
+            const messagesDiv = document.getElementById('messages');
+            const messageElement = document.createElement('div');
+            messageElement.className = 'p-1';
+            messageElement.innerHTML = `<span class="font-bold">${data.username}</span> (${data.timestamp}): ${data.message}`;
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
 
-            // Enable right-click
-            canvas.addEventListener("contextmenu", (evt) => evt.preventDefault());
+        function leaveRoom() {
+            sendMessage(`left the room`, true);
+            if (ws) {
+                ws.close();
+            }
+            document.getElementById('chat').classList.add('hidden');
+            document.getElementById('setup').classList.remove('hidden');
+            document.getElementById('messages').innerHTML = '';
+            currentRoom = '';
+            username = '';
+        }
 
-            // Game loop
-            scene.registerBeforeRender(() => {
-                updateChunks();
-                updateTime();
-                hunger -= 0.0001;
-                if (hunger <= 0) health -= 0.01;
-                if (health <= 0) {
-                    health = 20;
-                    hunger = 20;
-                    camera.position = new BABYLON.Vector3(0, 2, -10);
-                }
-                updateHealthHunger();
-                mobs.forEach(mob => {
-                    mob.velocity.x = (Math.random() - 0.5) * 0.02;
-                    mob.velocity.z = (Math.random() - 0.5) * 0.02;
-                    mob.mesh.position.addInPlace(mob.velocity);
-                    mob.mesh.position.y = 1.4;
-                });
-            });
-
-            return scene;
-        };
-
-        const scene = createScene();
-
-        engine.runRenderLoop(function () {
-            scene.render();
-        });
-
-        window.addEventListener("resize", function () {
-            engine.resize();
+        // Send message on Enter key
+        document.getElementById('message').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
         });
     </script>
 </body>
