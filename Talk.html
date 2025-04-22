@@ -61,12 +61,16 @@
         }
 
         function connectWebSocket() {
-            // Update to your deployed server URL if hosted
             ws = new WebSocket('ws://localhost:3000');
             ws.onopen = () => {
                 console.log('Connected to WebSocket');
-                // Send join message
                 ws.send(JSON.stringify({ type: 'join', room: currentRoom, username }));
+                // Keep-alive ping
+                setInterval(() => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'ping' }));
+                    }
+                }, 30000);
             };
             ws.onmessage = (event) => {
                 try {
@@ -82,9 +86,10 @@
                 console.log('WebSocket disconnected');
                 displayMessage({
                     username: 'System',
-                    message: 'Disconnected from server.',
+                    message: 'Disconnected from server. Reconnecting...',
                     timestamp: new Date().toLocaleTimeString()
                 });
+                setTimeout(connectWebSocket, 5000); // Reconnect after 5s
             };
             ws.onerror = (error) => {
                 console.error('WebSocket error:', error);
@@ -127,7 +132,6 @@
             username = '';
         }
 
-        // Send message on Enter key
         document.getElementById('message').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 sendMessage();
@@ -136,3 +140,4 @@
     </script>
 </body>
 </html>
+```
