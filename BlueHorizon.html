@@ -38,7 +38,7 @@
     }
     /* Full-screen textarea */
     .full-textarea {
-      min-height: calc(100vh - 4rem);
+      min-height: calc(100vh - 8rem);
       resize: none;
       font-family: monospace;
       font-size: 14px;
@@ -155,7 +155,10 @@
   <!-- App Creation Page -->
   <section id="app-creation" class="hidden bg-gray-100">
     <div class="relative h-screen">
-      <button onclick="runApp()" class="fixed top-4 right-4 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 hover-scale transition">Run</button>
+      <div class="fixed top-4 right-4 flex flex-col space-y-2">
+        <button onclick="runApp()" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 hover-scale transition">Run</button>
+        <button onclick="launchApp()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 hover-scale transition">Launch</button>
+      </div>
       <textarea id="app-input" class="full-textarea prism-textarea language-html" placeholder="Enter your HTML code here..."></textarea>
     </div>
   </section>
@@ -325,6 +328,19 @@
         </html>
       `);
       iframeDoc.close();
+    }
+
+    function launchApp() {
+      const input = document.getElementById('app-input').value;
+      if (!input.trim()) {
+        alert('Please enter some HTML code to launch.');
+        return;
+      }
+      // Simulate launching the website and generating a URL
+      const randomId = Math.random().toString(36).substring(2, 8);
+      const liveUrl = `https://bluehorizon.example.com/app/${randomId}`;
+      alert(`Your website is now live!\nAccess it at: ${liveUrl}`);
+      // In a real app, this would involve deploying the HTML to a hosting service
     }
 
     function closePreview() {
