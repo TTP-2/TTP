@@ -7,10 +7,8 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// Serve the HTML file
 app.use(express.static('public'));
 
-// Store rooms and their clients
 const rooms = new Map();
 
 wss.on('connection', (ws) => {
@@ -19,9 +17,10 @@ wss.on('connection', (ws) => {
     ws.on('message', (message) => {
         try {
             const data = JSON.parse(message);
-
+            if (data.type === 'ping') {
+                return; // Ignore ping
+            }
             if (data.type === 'join') {
-                // Add client to room
                 if (!rooms.has(data.room)) {
                     rooms.set(data.room, new Set());
                 }
@@ -29,8 +28,6 @@ wss.on('connection', (ws) => {
                 ws.room = data.room;
                 ws.username = data.username;
                 console.log(`${data.username} joined room ${data.room}`);
-
-                // Notify others in the room
                 broadcast(data.room, {
                     type: 'message',
                     room: data.room,
@@ -39,7 +36,6 @@ wss.on('connection', (ws) => {
                     timestamp: new Date().toLocaleTimeString()
                 }, ws);
             } else if (data.type === 'message') {
-                // Broadcast message to all clients in the room
                 broadcast(data.room, data);
             }
         } catch (e) {
@@ -49,14 +45,12 @@ wss.on('connection', (ws) => {
 
     ws.on('close', () => {
         if (ws.room && ws.username) {
-            // Remove client from room
             const roomClients = rooms.get(ws.room);
             if (roomClients) {
                 roomClients.delete(ws);
                 if (roomClients.size === 0) {
                     rooms.delete(ws.room);
                 }
-                // Notify others in the room
                 broadcast(ws.room, {
                     type: 'message',
                     room: ws.room,
@@ -70,7 +64,6 @@ wss.on('connection', (ws) => {
     });
 });
 
-// Broadcast message to all clients in a room except the sender (if specified)
 function broadcast(room, message, sender = null) {
     const roomClients = rooms.get(room);
     if (roomClients) {
