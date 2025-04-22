@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BlueHorizon - Welcome</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Prism.js for syntax highlighting -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
   <style>
     /* Custom animations */
     @keyframes fadeIn {
@@ -36,6 +40,8 @@
     .full-textarea {
       min-height: calc(100vh - 4rem);
       resize: none;
+      font-family: monospace;
+      font-size: 14px;
     }
     /* Full-screen preview */
     .preview-overlay {
@@ -50,6 +56,15 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
+    }
+    /* Prism.js override for textarea */
+    .prism-textarea {
+      background: #f5f2f0 !important;
+      color: #000 !important;
+      border: 1px solid #d1d5db !important;
+      padding: 16px !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
     }
   </style>
 </head>
@@ -120,7 +135,7 @@
   <section id="app-creation" class="hidden bg-gray-100">
     <div class="relative h-screen">
       <button onclick="runApp()" class="fixed top-4 right-4 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 hover-scale transition">Run</button>
-      <textarea id="app-input" class="full-textarea w-full p-4 text-gray-800 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter your HTML code here..."></textarea>
+      <textarea id="app-input" class="full-textarea prism-textarea language-html" placeholder="Enter your HTML code here..."></textarea>
     </div>
   </section>
 
@@ -172,7 +187,50 @@
       document.querySelector('nav').classList.add('hidden');
       document.querySelector('header').classList.add('hidden');
       document.querySelector('footer').classList.add('hidden');
+      // Initialize syntax highlighting
+      updateSyntaxHighlighting();
     }
+
+    function updateSyntaxHighlighting() {
+      const textarea = document.getElementById('app-input');
+      const code = textarea.value;
+      // Create a temporary pre/code element for Prism to highlight
+      const tempCode = document.createElement('code');
+      tempCode.className = 'language-html';
+      tempCode.textContent = code;
+      Prism.highlightElement(tempCode);
+      // Update textarea with highlighted content
+      textarea.innerHTML = tempCode.innerHTML;
+    }
+
+    function autoCloseTag(textarea) {
+      const value = textarea.value;
+      const cursorPos = textarea.selectionStart;
+      const beforeCursor = value.substring(0, cursorPos);
+      const afterCursor = value.substring(cursorPos);
+
+      // Detect if the user typed an opening tag
+      const tagMatch = beforeCursor.match(/<([a-zA-Z][a-zA-Z0-9]*)\s*[^>]*$/);
+      if (tagMatch) {
+        const tagName = tagMatch[1];
+        // List of void elements that don't need closing tags
+        const voidElements = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
+        if (!voidElements.includes(tagName.toLowerCase())) {
+          const closingTag = `</${tagName}>`;
+          textarea.value = beforeCursor + closingTag + afterCursor;
+          // Move cursor back to before the closing tag
+          textarea.selectionStart = textarea.selectionEnd = cursorPos;
+        }
+      }
+    }
+
+    // Initialize textarea event listeners
+    document.getElementById('app-input').addEventListener('input', function(e) {
+      updateSyntaxHighlighting();
+      if (e.data === '>') {
+        autoCloseTag(e.target);
+      }
+    });
 
     function runApp() {
       const input = document.getElementById('app-input').value;
