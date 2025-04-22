@@ -32,6 +32,11 @@
       height: 80px;
       border-radius: 50%;
     }
+    /* Full-screen textarea */
+    .full-textarea {
+      min-height: calc(100vh - 4rem);
+      resize: none;
+    }
   </style>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -56,7 +61,7 @@
   </header>
 
   <!-- Login Section -->
-  <section class="py-16">
+  <section class="py-16" id="login-section">
     <div class="container mx-auto px-4 flex justify-center">
       <div class="bg-white p-10 rounded-xl shadow-2xl w-full max-w-lg animate-fadeIn">
         <h2 class="text-3xl font-semibold text-center text-gray-800 mb-8">Join the Horizon</h2>
@@ -83,7 +88,7 @@
         <div id="dashboard" class="hidden text-center">
           <p class="mb-6 text-green-600 font-medium text-lg">You're in! Welcome!</p>
           <div class="flex flex-col items-center space-y-6">
-            <button onclick="createNewApp()" class="bg-blue-500 text-white plus-button hover:bg-blue-600 hover-scale transition">
+            <button onclick="showAppCreationPage()" class="bg-blue-500 text-white plus-button hover:bg-blue-600 hover-scale transition">
               +
             </button>
             <p class="text-sm text-gray-600">Create a New App</p>
@@ -94,6 +99,14 @@
           </div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- App Creation Page -->
+  <section id="app-creation" class="hidden bg-gray-100">
+    <div class="relative h-screen">
+      <button onclick="runApp()" class="fixed top-4 right-4 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 hover-scale transition">Run</button>
+      <textarea id="app-input" class="full-textarea w-full p-4 text-gray-800 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter your app code or configuration here..."></textarea>
     </div>
   </section>
 
@@ -133,9 +146,22 @@
       }
     }
 
-    function createNewApp() {
-      alert('Creating a new app! (Placeholder action)');
-      // In a real app, this could open a form or redirect to an app creation page
+    function showAppCreationPage() {
+      document.getElementById('login-section').classList.add('hidden');
+      document.getElementById('app-creation').classList.remove('hidden');
+      document.querySelector('nav').classList.add('hidden');
+      document.querySelector('header').classList.add('hidden');
+      document.querySelector('footer').classList.add('hidden');
+    }
+
+    function runApp() {
+      const input = document.getElementById('app-input').value;
+      if (!input.trim()) {
+        alert('Please enter some content to run.');
+        return;
+      }
+      alert('Running your app:\n' + input.substring(0, 100) + (input.length > 100 ? '...' : ''));
+      // In a real app, this would send the input to a backend for processing
     }
   </script>
 </body>
