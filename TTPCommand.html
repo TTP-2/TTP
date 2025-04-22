@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TTP commands</title>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
+    <style>
+        body {
+            background-color: black;
+            color: green;
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            overflow: auto;
+        }
+        #container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            text-align: left;
+            width: calc(100% - 20px);
+        }
+        #typing-text {
+            font-size: 12px;
+            border-right: 1px solid green;
+            white-space: nowrap;
+            overflow: hidden;
+            display: inline-block;
+        }
+        #output-area {
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        #input-line {
+            font-size: 12px;
+            display: flex;
+            align-items: flex-start;
+        }
+        .prompt {
+            color: green;
+            margin-right: 5px;
+        }
+        #input-content {
+            font-size: 12px;
+            color: green;
+            background-color: black;
+            border: none;
+            outline: none;
+            font-family: 'Courier New', monospace;
+            flex-grow: 1;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            display: inline-block;
+        }
+        .output-line {
+            margin: 2px 0;
+        }
+        .error {
+            color: red;
+        }
+        .input-prompt {
+            color: cyan;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="typing-text"></div>
+        <div id="output-area"></div>
+        <div id="input-line">
+            <span class="prompt">> </span>
+            <div id="input-content" contenteditable="true"></div>
+        </div>
+    </div>
+    <script>
+        const initialText = "Hello, World!";
+        let index = 0;
+        const speed = 100; // Typing speed in milliseconds
+        let pyodide = null;
+        let pythonOutput = "";
+        let pythonGlobals = null;
+        let waitingForInput = false;
+        let inputResolve = null;
+
+        // Load Pyodide and setup
+        async function loadPyodideAndSetup() {
+            try {
+                pyodide = await loadPyodide({
+                    stdout: (text) => { pythonOutput += text + "\n"; }
+                });
+                pythonGlobals = pyodide.globals;
+                // Override Python's input function
+                pyodide.runPython(`
+                    import js
+                    def custom_input(prompt=""):
+                        js.pythonOutput += prompt
+                        return js.waitForInput()
+                `);
+                console.log("Pyodide loaded successfully");
+            } catch (e) {
+                console.error("Error loading Pyodide:", e);
+                const outputArea = document.getElementById("output-area");
+                const errorDiv = document.createElement("div");
+                errorDiv.className = "output-line error";
+                errorDiv.innerText = "Error: Failed to load Python environment";
+                outputArea.appendChild(errorDiv);
+                scrollToBottom();
+            }
+        }
+
+        // JavaScript function to handle Python input
+        window.waitForInput = () => {
+            return new Promise((resolve) => {
+                waitingForInput = true;
+                inputResolve = resolve;
+                const inputLine = document.getElementById("input-line");
+                inputLine.innerHTML = '<span class="input-prompt">Input: </span><div id="input-content" contenteditable="true"></div>';
+                focusInput();
+            });
+        };
+
+        // Typing effect for initial text
+        function typeInitial() {
+            try {
+                if (index < initialText.length) {
+                    document.getElementById("typing-text").innerHTML = initialText.substring(0, index + 1) + '<span style="border-right: 1px solid green;"></span>';
+                    index++;
+                    setTimeout(typeInitial, speed);
+                } else {
+                    document.getElementById("typing-text").innerHTML = initialText;
+                    const inputContent = document.getElementById("input-content");
+                    inputContent.style.display = "block";
+                    focusInput();
+                }
+            } catch (e) {
+                console.error("Error in typeInitial:", e);
+            }
+        }
+
+        // Typing effect for messages
+        function typeMessage(message, targetDiv, callback) {
+            try {
+                let messageIndex = 0;
+                targetDiv.contentEditable = "false";
+
+                function typeChar() {
+                    if (messageIndex < message.length) {
+                        targetDiv.innerText = message.substring(0, messageIndex + 1);
+                        messageIndex++;
+                        setTimeout(typeChar, speed);
+                    } else {
+                        targetDiv.innerText = message;
+                        targetDiv.contentEditable = "false";
+                        if (callback) callback();
+                    }
+                }
+                typeChar();
+            } catch (e) {
+                console.error("Error in typeMessage:", e);
+            }
+        }
+
+        // Utility functions
+        function formatTime(date) {
+            return date.toTimeString().split(' ')[0];
+        }
+
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Focus input and place cursor at start
+        function focusInput() {
+            try {
+                const inputContent = document.getElementById("input-content");
+                inputContent.focus();
+                const range = document.createRange();
+                const sel = window.getSelection();
+                range.setStart(inputContent, 0);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+                scrollToBottom();
+            } catch (e) {
+                console.error("Error in focusInput:", e);
+            }
+        }
+
+        // Command registry
+        const commands = {
+            Help: async () => {
+                const now = new Date();
+                try {
+                    const battery = await navigator.getBattery();
+                    const batteryPercent = Math.round(battery.level * 100);
+                    return `Battery: ${batteryPercent}%\nTime: ${formatTime(now)}\nDate: ${formatDate(now)}`;
+                } catch (e) {
+                    return `Battery info unavailable.\nTime: ${formatTime(now)}\nDate: ${formatDate(now)}`;
+                }
+            },
+            Clear: () => {
+                document.getElementById("output-area").innerHTML = "";
+                return null; // No message to type
+            },
+            Memory: () => {
+                const memory = navigator.deviceMemory || "Unknown";
+                return `Device Memory: ${memory}GB`;
+            }
+        };
+
+        // Handle user input
+        const inputLine = document.getElementById("input-line");
+        inputLine.addEventListener("keydown", async (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                try {
+                    const inputContent = document.getElementById("input-content");
+                    const content = inputContent.innerText.trim();
+                    const outputArea = document.getElementById("output-area");
+
+                    if (content) {
+                        // Handle Python input
+                        if (waitingForInput) {
+                            const inputDiv = document.createElement("div");
+                            inputDiv.className = "output-line";
+                            inputDiv.innerText = `Input: ${content}`;
+                            outputArea.appendChild(inputDiv);
+                            inputResolve(content);
+                            waitingForInput = false;
+                            inputLine.innerHTML = '<span class="prompt">> </span><div id="input-content" contenteditable="true"></div>';
+                            focusInput();
+                            scrollToBottom();
+                            return;
+                        }
+
+                        // Move command/code to output area
+                        const commandDiv = document.createElement("div");
+                        commandDiv.className = "output-line";
+                        commandDiv.innerText = `> ${content}`;
+                        outputArea.appendChild(commandDiv);
+
+                        // Clear input content
+                        inputContent.innerText = "";
+                        focusInput();
+
+                        // Process input
+                        const tokens = content.split(/\s+/);
+                        const firstToken = tokens[0];
+                        const isCommand = firstToken.startsWith("/") || Object.keys(commands).includes(firstToken);
+
+                        if (isCommand) {
+                            // Process as commands
+                            let commandIndex = 0;
+
+                            async function processNextCommand() {
+                                if (commandIndex < tokens.length) {
+                                    const rawCmd = tokens[commandIndex];
+                                    const cmd = rawCmd.startsWith("/") ? rawCmd.substring(1) : rawCmd;
+                                    const commandFunc = commands[cmd];
+                                    if (commandFunc) {
+                                        const message = await commandFunc();
+                                        if (message) {
+                                            const messageDiv = document.createElement("div");
+                                            messageDiv.className = "output-line";
+                                            outputArea.appendChild(messageDiv);
+                                            typeMessage(message, messageDiv, () => {
+                                                commandIndex++;
+                                                processNextCommand();
+                                                scrollToBottom();
+                                            });
+                                        } else {
+                                            commandIndex++;
+                                            processNextCommand();
+                                        }
+                                    } else {
+                                        const messageDiv = document.createElement("div");
+                                        messageDiv.className = "output-line error";
+                                        outputArea.appendChild(messageDiv);
+                                        typeMessage(`Unknown command: ${cmd}`, messageDiv, () => {
+                                            commandIndex++;
+                                            processNextCommand();
+                                            scrollToBottom();
+                                        });
+                                    }
+                                }
+                            }
+                            processNextCommand();
+                        } else if (pyodide) {
+                            // Process as Python code
+                            pythonOutput = "";
+                            try {
+                                await pyodide.runPythonAsync(content, pythonGlobals);
+                                const output = pythonOutput.trim();
+                                if (output) {
+                                    const messageDiv = document.createElement("div");
+                                    messageDiv.className = "output-line";
+                                    outputArea.appendChild(messageDiv);
+                                    typeMessage(output, messageDiv, () => {
+                                        scrollToBottom();
+                                    });
+                                }
+                            } catch (e) {
+                                const messageDiv = document.createElement("div");
+                                messageDiv.className = "output-line error";
+                                outputArea.appendChild(messageDiv);
+                                typeMessage(`Python error: ${e.message}`, messageDiv, () => {
+                                    scrollToBottom();
+                                });
+                            }
+                        } else {
+                            const messageDiv = document.createElement("div");
+                            messageDiv.className = "output-line error";
+                            outputArea.appendChild(messageDiv);
+                            typeMessage("Python environment not loaded", messageDiv, () => {
+                                scrollToBottom();
+                            });
+                        }
+                    }
+                    scrollToBottom();
+                } catch (e) {
+                    console.error("Error in keydown handler:", e);
+                    const outputArea = document.getElementById("output-area");
+                    const errorDiv = document.createElement("div");
+                    errorDiv.className = "output-line error";
+                    outputArea.appendChild(errorDiv);
+                    typeMessage(`Error: ${e.message}`, errorDiv, () => {
+                        scrollToBottom();
+                    });
+                }
+            }
+        });
+
+        // Scroll to bottom of container
+        function scrollToBottom() {
+            try {
+                const container = document.getElementById("container");
+                container.scrollTop = container.scrollHeight;
+            } catch (e) {
+                console.error("Error in scrollToBottom:", e);
+            }
+        }
+
+        // Start Pyodide and typing effect
+        window.onload = async () => {
+            await loadPyodideAndSetup();
+            typeInitial();
+        };
+    </script>
+</body>
+</html>
