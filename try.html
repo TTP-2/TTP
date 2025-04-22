@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Faster Minecraft-like Game with Clouds and Sun</title>
+    <title>Minecraft-like Game with Blue Sky and Crosshair</title>
     <style>
         html, body {
             margin: 0;
@@ -16,10 +16,20 @@
             height: 100%;
             display: block;
         }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
     <canvas id="renderCanvas"></canvas>
+    <div id="crosshair">+</div>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script>
         const canvas = document.getElementById("renderCanvas");
@@ -27,12 +37,12 @@
 
         const createScene = function () {
             const scene = new BABYLON.Scene(engine);
-            scene.clearColor = new BABYLON.Color4(0.5, 0.8, 1, 1);
+            scene.clearColor = new BABYLON.Color4(0, 0, 1, 1); // Pure blue sky
 
             // Camera
             const camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 5, 0), scene);
             camera.rotation.y = Math.PI / 2;
-            camera.speed = 0.5; // Increased speed
+            camera.speed = 0.5;
             camera.minZ = 0.1;
             camera.detachControl(canvas);
 
@@ -41,22 +51,13 @@
             groundMaterial.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
             const grassMaterial = new BABYLON.StandardMaterial("grassMat", scene);
             grassMaterial.diffuseColor = new BABYLON.Color3(0, 1, 0);
-            const cloudMaterial = new BABYLON.StandardMaterial("cloudMat", scene);
-            cloudMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);
-            cloudMaterial.alpha = 0.9;
-            const sunMaterial = new BABYLON.StandardMaterial("sunMat", scene);
-            sunMaterial.emissiveColor = new BABYLON.Color3(1, 0.9, 0.5);
 
             // Light
             const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
             light.intensity = 0.7;
 
-            // Glow layer for sun
-            const glowLayer = new BABYLON.GlowLayer("glow", scene);
-            glowLayer.intensity = 0.5;
-
             // World settings
-            const chunkSize = 8; // Smaller chunks for performance
+            const chunkSize = 8;
             const blockSize = 1;
             const renderDistance = 2;
             const blocks = {};
@@ -97,7 +98,7 @@
             const unloadChunks = (playerChunkX, playerChunkZ) => {
                 for (const chunkKey in chunks) {
                     const [cx, cz] = chunkKey.split("_").map(Number);
-                    if (Math.abs(cx - playerChunkX) > renderDistance || Math.abs(cz - playerChunkZ) > renderDistance) {
+                    if (Math.abs(cx - playerChunkX) >served as Math.abs(cx - playerChunkX) > renderDistance || Math.abs(cz - playerChunkZ) > renderDistance) {
                         for (let x = cx * chunkSize; x < (cx + 1) * chunkSize; x++) {
                             for (let z = cz * chunkSize; z < (cz + 1) * chunkSize; z++) {
                                 for (let y = -10; y <= 10; y++) {
@@ -122,46 +123,6 @@
                     generateChunk(cx + initialChunkX, cz + initialChunkZ);
                 }
             }
-
-            // Clouds
-            const cloudMaster = BABYLON.MeshBuilder.CreateBox("cloudMaster", { size: blockSize }, scene);
-            cloudMaster.material = cloudMaterial;
-            cloudMaster.isVisible = false;
-            const clouds = [];
-            for (let i = 0; i < 10; i++) {
-                const cloudBaseX = (Math.random() - 0.5) * chunkSize * renderDistance * 2;
-                const cloudBaseZ = (Math.random() - 0.5) * chunkSize * renderDistance * 2;
-                const cloudY = 20 + Math.random() * 5;
-                for (let dx = -2; dx <= 2; dx++) {
-                    for (let dz = -2; dz <= 2; dz++) {
-                        if (Math.random() > 0.5) {
-                            const cloudBlock = cloudMaster.createInstance(`cloud_${cloudBaseX + dx}_${cloudY}_${cloudBaseZ + dz}`);
-                            cloudBlock.position = new BABYLON.Vector3(
-                                cloudBaseX + dx * blockSize,
-                                cloudY * blockSize,
-                                cloudBaseZ + dz * blockSize
-                            );
-                            clouds.push({ mesh: cloudBlock, baseX: cloudBaseX, baseZ: cloudBaseZ, offsetX: dx, offsetZ: dz, y: cloudY });
-                        }
-                    }
-                }
-            }
-
-            // Sun
-            const sun = BABYLON.MeshBuilder.CreateSphere("sun", { diameter: 5 }, scene);
-            sun.material = sunMaterial;
-            sun.position = new BABYLON.Vector3(50, 50, 0);
-            let sunAngle = 0;
-
-            // Skybox
-            const skybox = BABYLON.MeshBuilder.CreateBox("skybox", { size: 1000 }, scene);
-            const skyboxMaterial = new BABYLON.StandardMaterial("skyboxMat", scene);
-            skyboxMaterial.backFaceCulling = false;
-            skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture("https://playground.babylonjs.com/textures/skybox", scene);
-            skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
-            skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
-            skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
-            skybox.material = skyboxMaterial;
 
             // Arrow key movement
             const keys = {};
@@ -261,19 +222,6 @@
                     }
                 }
                 unloadChunks(playerChunkX, playerChunkZ);
-
-                // Cloud movement
-                clouds.forEach(cloud => {
-                    const drift = Math.sin(Date.now() * 0.0001) * 0.01;
-                    cloud.mesh.position.x = (cloud.baseX + cloud.offsetX + drift) * blockSize;
-                    cloud.mesh.position.z = (cloud.baseZ + cloud.offsetZ) * blockSize;
-                });
-
-                // Sun movement
-                sunAngle += 0.001;
-                sun.position.x = Math.cos(sunAngle) * 50;
-                sun.position.y = Math.sin(sunAngle) * 50 + 50;
-                sun.position.z = Math.sin(sunAngle) * 50;
             });
 
             return scene;
