@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Infinite Minecraft-like Game with Arrow Movement</title>
+    <title>Faster Minecraft-like Game with Clouds and Sun</title>
     <style>
         html, body {
             margin: 0;
@@ -31,11 +31,9 @@
 
             // Camera
             const camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 5, 0), scene);
-            camera.rotation.y = Math.PI / 2; // Face forward
-            camera.speed = 0.2;
+            camera.rotation.y = Math.PI / 2;
+            camera.speed = 0.5; // Increased speed
             camera.minZ = 0.1;
-
-            // Disable default controls
             camera.detachControl(canvas);
 
             // Materials
@@ -43,17 +41,34 @@
             groundMaterial.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
             const grassMaterial = new BABYLON.StandardMaterial("grassMat", scene);
             grassMaterial.diffuseColor = new BABYLON.Color3(0, 1, 0);
+            const cloudMaterial = new BABYLON.StandardMaterial("cloudMat", scene);
+            cloudMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);
+            cloudMaterial.alpha = 0.9;
+            const sunMaterial = new BABYLON.StandardMaterial("sunMat", scene);
+            sunMaterial.emissiveColor = new BABYLON.Color3(1, 0.9, 0.5);
 
             // Light
             const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
             light.intensity = 0.7;
 
+            // Glow layer for sun
+            const glowLayer = new BABYLON.GlowLayer("glow", scene);
+            glowLayer.intensity = 0.5;
+
             // World settings
-            const chunkSize = 16;
+            const chunkSize = 8; // Smaller chunks for performance
             const blockSize = 1;
-            const renderDistance = 2; // Chunks to render in each direction
+            const renderDistance = 2;
             const blocks = {};
             const chunks = {};
+
+            // Master meshes for instancing
+            const grassMaster = BABYLON.MeshBuilder.CreateBox("grassMaster", { size: blockSize }, scene);
+            grassMaster.material = grassMaterial;
+            grassMaster.isVisible = false;
+            const groundMaster = BABYLON.MeshBuilder.CreateBox("groundMaster", { size: blockSize }, scene);
+            groundMaster.material = groundMaterial;
+            groundMaster.isVisible = false;
 
             // Generate terrain for a chunk
             const generateChunk = (chunkX, chunkZ) => {
@@ -67,9 +82,9 @@
                         for (let y = 0; y <= height; y++) {
                             const blockKey = `${x}_${y}_${z}`;
                             if (!blocks[blockKey]) {
-                                const block = BABYLON.MeshBuilder.CreateBox(`block_${x}_${y}_${z}`, { size: blockSize }, scene);
+                                const master = y === height ? grassMaster : groundMaster;
+                                const block = master.createInstance(`block_${x}_${y}_${z}`);
                                 block.position = new BABYLON.Vector3(x * blockSize, y * blockSize, z * blockSize);
-                                block.material = y === height ? grassMaterial : groundMaterial;
                                 block.checkCollisions = true;
                                 blocks[blockKey] = block;
                             }
@@ -85,7 +100,7 @@
                     if (Math.abs(cx - playerChunkX) > renderDistance || Math.abs(cz - playerChunkZ) > renderDistance) {
                         for (let x = cx * chunkSize; x < (cx + 1) * chunkSize; x++) {
                             for (let z = cz * chunkSize; z < (cz + 1) * chunkSize; z++) {
-                                for (let y = -10; y <= 10; y++) { // Reasonable height range
+                                for (let y = -10; y <= 10; y++) {
                                     const blockKey = `${x}_${y}_${z}`;
                                     if (blocks[blockKey]) {
                                         blocks[blockKey].dispose();
@@ -107,6 +122,36 @@
                     generateChunk(cx + initialChunkX, cz + initialChunkZ);
                 }
             }
+
+            // Clouds
+            const cloudMaster = BABYLON.MeshBuilder.CreateBox("cloudMaster", { size: blockSize }, scene);
+            cloudMaster.material = cloudMaterial;
+            cloudMaster.isVisible = false;
+            const clouds = [];
+            for (let i = 0; i < 10; i++) {
+                const cloudBaseX = (Math.random() - 0.5) * chunkSize * renderDistance * 2;
+                const cloudBaseZ = (Math.random() - 0.5) * chunkSize * renderDistance * 2;
+                const cloudY = 20 + Math.random() * 5;
+                for (let dx = -2; dx <= 2; dx++) {
+                    for (let dz = -2; dz <= 2; dz++) {
+                        if (Math.random() > 0.5) {
+                            const cloudBlock = cloudMaster.createInstance(`cloud_${cloudBaseX + dx}_${cloudY}_${cloudBaseZ + dz}`);
+                            cloudBlock.position = new BABYLON.Vector3(
+                                cloudBaseX + dx * blockSize,
+                                cloudY * blockSize,
+                                cloudBaseZ + dz * blockSize
+                            );
+                            clouds.push({ mesh: cloudBlock, baseX: cloudBaseX, baseZ: cloudBaseZ, offsetX: dx, offsetZ: dz, y: cloudY });
+                        }
+                    }
+                }
+            }
+
+            // Sun
+            const sun = BABYLON.MeshBuilder.CreateSphere("sun", { diameter: 5 }, scene);
+            sun.material = sunMaterial;
+            sun.position = new BABYLON.Vector3(50, 50, 0);
+            let sunAngle = 0;
 
             // Skybox
             const skybox = BABYLON.MeshBuilder.CreateBox("skybox", { size: 1000 }, scene);
@@ -164,11 +209,10 @@
                             const newZ = Math.round(z + normal.z);
                             const blockKey = `${newX}_${newY}_${newZ}`;
                             if (!blocks[blockKey]) {
-                                const newBlock = BABYLON.MeshBuilder.CreateBox(`block_${newX}_${newY}_${newZ}`, { size: blockSize }, scene);
-                                newBlock.position = new BABYLON.Vector3(newX * blockSize, newY * blockSize, newZ * blockSize);
-                                newBlock.material = grassMaterial;
-                                newBlock.checkCollisions = true;
-                                blocks[blockKey] = newBlock;
+                                const block = grassMaster.createInstance(`block_${newX}_${newY}_${newZ}`);
+                                block.position = new BABYLON.Vector3(newX * blockSize, newY * blockSize, newZ * blockSize);
+                                block.checkCollisions = true;
+                                blocks[blockKey] = block;
                             }
                         }
                     }
@@ -186,6 +230,7 @@
 
             // Update loop
             scene.registerBeforeRender(() => {
+                // Player movement
                 let moveX = 0, moveZ = 0;
                 const forward = new BABYLON.Vector3(Math.sin(camera.rotation.y), 0, Math.cos(camera.rotation.y));
                 const right = new BABYLON.Vector3(Math.cos(camera.rotation.y), 0, -Math.sin(camera.rotation.y));
@@ -216,6 +261,19 @@
                     }
                 }
                 unloadChunks(playerChunkX, playerChunkZ);
+
+                // Cloud movement
+                clouds.forEach(cloud => {
+                    const drift = Math.sin(Date.now() * 0.0001) * 0.01;
+                    cloud.mesh.position.x = (cloud.baseX + cloud.offsetX + drift) * blockSize;
+                    cloud.mesh.position.z = (cloud.baseZ + cloud.offsetZ) * blockSize;
+                });
+
+                // Sun movement
+                sunAngle += 0.001;
+                sun.position.x = Math.cos(sunAngle) * 50;
+                sun.position.y = Math.sin(sunAngle) * 50 + 50;
+                sun.position.z = Math.sin(sunAngle) * 50;
             });
 
             return scene;
