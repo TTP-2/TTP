@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BlueHorizon - Welcome</title>
+  <title>Bluehorizon - Welcome</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Prism.js for syntax highlighting -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
@@ -80,6 +80,20 @@
     .otp-input:focus {
       border-color: #3b82f6;
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+    /* Live site styling */
+    .live-site {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .url-bar {
+      background: #f3f4f6;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #d1d5db;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
   </style>
 </head>
@@ -161,6 +175,15 @@
       </div>
       <textarea id="app-input" class="full-textarea prism-textarea language-html" placeholder="Enter your HTML code here..."></textarea>
     </div>
+  </section>
+
+  <!-- Live Site Simulation -->
+  <section id="live-site" class="hidden live-site">
+    <div class="url-bar">
+      <span id="live-url" class="text-gray-700"></span>
+      <button onclick="backToAppCreation()" class="bg-blue-500 text-white px-4 py-1 rounded-lg hover:bg-blue-600 hover-scale transition">Back</button>
+    </div>
+    <iframe id="live-iframe" class="flex-1 w-full bg-white"></iframe>
   </section>
 
   <!-- Preview Overlay -->
@@ -336,11 +359,44 @@
         alert('Please enter some HTML code to launch.');
         return;
       }
-      // Simulate launching the website and generating a URL
+      // Generate a simulated URL
       const randomId = Math.random().toString(36).substring(2, 8);
       const liveUrl = `https://bluehorizon.example.com/app/${randomId}`;
-      alert(`Your website is now live!\nAccess it at: ${liveUrl}`);
-      // In a real app, this would involve deploying the HTML to a hosting service
+      // Show live site section
+      document.getElementById('app-creation').classList.add('hidden');
+      const liveSite = document.getElementById('live-site');
+      liveSite.classList.remove('hidden');
+      // Set URL in the fake URL bar
+      document.getElementById('live-url').textContent = liveUrl;
+      // Render HTML in iframe
+      const iframe = document.getElementById('live-iframe');
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      iframeDoc.open();
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+          </style>
+        </head>
+        <body>
+          ${input}
+        </body>
+        </html>
+      `);
+      iframeDoc.close();
+    }
+
+    function backToAppCreation() {
+      document.getElementById('live-site').classList.add('hidden');
+      document.getElementById('app-creation').classList.remove('hidden');
+      // Clear iframe content
+      const iframe = document.getElementById('live-iframe');
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      iframeDoc.open();
+      iframeDoc.write('');
+      iframeDoc.close();
     }
 
     function closePreview() {
