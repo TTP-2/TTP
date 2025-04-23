@@ -9,6 +9,8 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+  <!-- EmailJS SDK -->
+  <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
   <style>
     /* Custom animations */
     @keyframes fadeIn {
@@ -90,7 +92,7 @@
       cursor: pointer;
     }
     /* Canvas styling */
-    #eraser-canvas {
+    canvas {
       max-width: 100%;
       max-height: 400px;
       border: 1px solid #d1d5db;
@@ -128,8 +130,8 @@
         <!-- Login Form -->
         <div id="login-form">
           <div class="mb-6">
-            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-            <input type="email" id="email" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Enter your email" required>
+            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Gmail Address</label>
+            <input type="email" id="email" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Enter your Gmail address (e.g., user@gmail.com)" required>
           </div>
           <button onclick="sendVerificationCode()" class="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 hover-scale transition">Send Verification Code</button>
         </div>
@@ -188,24 +190,54 @@
     <div class="container mx-auto px-4">
       <h2 class="text-3xl font-semibold text-center text-gray-800 mb-8">CodeSpark Tools</h2>
       <button onclick="showDashboard()" class="mb-6 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 hover-scale transition">Back to Dashboard</button>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
         <!-- Magic Eraser Tool -->
         <div class="bg-white p-6 rounded-xl shadow-lg">
           <h3 class="text-xl font-medium text-gray-800 mb-4">Magic Eraser</h3>
-          <p class="text-sm text-gray-600 mb-4">Upload an image with a solid background (e.g., white or green) to remove it.</p>
+          <p class="text-sm text-gray-600 mb-4">Upload an image and circle the area you want to erase.</p>
           <input type="file" id="eraser-input" accept="image/*" class="mb-4">
           <canvas id="eraser-canvas" class="mb-4"></canvas>
           <div class="flex space-x-4">
-            <button onclick="removeBackground()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 hover-scale transition">Remove Background</button>
+            <button onclick="eraseArea()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 hover-scale transition">Erase</button>
+            <button onclick="resetImage()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 hover-scale transition">Reset</button>
             <button onclick="downloadImage()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 hover-scale transition">Download</button>
           </div>
         </div>
-        <!-- Placeholder for Additional Tools -->
+        <!-- Color Picker Tool -->
         <div class="bg-white p-6 rounded-xl shadow-lg">
-          <h3 class="text-xl font-medium text-gray-800 mb-4">More Tools Coming Soon</h3>
-          <p class="text-sm text-gray-600 mb-4">Explore additional creative tools to enhance your projects.</p>
-          <button onclick="alert('Image Resizer: Coming soon!')" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 hover-scale transition mb-2 w-full">Image Resizer</button>
-          <button onclick="alert('Color Picker: Coming soon!')" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 hover-scale transition w-full">Color Picker</button>
+          <h3 class="text-xl font-medium text-gray-800 mb-4">Color Picker</h3>
+          <p class="text-sm text-gray-600 mb-4">Click on the color wheel to select a color and get its HEX/RGB values.</p>
+          <canvas id="color-picker-canvas" class="mb-4"></canvas>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">HEX</label>
+            <input type="text" id="hex-value" class="w-full p-2 border border-gray-300 rounded-lg" readonly>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">RGB</label>
+            <input type="text" id="rgb-value" class="w-full p-2 border border-gray-300 rounded-lg" readonly>
+          </div>
+        </div>
+        <!-- Image Resizer Tool -->
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+          <h3 class="text-xl font-medium text-gray-800 mb-4">Image Resizer</h3>
+          <p class="text-sm text-gray-600 mb-4">Upload an image and specify new dimensions to resize it.</p>
+          <input type="file" id="resizer-input" accept="image/*" class="mb-4">
+          <canvas id="resizer-canvas" class="mb-4 hidden"></canvas>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Width (px)</label>
+            <input type="number" id="resize-width" class="w-full p-2 border border-gray-300 rounded-lg" min="1">
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Height (px)</label>
+            <input type="number" id="resize-height" class="w-full p-2 border border-gray-300 rounded-lg" min="1">
+          </div>
+          <div class="mb-4">
+            <label class="flex items-center">
+              <input type="checkbox" id="maintain-aspect" class="mr-2">
+              <span class="text-sm text-gray-600">Maintain Aspect Ratio</span>
+            </label>
+          </div>
+          <button onclick="resizeImage()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 hover-scale transition">Resize & Download</button>
         </div>
       </div>
     </div>
@@ -223,9 +255,16 @@
   </footer>
 
   <script>
+    // Initialize EmailJS (replace YOUR_USER_ID with your EmailJS user ID)
+    (function(){
+      emailjs.init("YOUR_USER_ID");
+    })();
+
     let generatedCode = null;
     let apps = [];
     let originalImageData = null;
+    let isDrawing = false;
+    let startX, startY;
 
     function generateCode() {
       // Generate a random 6-digit code
@@ -234,15 +273,25 @@
 
     function sendVerificationCode() {
       const email = document.getElementById('email').value;
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        alert('Please enter a valid email address.');
+      if (!email || !/^[^\s@]+@gmail\.com$/.test(email)) {
+        alert('Please enter a valid Gmail address (e.g., user@gmail.com).');
         return;
       }
-      // Generate and "send" verification code
+      // Generate verification code
       generatedCode = generateCode();
-      document.getElementById('login-form').classList.add('hidden');
-      document.getElementById('verification-form').classList.remove('hidden');
-      alert(`Your verification code is: ${generatedCode}\n(This simulates an email sent to ${email})`);
+      // Send email using EmailJS
+      const templateParams = {
+        to_email: email,
+        code: generatedCode
+      };
+      emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
+        .then(() => {
+          document.getElementById('login-form').classList.add('hidden');
+          document.getElementById('verification-form').classList.remove('hidden');
+          alert('Verification code sent to your Gmail address. Please check your inbox (and spam folder).');
+        }, (error) => {
+          alert('Failed to send verification code. Please try again. Error: ' + JSON.stringify(error));
+        });
     }
 
     function handleOtpInput(input, index) {
@@ -311,6 +360,8 @@
       document.querySelector('nav').classList.remove('hidden');
       document.querySelector('header').classList.add('hidden');
       document.querySelector('footer').classList.remove('hidden');
+      // Initialize color picker
+      initColorPicker();
     }
 
     function showDashboard() {
@@ -508,7 +559,7 @@
     // Magic Eraser Functionality
     const eraserInput = document.getElementById('eraser-input');
     const eraserCanvas = document.getElementById('eraser-canvas');
-    const ctx = eraserCanvas.getContext('2d');
+    const eraserCtx = eraserCanvas.getContext('2d');
 
     eraserInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -517,30 +568,64 @@
       img.onload = () => {
         eraserCanvas.width = img.width;
         eraserCanvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-        originalImageData = ctx.getImageData(0, 0, img.width, img.height);
+        eraserCtx.drawImage(img, 0, 0);
+        originalImageData = eraserCtx.getImageData(0, 0, img.width, img.height);
       };
       img.src = URL.createObjectURL(file);
     });
 
-    function removeBackground() {
+    eraserCanvas.addEventListener('mousedown', (e) => {
+      if (!originalImageData) return;
+      isDrawing = true;
+      const rect = eraserCanvas.getBoundingClientRect();
+      startX = (e.clientX - rect.left) * (eraserCanvas.width / rect.width);
+      startY = (e.clientY - rect.top) * (eraserCanvas.height / rect.height);
+    });
+
+    eraserCanvas.addEventListener('mousemove', (e) => {
+      if (!isDrawing || !originalImageData) return;
+      const rect = eraserCanvas.getBoundingClientRect();
+      const endX = (e.clientX - rect.left) * (eraserCanvas.width / rect.width);
+      const endY = (e.clientY - rect.top) * (eraserCanvas.height / rect.height);
+      // Redraw original image
+      eraserCtx.putImageData(originalImageData, 0, 0);
+      // Draw temporary circle
+      eraserCtx.beginPath();
+      const radius = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2);
+      eraserCtx.arc(startX, startY, radius, 0, 2 * Math.PI);
+      eraserCtx.strokeStyle = 'red';
+      eraserCtx.lineWidth = 2;
+      eraserCtx.stroke();
+    });
+
+    eraserCanvas.addEventListener('mouseup', () => {
+      isDrawing = false;
+    });
+
+    function eraseArea() {
       if (!originalImageData) {
         alert('Please upload an image first.');
         return;
       }
-      const imageData = ctx.getImageData(0, 0, eraserCanvas.width, eraserCanvas.height);
+      const imageData = eraserCtx.getImageData(0, 0, eraserCanvas.width, eraserCanvas.height);
       const data = imageData.data;
-      // Simple background removal: make white or near-white pixels transparent
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        // Detect white or near-white (adjust threshold as needed)
-        if (r > 200 && g > 200 && b > 200) {
-          data[i + 3] = 0; // Set alpha to 0 (transparent)
+      const radius = Math.sqrt((startX - startX) ** 2 + (startY - startY) ** 2) || 50; // Default radius if not drawn
+      // Erase pixels within the circle
+      for (let y = 0; y < eraserCanvas.height; y++) {
+        for (let x = 0; x < eraserCanvas.width; x++) {
+          const distance = Math.sqrt((x - startX) ** 2 + (y - startY) ** 2);
+          if (distance <= radius) {
+            const index = (y * eraserCanvas.width + x) * 4;
+            data[index + 3] = 0; // Set alpha to 0 (transparent)
+          }
         }
       }
-      ctx.putImageData(imageData, 0, 0);
+      eraserCtx.putImageData(imageData, 0, 0);
+    }
+
+    function resetImage() {
+      if (!originalImageData) return;
+      eraserCtx.putImageData(originalImageData, 0, 0);
     }
 
     function downloadImage() {
@@ -551,6 +636,105 @@
       const link = document.createElement('a');
       link.download = 'processed_image.png';
       link.href = eraserCanvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Color Picker Functionality
+    function initColorPicker() {
+      const canvas = document.getElementById('color-picker-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 200;
+      canvas.height = 200;
+      // Create a color wheel
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          const hue = (x / canvas.width) * 360;
+          const saturation = 1;
+          const lightness = 1 - (y / canvas.height);
+          ctx.fillStyle = `hsl(${hue}, ${saturation * 100}%, ${lightness * 50}%)`;
+          ctx.fillRect(x, y, 1, 1);
+        }
+      }
+      canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+        const imageData = ctx.getImageData(x, y, 1, 1).data;
+        const r = imageData[0];
+        const g = imageData[1];
+        const b = imageData[2];
+        const hex = rgbToHex(r, g, b);
+        document.getElementById('hex-value').value = hex;
+        document.getElementById('rgb-value').value = `rgb(${r}, ${g}, ${b})`;
+      });
+    }
+
+    function rgbToHex(r, g, b) {
+      return "#" + [r, g, b].map(x => {
+        const hex = x.toString(16);
+        return hex.length === 1 ? "0" + hex : hex;
+      }).join('');
+    }
+
+    // Image Resizer Functionality
+    const resizerInput = document.getElementById('resizer-input');
+    const resizerCanvas = document.getElementById('resizer-canvas');
+    const resizerCtx = resizerCanvas.getContext('2d');
+    let resizerImage = null;
+
+    resizerInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const img = new Image();
+      img.onload = () => {
+        resizerCanvas.width = img.width;
+        resizerCanvas.height = img.height;
+        resizerCtx.drawImage(img, 0, 0);
+        resizerImage = img;
+        resizerCanvas.classList.remove('hidden');
+      };
+      img.src = URL.createObjectURL(file);
+    });
+
+    document.getElementById('resize-width').addEventListener('input', () => {
+      if (document.getElementById('maintain-aspect').checked && resizerImage) {
+        const width = parseInt(document.getElementById('resize-width').value);
+        if (width) {
+          const aspectRatio = resizerImage.height / resizerImage.width;
+          document.getElementById('resize-height').value = Math.round(width * aspectRatio);
+        }
+      }
+    });
+
+    document.getElementById('resize-height').addEventListener('input', () => {
+      if (document.getElementById('maintain-aspect').checked && resizerImage) {
+        const height = parseInt(document.getElementById('resize-height').value);
+        if (height) {
+          const aspectRatio = resizerImage.width / resizerImage.height;
+          document.getElementById('resize-width').value = Math.round(height * aspectRatio);
+        }
+      }
+    });
+
+    function resizeImage() {
+      if (!resizerImage) {
+        alert('Please upload an image first.');
+        return;
+      }
+      const width = parseInt(document.getElementById('resize-width').value);
+      const height = parseInt(document.getElementById('resize-height').value);
+      if (!width || !height) {
+        alert('Please enter valid width and height values.');
+        return;
+      }
+      resizerCanvas.width = width;
+      resizerCanvas.height = height;
+      resizerCtx.drawImage(resizerImage, 0, 0, width, height);
+      const link = document.createElement('a');
+      link.download = 'resized_image.png';
+      link.href = resizerCanvas.toDataURL('image/png');
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
