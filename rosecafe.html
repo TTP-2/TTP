@@ -34,7 +34,7 @@
         .right-half {
             width: calc(50% + 50px);
             height: 100%;
-            background-image: url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80');
+            background-image: url('coffee.png');
             background-size: cover;
             background-position: center;
             position: absolute;
@@ -214,6 +214,8 @@
             const name = document.getElementById('nameInput').value;
             const order = document.getElementById('orderInput').value;
             const orderDisplayContainer = document.getElementById('orderDisplayContainer');
+            const whiteDiv = document.getElementById('whiteDiv');
+            const imageDiv = document.getElementById('imageDiv');
 
             if (name && order) {
                 const orderNumber = Math.floor(1000 + Math.random() * 9000); // Generate 4-digit random number
@@ -233,9 +235,11 @@
                 orderDiv.innerHTML = `Name: ${name}<br>Order: ${order}<br>Order Number: ${orderNumber}<br>Time: ${timestamp}<button class="delete-button" onclick="deleteOrder('${orderId}')">Delete</button>`;
                 orderDisplayContainer.appendChild(orderDiv);
 
-                // Clear inputs
+                // Clear inputs and slide back to original state
                 document.getElementById('nameInput').value = '';
                 document.getElementById('orderInput').value = '';
+                whiteDiv.classList.remove('expanded');
+                imageDiv.classList.remove('shrunk');
             }
         }
 
@@ -265,9 +269,6 @@
                     orderDiv.innerHTML = `Name: ${orderData.name}<br>Order: ${orderData.order}<br>Order Number: ${orderData.orderNumber}<br>Time: ${orderData.timestamp}<button class="delete-button" onclick="deleteOrder('${orderData.orderId}')">Delete</button>`;
                     orderDisplayContainer.appendChild(orderDiv);
                 });
-                // Expand the page automatically if there are saved orders
-                document.getElementById('whiteDiv').classList.add('expanded');
-                document.getElementById('imageDiv').classList.add('shrunk');
             }
         };
     </script>
