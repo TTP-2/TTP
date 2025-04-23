@@ -155,11 +155,13 @@
     /* Clipboard textarea styling */
     .clipboard-textarea {
       background-image: url('/codespark.png');
-      background-size: contain;
+      background-size: 50%;
       background-repeat: no-repeat;
       background-position: center;
       opacity: 0.8;
       color: var(--text-color);
+      mask-image: radial-gradient(circle, white 50%, transparent 50%);
+      -webkit-mask-image: radial-gradient(circle, white 50%, transparent 50%);
     }
   </style>
 </head>
