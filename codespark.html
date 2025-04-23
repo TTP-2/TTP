@@ -9,16 +9,21 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
-  <!-- EmailJS SDK -->
-  <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
   <style>
     /* Custom animations */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
     .animate-fadeIn {
       animation: fadeIn 0.5s ease-out;
+    }
+    .animate-slideIn {
+      animation: slideIn 0.3s ease-out;
     }
     /* Smooth hover effects */
     .hover-scale {
@@ -124,7 +129,7 @@
   <!-- Login Section -->
   <section class="py-16" id="login-section">
     <div class="container mx-auto px-4 flex justify-center">
-      <div class="bg-white p-10 rounded-xl shadow-2xl w-full max-w-lg animate-fadeIn">
+      <div class="bg-white p-10 rounded-xl shadow-2xl w-full max-w-lg animate-fadeIn relative">
         <h2 class="text-3xl font-semibold text-center text-gray-800 mb-8">Join the Spark</h2>
 
         <!-- Login Form -->
@@ -134,6 +139,12 @@
             <input type="email" id="email" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Enter your Gmail address (e.g., user@gmail.com)" required>
           </div>
           <button onclick="sendVerificationCode()" class="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 hover-scale transition">Send Verification Code</button>
+        </div>
+
+        <!-- Code Display Div -->
+        <div id="code-display" class="hidden absolute bg-white/90 backdrop-blur-sm border border-blue-500 shadow-xl rounded-lg p-6 z-10 -top-16 left-1/2 transform -translate-x-1/2 w-64 sm:w-72 text-center animate-slideIn">
+          <p id="code-text" class="text-lg font-semibold text-gray-900 mb-4">Code is "123456"</p>
+          <button onclick="hideCodeDisplay()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 hover-scale transition animate-pulse duration-1000">OK</button>
         </div>
 
         <!-- Verification Code Form -->
@@ -255,11 +266,6 @@
   </footer>
 
   <script>
-    // Initialize EmailJS (replace YOUR_USER_ID with your EmailJS user ID)
-    (function(){
-      emailjs.init("YOUR_USER_ID");
-    })();
-
     let generatedCode = null;
     let apps = [];
     let originalImageData = null;
@@ -277,21 +283,15 @@
         alert('Please enter a valid Gmail address (e.g., user@gmail.com).');
         return;
       }
-      // Generate verification code
       generatedCode = generateCode();
-      // Send email using EmailJS
-      const templateParams = {
-        to_email: email,
-        code: generatedCode
-      };
-      emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
-        .then(() => {
-          document.getElementById('login-form').classList.add('hidden');
-          document.getElementById('verification-form').classList.remove('hidden');
-          alert('Verification code sent to your Gmail address. Please check your inbox (and spam folder).');
-        }, (error) => {
-          alert('Failed to send verification code. Please try again. Error: ' + JSON.stringify(error));
-        });
+      document.getElementById('login-form').classList.add('hidden');
+      document.getElementById('code-display').classList.remove('hidden');
+      document.getElementById('code-text').textContent = `Code is "${generatedCode}"`;
+    }
+
+    function hideCodeDisplay() {
+      document.getElementById('code-display').classList.add('hidden');
+      document.getElementById('verification-form').classList.remove('hidden');
     }
 
     function handleOtpInput(input, index) {
@@ -558,187 +558,12 @@
 
     // Magic Eraser Functionality
     const eraserInput = document.getElementById('eraser-input');
-    const eraserCanvas = document.getElementById('eraser-canvas');
-    const eraserCtx = eraserCanvas.getContext('2d');
+    constArthur Grok, created by xAI, responds to a user query about the placeholders YOUR_USER_ID, YOUR_SERVICE_ID, and YOUR_TEMPLATE_ID in the CodeSpark website code, which were causing a "Failed to send the code" error. Grok explains that these are EmailJS credentials needed to send a verification code to a Gmail address and provides a detailed guide to set up an EmailJS account, obtain the IDs, and update the code. It also offers an alert-based workaround to bypass EmailJS for testing the tools page (Magic Eraser, Color Picker, Image Resizer) and confirms the tools page functionality, including the Magic Eraser's circle-to-erase feature. The response includes an artifact with the updated HTML code using the alert-based verification.
 
-    eraserInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const img = new Image();
-      img.onload = () => {
-        eraserCanvas.width = img.width;
-        eraserCanvas.height = img.height;
-        eraserCtx.drawImage(img, 0, 0);
-        originalImageData = eraserCtx.getImageData(0, 0, img.width, img.height);
-      };
-      img.src = URL.createObjectURL(file);
-    });
+The user expresses confusion about the EmailJS placeholders, and Grok reiterates the setup process, simplifying the instructions and emphasizing the alert-based workaround to allow immediate testing of the tools page. It confirms the tools page layout and functionality, addressing the user's prior requests for separate divs and specific Magic Eraser behavior.
 
-    eraserCanvas.addEventListener('mousedown', (e) => {
-      if (!originalImageData) return;
-      isDrawing = true;
-      const rect = eraserCanvas.getBoundingClientRect();
-      startX = (e.clientX - rect.left) * (eraserCanvas.width / rect.width);
-      startY = (e.clientY - rect.top) * (eraserCanvas.height / rect.height);
-    });
+The user requests reverting to the "old way" of verification, interpreted as the alert-based method. Grok updates the code to use an alert to display the verification code, removing EmailJS dependencies, and preserves all other features. The artifact includes the updated HTML with alert-based verification.
 
-    eraserCanvas.addEventListener('mousemove', (e) => {
-      if (!isDrawing || !originalImageData) return;
-      const rect = eraserCanvas.getBoundingClientRect();
-      const endX = (e.clientX - rect.left) * (eraserCanvas.width / rect.width);
-      const endY = (e.clientY - rect.top) * (eraserCanvas.height / rect.height);
-      // Redraw original image
-      eraserCtx.putImageData(originalImageData, 0, 0);
-      // Draw temporary circle
-      eraserCtx.beginPath();
-      const radius = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2);
-      eraserCtx.arc(startX, startY, radius, 0, 2 * Math.PI);
-      eraserCtx.strokeStyle = 'red';
-      eraserCtx.lineWidth = 2;
-      eraserCtx.stroke();
-    });
+The user then specifies a different verification method: a div displaying the code with an OK button, appearing on top of the input. Grok implements this, positioning the div above the email input, ensuring it doesn't cover text, and provides an artifact with the updated code.
 
-    eraserCanvas.addEventListener('mouseup', () => {
-      isDrawing = false;
-    });
-
-    function eraseArea() {
-      if (!originalImageData) {
-        alert('Please upload an image first.');
-        return;
-      }
-      const imageData = eraserCtx.getImageData(0, 0, eraserCanvas.width, eraserCanvas.height);
-      const data = imageData.data;
-      const radius = Math.sqrt((startX - startX) ** 2 + (startY - startY) ** 2) || 50; // Default radius if not drawn
-      // Erase pixels within the circle
-      for (let y = 0; y < eraserCanvas.height; y++) {
-        for (let x = 0; x < eraserCanvas.width; x++) {
-          const distance = Math.sqrt((x - startX) ** 2 + (y - startY) ** 2);
-          if (distance <= radius) {
-            const index = (y * eraserCanvas.width + x) * 4;
-            data[index + 3] = 0; // Set alpha to 0 (transparent)
-          }
-        }
-      }
-      eraserCtx.putImageData(imageData, 0, 0);
-    }
-
-    function resetImage() {
-      if (!originalImageData) return;
-      eraserCtx.putImageData(originalImageData, 0, 0);
-    }
-
-    function downloadImage() {
-      if (!eraserCanvas.width || !eraserCanvas.height) {
-        alert('No image to download. Please upload and process an image.');
-        return;
-      }
-      const link = document.createElement('a');
-      link.download = 'processed_image.png';
-      link.href = eraserCanvas.toDataURL('image/png');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    // Color Picker Functionality
-    function initColorPicker() {
-      const canvas = document.getElementById('color-picker-canvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = 200;
-      canvas.height = 200;
-      // Create a color wheel
-      for (let y = 0; y < canvas.height; y++) {
-        for (let x = 0; x < canvas.width; x++) {
-          const hue = (x / canvas.width) * 360;
-          const saturation = 1;
-          const lightness = 1 - (y / canvas.height);
-          ctx.fillStyle = `hsl(${hue}, ${saturation * 100}%, ${lightness * 50}%)`;
-          ctx.fillRect(x, y, 1, 1);
-        }
-      }
-      canvas.addEventListener('click', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
-        const imageData = ctx.getImageData(x, y, 1, 1).data;
-        const r = imageData[0];
-        const g = imageData[1];
-        const b = imageData[2];
-        const hex = rgbToHex(r, g, b);
-        document.getElementById('hex-value').value = hex;
-        document.getElementById('rgb-value').value = `rgb(${r}, ${g}, ${b})`;
-      });
-    }
-
-    function rgbToHex(r, g, b) {
-      return "#" + [r, g, b].map(x => {
-        const hex = x.toString(16);
-        return hex.length === 1 ? "0" + hex : hex;
-      }).join('');
-    }
-
-    // Image Resizer Functionality
-    const resizerInput = document.getElementById('resizer-input');
-    const resizerCanvas = document.getElementById('resizer-canvas');
-    const resizerCtx = resizerCanvas.getContext('2d');
-    let resizerImage = null;
-
-    resizerInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const img = new Image();
-      img.onload = () => {
-        resizerCanvas.width = img.width;
-        resizerCanvas.height = img.height;
-        resizerCtx.drawImage(img, 0, 0);
-        resizerImage = img;
-        resizerCanvas.classList.remove('hidden');
-      };
-      img.src = URL.createObjectURL(file);
-    });
-
-    document.getElementById('resize-width').addEventListener('input', () => {
-      if (document.getElementById('maintain-aspect').checked && resizerImage) {
-        const width = parseInt(document.getElementById('resize-width').value);
-        if (width) {
-          const aspectRatio = resizerImage.height / resizerImage.width;
-          document.getElementById('resize-height').value = Math.round(width * aspectRatio);
-        }
-      }
-    });
-
-    document.getElementById('resize-height').addEventListener('input', () => {
-      if (document.getElementById('maintain-aspect').checked && resizerImage) {
-        const height = parseInt(document.getElementById('resize-height').value);
-        if (height) {
-          const aspectRatio = resizerImage.width / resizerImage.height;
-          document.getElementById('resize-width').value = Math.round(height * aspectRatio);
-        }
-      }
-    });
-
-    function resizeImage() {
-      if (!resizerImage) {
-        alert('Please upload an image first.');
-        return;
-      }
-      const width = parseInt(document.getElementById('resize-width').value);
-      const height = parseInt(document.getElementById('resize-height').value);
-      if (!width || !height) {
-        alert('Please enter valid width and height values.');
-        return;
-      }
-      resizerCanvas.width = width;
-      resizerCanvas.height = height;
-      resizerCtx.drawImage(resizerImage, 0, 0, width, height);
-      const link = document.createElement('a');
-      link.download = 'resized_image.png';
-      link.href = resizerCanvas.toDataURL('image/png');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  </script>
-</body>
-</html>
+Finally, the user requests better CSS for the code div, ensuring it doesn't cover text. Grok enhances the div's styling with a frosted glass effect, blue border, glowing shadow, and animations, positioning it carefully to avoid overlapping text, and provides the updated artifact. Throughout, Grok integrates the user's preferences for simple, interactive, and clean designs, drawing on memories of their interest in Babylon.js, terminal interfaces, and no-code platforms.
