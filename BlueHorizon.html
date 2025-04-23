@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BlueHorizon - Welcome</title>
+  <title>CodeSpark - Welcome</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Prism.js for syntax highlighting -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
@@ -38,7 +38,7 @@
     }
     /* Full-screen textarea */
     .full-textarea {
-      min-height: calc(100vh - 12rem);
+      min-height: calc(100vh - 16rem);
       resize: none;
       font-family: monospace;
       font-size: 14px;
@@ -89,13 +89,20 @@
       text-align: center;
       cursor: pointer;
     }
+    /* Canvas styling */
+    #eraser-canvas {
+      max-width: 100%;
+      max-height: 400px;
+      border: 1px solid #d1d5db;
+      border-radius: 0.375rem;
+    }
   </style>
 </head>
 <body class="bg-gray-100 font-sans">
   <!-- Navigation Bar -->
   <nav class="bg-blue-600 text-white shadow-lg">
     <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-      <h1 class="text-2xl font-bold">BlueHorizon</h1>
+      <h1 class="text-2xl font-bold">CodeSpark</h1>
       <div class="space-x-4">
         <a href="#" class="hover:text-blue-200 transition">Home</a>
         <a href="#" class="hover:text-blue-200 transition">About</a>
@@ -107,8 +114,8 @@
   <!-- Hero Section -->
   <header class="bg-gradient-to-r from-blue-500 to-blue-700 text-white py-20 text-center">
     <div class="container mx-auto px-4">
-      <h1 class="text-5xl font-extrabold mb-4 animate-fadeIn">Welcome to BlueHorizon</h1>
-      <p class="text-xl mb-6 animate-fadeIn">Discover a world of possibilities. Log in to start your journey!</p>
+      <h1 class="text-5xl font-extrabold mb-4 animate-fadeIn">Welcome to CodeSpark</h1>
+      <p class="text-xl mb-6 animate-fadeIn">Ignite your app ideas and launch them with ease!</p>
     </div>
   </header>
 
@@ -116,7 +123,7 @@
   <section class="py-16" id="login-section">
     <div class="container mx-auto px-4 flex justify-center">
       <div class="bg-white p-10 rounded-xl shadow-2xl w-full max-w-lg animate-fadeIn">
-        <h2 class="text-3xl font-semibold text-center text-gray-800 mb-8">Join the Horizon</h2>
+        <h2 class="text-3xl font-semibold text-center text-gray-800 mb-8">Join the Spark</h2>
 
         <!-- Login Form -->
         <div id="login-form">
@@ -151,7 +158,7 @@
             </button>
             <p class="text-sm text-gray-600">Create a New App</p>
             <div class="flex space-x-4">
-              <button onclick="alert('View your apps (placeholder action)')" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 hover-scale transition">View Apps</button>
+              <button onclick="showToolsPage()" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 hover-scale transition">Tools</button>
               <button onclick="alert('Open settings (placeholder action)')" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 hover-scale transition">Settings</button>
             </div>
             <div id="app-launcher" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-6"></div>
@@ -163,16 +170,44 @@
 
   <!-- App Creation Page -->
   <section id="app-creation" class="hidden bg-gray-100">
-    <div class="relative h-screen p-4">
-      <div class="fixed top-4 right-4 flex flex-col space-y-2">
-        <button onclick="runApp()" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 hover-scale transition">Run</button>
-        <button onclick="launchApp()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 hover-scale transition">Launch</button>
-      </div>
+    <div class="h-screen p-4 flex flex-col">
       <div class="mb-4">
         <label for="app-name" class="block text-sm font-medium text-gray-700 mb-2">App Name</label>
         <input type="text" id="app-name" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Enter app name" required>
       </div>
-      <textarea id="app-input" class="full-textarea prism-textarea language-html" placeholder="Enter your HTML code here..."></textarea>
+      <textarea id="app-input" class="full-textarea prism-textarea language-html mb-4" placeholder="Enter your HTML code here..."></textarea>
+      <div class="flex space-x-4">
+        <button onclick="runApp()" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 hover-scale transition">Run</button>
+        <button onclick="launchApp()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 hover-scale transition">Launch</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tools Page -->
+  <section id="tools-page" class="hidden bg-gray-100 py-16">
+    <div class="container mx-auto px-4">
+      <h2 class="text-3xl font-semibold text-center text-gray-800 mb-8">CodeSpark Tools</h2>
+      <button onclick="showDashboard()" class="mb-6 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 hover-scale transition">Back to Dashboard</button>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Magic Eraser Tool -->
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+          <h3 class="text-xl font-medium text-gray-800 mb-4">Magic Eraser</h3>
+          <p class="text-sm text-gray-600 mb-4">Upload an image with a solid background (e.g., white or green) to remove it.</p>
+          <input type="file" id="eraser-input" accept="image/*" class="mb-4">
+          <canvas id="eraser-canvas" class="mb-4"></canvas>
+          <div class="flex space-x-4">
+            <button onclick="removeBackground()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 hover-scale transition">Remove Background</button>
+            <button onclick="downloadImage()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 hover-scale transition">Download</button>
+          </div>
+        </div>
+        <!-- Placeholder for Additional Tools -->
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+          <h3 class="text-xl font-medium text-gray-800 mb-4">More Tools Coming Soon</h3>
+          <p class="text-sm text-gray-600 mb-4">Explore additional creative tools to enhance your projects.</p>
+          <button onclick="alert('Image Resizer: Coming soon!')" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 hover-scale transition mb-2 w-full">Image Resizer</button>
+          <button onclick="alert('Color Picker: Coming soon!')" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 hover-scale transition w-full">Color Picker</button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -184,12 +219,13 @@
 
   <!-- Footer -->
   <footer class="bg-blue-600 text-white py-8 text-center">
-    <p class="text-sm">© 2025 BlueHorizon. All rights reserved.</p>
+    <p class="text-sm">© 2025 CodeSpark. All rights reserved.</p>
   </footer>
 
   <script>
     let generatedCode = null;
     let apps = [];
+    let originalImageData = null;
 
     function generateCode() {
       // Generate a random 6-digit code
@@ -258,6 +294,7 @@
     function showAppCreationPage() {
       document.getElementById('login-section').classList.add('hidden');
       document.getElementById('app-creation').classList.remove('hidden');
+      document.getElementById('tools-page').classList.add('hidden');
       document.querySelector('nav').classList.add('hidden');
       document.querySelector('header').classList.add('hidden');
       document.querySelector('footer').classList.add('hidden');
@@ -265,6 +302,25 @@
       updateSyntaxHighlighting();
       // Clear app name input
       document.getElementById('app-name').value = '';
+    }
+
+    function showToolsPage() {
+      document.getElementById('login-section').classList.add('hidden');
+      document.getElementById('app-creation').classList.add('hidden');
+      document.getElementById('tools-page').classList.remove('hidden');
+      document.querySelector('nav').classList.remove('hidden');
+      document.querySelector('header').classList.add('hidden');
+      document.querySelector('footer').classList.remove('hidden');
+    }
+
+    function showDashboard() {
+      document.getElementById('tools-page').classList.add('hidden');
+      document.getElementById('app-creation').classList.add('hidden');
+      document.getElementById('login-section').classList.remove('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+      document.querySelector('nav').classList.remove('hidden');
+      document.querySelector('header').classList.remove('hidden');
+      document.querySelector('footer').classList.remove('hidden');
     }
 
     function updateSyntaxHighlighting() {
@@ -447,6 +503,57 @@
       iframeDoc.open();
       iframeDoc.write('');
       iframeDoc.close();
+    }
+
+    // Magic Eraser Functionality
+    const eraserInput = document.getElementById('eraser-input');
+    const eraserCanvas = document.getElementById('eraser-canvas');
+    const ctx = eraserCanvas.getContext('2d');
+
+    eraserInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const img = new Image();
+      img.onload = () => {
+        eraserCanvas.width = img.width;
+        eraserCanvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        originalImageData = ctx.getImageData(0, 0, img.width, img.height);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+
+    function removeBackground() {
+      if (!originalImageData) {
+        alert('Please upload an image first.');
+        return;
+      }
+      const imageData = ctx.getImageData(0, 0, eraserCanvas.width, eraserCanvas.height);
+      const data = imageData.data;
+      // Simple background removal: make white or near-white pixels transparent
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        // Detect white or near-white (adjust threshold as needed)
+        if (r > 200 && g > 200 && b > 200) {
+          data[i + 3] = 0; // Set alpha to 0 (transparent)
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+    }
+
+    function downloadImage() {
+      if (!eraserCanvas.width || !eraserCanvas.height) {
+        alert('No image to download. Please upload and process an image.');
+        return;
+      }
+      const link = document.createElement('a');
+      link.download = 'processed_image.png';
+      link.href = eraserCanvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   </script>
 </body>
