@@ -38,7 +38,7 @@
     }
     /* Full-screen textarea */
     .full-textarea {
-      min-height: calc(100vh - 8rem);
+      min-height: calc(100vh - 12rem);
       resize: none;
       font-family: monospace;
       font-size: 14px;
@@ -163,10 +163,14 @@
 
   <!-- App Creation Page -->
   <section id="app-creation" class="hidden bg-gray-100">
-    <div class="relative h-screen">
+    <div class="relative h-screen p-4">
       <div class="fixed top-4 right-4 flex flex-col space-y-2">
         <button onclick="runApp()" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 hover-scale transition">Run</button>
         <button onclick="launchApp()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 hover-scale transition">Launch</button>
+      </div>
+      <div class="mb-4">
+        <label for="app-name" class="block text-sm font-medium text-gray-700 mb-2">App Name</label>
+        <input type="text" id="app-name" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Enter app name" required>
       </div>
       <textarea id="app-input" class="full-textarea prism-textarea language-html" placeholder="Enter your HTML code here..."></textarea>
     </div>
@@ -186,7 +190,6 @@
   <script>
     let generatedCode = null;
     let apps = [];
-    let appCounter = 1;
 
     function generateCode() {
       // Generate a random 6-digit code
@@ -260,6 +263,8 @@
       document.querySelector('footer').classList.add('hidden');
       // Initialize syntax highlighting
       updateSyntaxHighlighting();
+      // Clear app name input
+      document.getElementById('app-name').value = '';
     }
 
     function updateSyntaxHighlighting() {
@@ -343,12 +348,22 @@
 
     function launchApp() {
       const input = document.getElementById('app-input').value;
+      const appNameInput = document.getElementById('app-name').value.trim();
       if (!input.trim()) {
         alert('Please enter some HTML code to launch.');
         return;
       }
-      // Generate app name and add to in-app launcher
-      const appName = `App ${appCounter++}`;
+      if (!appNameInput) {
+        alert('Please enter an app name.');
+        return;
+      }
+      // Check for unique app name
+      if (apps.some(app => app.name.toLowerCase() === appNameInput.toLowerCase())) {
+        alert('An app with this name already exists. Please choose a different name.');
+        return;
+      }
+      // Add app to launcher
+      const appName = appNameInput;
       apps.push({ name: appName, html: input });
       updateLauncher();
       // Create downloadable HTML file
