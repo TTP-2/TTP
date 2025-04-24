@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice-Activated Smiley Face</title>
+    <title>Face-Detection Smiley Face</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
         body {
             background-color: teal;
@@ -12,6 +14,7 @@
             align-items: center;
             height: 100vh;
             margin: 0;
+            flex-direction: column;
         }
         .face {
             position: relative;
@@ -25,6 +28,7 @@
             border-radius: 50%;
             position: absolute;
             top: 50px;
+            transition: transform 0.3s ease;
         }
         .eye-left {
             left: 40px;
@@ -41,74 +45,74 @@
             bottom: 50px;
             left: 50%;
             transform: translateX(-50%);
-            transition: transform 0.1s ease;
+            transition: all 0.3s ease;
         }
-        .mouth.speaking {
-            transform: translateX(-50%) scaleY(1.5);
+        .happy .eye {
+            transform: scale(1.2); /* Slightly larger eyes */
+        }
+        .happy .mouth {
+            width: 100px; /* Wider mouth */
+            height: 50px; /* Taller for a fuller smile */
+            border-radius: 0 0 100px 100px; /* Smoother, happier curve */
+        }
+        video {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 200px;
+            height: 150px;
+            object-fit: cover;
+            border: 2px solid white;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
+    <video id="video" autoplay muted></video>
     <div class="face">
         <div class="eye eye-left"></div>
         <div class="eye eye-right"></div>
         <div class="mouth"></div>
     </div>
     <script>
-        const mouth = document.querySelector('.mouth');
-        let recognition = null;
-
-        // Check if SpeechRecognition is supported
-        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.continuous = true;
-            recognition.interimResults = true;
-
-            recognition.onresult = function(event) {
-                const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
-                // Check if the transcript contains "hey micro"
-                if (transcript.includes('hey micro')) {
-                    // Animate the mouth
-                    mouth.classList.add('speaking');
-                    // Remove the speaking class after a short delay
-                    setTimeout(() => {
-                        mouth.classList.remove('speaking');
-                    }, 500); // Longer duration for a noticeable effect
-                }
-            };
-
-            recognition.onend = function() {
-                // Restart recognition to keep listening
-                try {
-                    recognition.start();
-                } catch (error) {
-                    console.error('Error restarting recognition:', error);
-                }
-            };
-
-            recognition.onerror = function(event) {
-                console.error('Speech recognition error:', event.error);
-                // Attempt to restart on error (except no-speech)
-                if (event.error !== 'no-speech') {
-                    setTimeout(() => {
-                        try {
-                            recognition.start();
-                        } catch (error) {
-                            console.error('Error restarting recognition:', error);
-                        }
-                    }, 1000);
-                }
-            };
-
-            // Start recognition automatically
-            try {
-                recognition.start();
-            } catch (error) {
-                console.error('Error starting recognition:', error);
-            }
-        } else {
-            alert('Sorry, your browser does not support Speech Recognition.');
+        async function loadModels() {
+            // Load face-api.js models (tiny face detector for performance)
+            await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights');
+            startVideo();
         }
+
+        function startVideo() {
+            const video = document.getElementById('video');
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.play();
+                    detectFaces();
+                })
+                .catch(err => {
+                    console.error('Error accessing webcam:', err);
+                    alert('Could not access webcam. Please allow webcam access.');
+                });
+        }
+
+        async function detectFaces() {
+            const video = document.getElementById('video');
+            const faceElement = document.querySelector('.face');
+
+            setInterval(async () => {
+                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+                if (detections.length > 0) {
+                    // Human face detected, make the face look happy
+                    faceElement.classList.add('happy');
+                } else {
+                    // No face detected, revert to normal
+                    faceElement.classList.remove('happy');
+                }
+            }, 100); // Check every 100ms
+        }
+
+        // Load models and start detection
+        loadModels();
     </script>
 </body>
 </html>
