@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTP - Innovative Solutions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .smooth-scroll {
+            scroll-behavior: smooth;
+        }
+        .toast {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .spinner {
+            display: inline-block;
+            border: 2px solid #fff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            margin-left: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 smooth-scroll">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-lg fixed w-full z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-teal-600">TTP</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="#home" class="text-gray-700 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium" aria-label="Go to Home section">Home</a>
+                    <a href="#about" class="text-gray-700 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium" aria-label="Go to About section">About</a>
+                    <a href="#services" class="text-gray-700 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium" aria-label="Go to Services section">Services</a>
+                    <button id="openSignUpModal" class="bg-teal-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-teal-700 transition" aria-label="Open sign-up form">Sign Up</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="bg-gradient-to-r from-teal-600 to-gray-800 h-screen flex items-center justify-center text-white">
+        <div class="text-center max-w-3xl mx-auto px-4">
+            <h1 class="text-5xl font-bold mb-4">Welcome to TTP</h1>
+            <p class="text-lg mb-6">Transforming businesses with innovative technology and tailored solutions.</p>
+            <button id="openSignUpModalHero" class="bg-white text-teal-600 px-6 py-3 rounded-full font-semibold hover:bg-gray-200 transition" aria-label="Open sign-up form">Sign Up</button>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-gray-900 text-center mb-12">About TTP</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold text-teal-600 mb-4">Our Mission</h3>
+                    <p class="text-gray-600">At TTP, we empower businesses with cutting-edge technology, delivering solutions that drive growth and efficiency.</p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold text-teal-600 mb-4">Our Vision</h3>
+                    <p class="text-gray-600">To lead the industry in providing transformative tech solutions, redefining how businesses succeed.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="py-20 bg-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-gray-900 text-center mb-12">Our Services</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
+                    <h3 class="text-xl font-semibold text-teal-600 mb-4">Web Development</h3>
+                    <p class="text-gray-600">Custom-built, responsive websites designed to captivate and convert your audience.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
+                    <h3 class="text-xl font-semibold text-teal-600 mb-4">Digital Marketing</h3>
+                    <p class="text-gray-600">Data-driven campaigns to elevate your brand and maximize ROI.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
+                    <h3 class="text-xl font-semibold text-teal-600 mb-4">Cloud Solutions</h3>
+                    <p class="text-gray-600">Secure, scalable cloud infrastructure to streamline your operations.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sign-Up Modal -->
+    <div id="signUpModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden z-20" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
+        <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+            <h2 id="modalTitle" class="text-2xl font-bold text-gray-900 mb-6">Sign Up for TTP</h2>
+            <div id="formFeedback" class="hidden mb-4 p-4 rounded-md text-sm"></div>
+            <form id="signUpForm" action="https://formspree.io/f/YOUR_FORMSPREE_ID" method="POST" class="space-y-6">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+                    <input type="text" id="name" name="name" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm" placeholder="Your Name" required aria-required="true">
+                </div>
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="email" name="email" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm" placeholder="Your Email" required aria-required="true">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="password" name="password" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm" placeholder="Your Password" required aria-required="true" minlength="6">
+                </div>
+                <div class="flex justify-between">
+                    <button type="submit" id="submitBtn" class="bg-teal-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-teal-700 transition flex items-center" aria-label="Submit sign-up form">
+                        <span>Sign Up</span>
+                        <span id="spinner" class="spinner hidden"></span>
+                    </button>
+                    <button type="button" id="closeSignUpModal" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md font-semibold hover:bg-gray-400 transition" aria-label="Close sign-up modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p>© 2025 TTP. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for navbar links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Modal handling
+        const signUpModal = document.getElementById('signUpModal');
+        const openSignUpModal = document.getElementById('openSignUpModal');
+        const openSignUpModalHero = document.getElementById('openSignUpModalHero');
+        const closeSignUpModal = document.getElementById('closeSignUpModal');
+        const form = document.getElementById('signUpForm');
+        const feedback = document.getElementById('formFeedback');
+        const submitBtn = document.getElementById('submitBtn');
+        const spinner = document.getElementById('spinner');
+
+        function openModal() {
+            signUpModal.classList.remove('hidden');
+            document.getElementById('name').focus();
+        }
+
+        openSignUpModal.addEventListener('click', () => {
+            openSignUpModal.disabled = true;
+            setTimeout(() => { openSignUpModal.disabled = false; }, 500);
+            openModal();
+        });
+
+        openSignUpModalHero.addEventListener('click', () => {
+            openSignUpModalHero.disabled = true;
+            setTimeout(() => { openSignUpModalHero.disabled = false; }, 500);
+            openModal();
+        });
+
+        closeSignUpModal.addEventListener('click', () => {
+            signUpModal.classList.add('hidden');
+            form.reset();
+            feedback.classList.add('hidden');
+        });
+
+        // Close modal with Esc key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !signUpModal.classList.contains('hidden')) {
+                signUpModal.classList.add('hidden');
+                form.reset();
+                feedback.classList.add('hidden');
+            }
+        });
+
+        // Form submission handling with Formspree
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            feedback.classList.add('hidden');
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (!emailRegex.test(email)) {
+                feedback.classList.remove('hidden', 'bg-green-100', 'text-green-700');
+                feedback.classList.add('bg-red-100', 'text-red-700');
+                feedback.textContent = 'Please enter a valid email address.';
+                setTimeout(() => { feedback.classList.add('hidden'); }, 5000);
+                return;
+            }
+
+            if (password.length < 6) {
+                feedback.classList.remove('hidden', 'bg-green-100', 'text-green-700');
+                feedback.classList.add('bg-red-100', 'text-red-700');
+                feedback.textContent = 'Password must be at least 6 characters long.';
+                setTimeout(() => { feedback.classList.add('hidden'); }, 5000);
+                return;
+            }
+
+            const formData = new FormData(form);
+            submitBtn.disabled = true;
+            submitBtn.querySelector('span:first-child').textContent = 'Submitting...';
+            spinner.classList.remove('hidden');
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    feedback.classList.remove('hidden', 'bg-red-100', 'text-red-700');
+                    feedback.classList.add('bg-green-100', 'text-green-700');
+                    feedback.textContent = 'Sign-up submitted successfully!';
+                    form.reset();
+                } else {
+                    throw new Error('Failed to submit sign-up.');
+                }
+            } catch (error) {
+                feedback.classList.remove('hidden', 'bg-green-100', 'text-green-700');
+                feedback.classList.add('bg-red-100', 'text-red-700');
+                feedback.textContent = 'Error submitting sign-up. Please check your connection and try again.';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.querySelector('span:first-child').textContent = 'Sign Up';
+                spinner.classList.add('hidden');
+                setTimeout(() => {
+                    feedback.classList.add('hidden');
+                }, 5000);
+            }
+        });
+    </script>
+</body>
+</html>
