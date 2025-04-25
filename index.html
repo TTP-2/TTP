@@ -91,7 +91,6 @@
 
     <!-- Services Section -->
     <section id="services" class="py-20 bg-gray-100">
-        <div^{-} id="services" class="py-20 bg-gray-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 class="text-3xl font-bold text-gray-900 text-center mb-12">Our Services</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -180,7 +179,7 @@
         // Function to get initials from name
         function getInitials(name) {
             const parts = name.trim().split(' ').filter(part => part);
-            if (parts.length === 0) return '';
+            if (parts.length === 0 || !name.trim()) return '';
             if (parts.length === 1) return parts[0][0].toUpperCase();
             return (parts[0][0] + (parts[parts.length - 1][0] || '')).toUpperCase();
         }
@@ -249,6 +248,11 @@
             const name = document.getElementById('name').value;
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+            if (!name.trim()) {
+                showToast('Please enter a valid name.', true);
+                return;
+            }
+
             if (!emailRegex.test(email)) {
                 showToast('Please enter a valid email address.', true);
                 return;
@@ -279,7 +283,12 @@
 
                 if (response.ok) {
                     showToast('Sign-up submitted successfully!');
-                    updateInitials(getInitials(name));
+                    const initials = getInitials(name);
+                    if (initials) {
+                        updateInitials(initials);
+                    } else {
+                        showToast('Invalid name format. Initials not displayed.', true);
+                    }
                 } else {
                     throw new Error('Failed to submit sign-up.');
                 }
