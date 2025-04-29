@@ -26,13 +26,13 @@
             justify-content: flex-start;
             padding-top: 20px;
         }
-        .home-icon {
+        .icon {
             font-size: 24px;
             color: black;
             margin-bottom: 20px;
             cursor: pointer;
         }
-        .home-icon.active {
+        .icon.active {
             color: #FFA500;
         }
         .content {
@@ -43,10 +43,19 @@
             width: calc(100% - 60px);
             height: 100%;
             background-color: white;
-            display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            align-items: flex-start;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .section-title {
+            font-size: 20px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .file-list {
+            display: flex;
+            flex-wrap: wrap;
         }
         .plus-box {
             width: 250px;
@@ -58,11 +67,9 @@
             border: 2px solid #000;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            transition: transform 0.2s ease-in-out;
+            margin: 10px;
             cursor: pointer;
+            flex-shrink: 0;
         }
         .plus-box:hover {
             transform: scale(1.05);
@@ -71,65 +78,199 @@
             font-size: 48px;
             color: #000;
         }
-        #videoInput {
+        #videoInput, #imageInput {
             display: none;
         }
-        #videoPlayer {
-            margin-top: 350px;
-            max-width: 80%;
-            max-height: 400px;
+        .file-item {
+            width: 250px;
+            height: 300px;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid #000;
+            border-radius: 12px;
+            margin: 10px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .file-item img, .file-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #slideshowModal {
             display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        #slideshowModal img {
+            max-width: 90%;
+            max-height: 90%;
         }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <i class="fas fa-home home-icon" onclick="setActive(this)"></i>
+        <i class="fas fa-home icon" onclick="showContent('home')"></i>
+        <i class="fas fa-film icon" onclick="showContent('video')"></i>
+        <i class="fas fa-image icon" onclick="showContent('image')"></i>
     </div>
 
     <div class="content" id="homeContent">
-        <div class="plus-box" onclick="triggerDownload()">
+        <div class="section-title">Videos</div>
+        <div class="file-list" id="homeVideoList"></div>
+        <div class="section-title">Pictures</div>
+        <div class="file-list" id="homeImageList"></div>
+    </div>
+
+    <div class="content" id="videoContent">
+        <div class="plus-box" onclick="triggerVideoDownload()">
             <span class="plus">+</span>
         </div>
-        <input type="file" id="videoInput" accept="video/*" />
-        <video id="videoPlayer" controls></video>
+        <input type="file" id="videoInput" accept="video/*" multiple />
+        <div class="file-list" id="videoList"></div>
+    </div>
+
+    <div class="content" id="imageContent">
+        <div class="plus-box" onclick="triggerImageDownload()">
+            <span class="plus">+</span>
+        </div>
+        <input type="file" id="imageInput" accept="image/*" multiple />
+        <div class="file-list" id="imageList"></div>
+    </div>
+
+    <div id="slideshowModal" onclick="closeSlideshow()">
+        <img id="slideshowImage">
     </div>
 
     <script>
-        function setActive(icon) {
-            const icons = document.querySelectorAll('.home-icon');
-            icons.forEach(i => i.classList.remove('active'));
-            icon.classList.add('active');
-            const homeContent = document.getElementById('homeContent');
-            homeContent.style.display = 'block';
+        let slideshowImages = [];
+        let currentSlide = 0;
+
+        function showContent(type) {
+            document.querySelectorAll('.content').forEach(c => c.style.display = 'none');
+            document.querySelectorAll('.icon').forEach(i => i.classList.remove('active'));
+
+            const map = { home: 'homeContent', video: 'videoContent', image: 'imageContent' };
+            document.getElementById(map[type]).style.display = 'flex';
+            document.querySelectorAll('.icon')[['home', 'video', 'image'].indexOf(type)].classList.add('active');
         }
 
-        function triggerDownload() {
-            const videoInput = document.getElementById('videoInput');
-            videoInput.click();
+        function triggerVideoDownload() {
+            document.getElementById('videoInput').click();
+        }
 
-            videoInput.onchange = () => {
-                const file = videoInput.files[0];
-                if (file && file.type.startsWith('video/')) {
-                    const url = URL.createObjectURL(file);
+        function triggerImageDownload() {
+            document.getElementById('imageInput').click();
+        }
 
-                    // Set video source and show player
-                    const videoPlayer = document.getElementById('videoPlayer');
-                    videoPlayer.src = url;
-                    videoPlayer.style.display = 'block';
+        function saveToLocalStorage(type, base64) {
+            const key = type === 'video' ? 'videos' : 'images';
+            let items = JSON.parse(localStorage.getItem(key)) || [];
+            items.push(base64);
+            localStorage.setItem(key, JSON.stringify(items));
+        }
 
-                    // Auto-download
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = file.name;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                } else {
-                    alert('Please select a valid video file.');
+        function loadFromLocalStorage() {
+            const videos = JSON.parse(localStorage.getItem('videos')) || [];
+            const images = JSON.parse(localStorage.getItem('images')) || [];
+
+            videos.forEach(src => addVideoToDOM(src));
+            images.forEach(src => addImageToDOM(src));
+        }
+
+        function addVideoToDOM(src) {
+            const box = document.createElement('div');
+            box.className = 'file-item';
+            const vid = document.createElement('video');
+            vid.src = src;
+            vid.controls = true;
+            box.appendChild(vid);
+            document.getElementById('videoList').appendChild(box);
+            document.getElementById('homeVideoList').appendChild(box.cloneNode(true));
+        }
+
+        function addImageToDOM(src) {
+            slideshowImages.push(src);
+            const box = document.createElement('div');
+            box.className = 'file-item';
+            const img = document.createElement('img');
+            img.src = src;
+            box.appendChild(img);
+            box.onclick = startSlideshow;
+            document.getElementById('imageList').appendChild(box);
+            const clone = box.cloneNode(true);
+            clone.onclick = startSlideshow;
+            document.getElementById('homeImageList').appendChild(clone);
+        }
+
+        document.getElementById('videoInput').addEventListener('change', e => {
+            Array.from(e.target.files).forEach(file => {
+                if (file.type.startsWith('video/')) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        saveToLocalStorage('video', reader.result);
+                        addVideoToDOM(reader.result);
+                    };
+                    reader.readAsDataURL(file);
                 }
-            };
+            });
+        });
+
+        document.getElementById('imageInput').addEventListener('change', e => {
+            Array.from(e.target.files).forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        saveToLocalStorage('image', reader.result);
+                        addImageToDOM(reader.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+
+        function startSlideshow() {
+            if (slideshowImages.length === 0) return;
+            document.getElementById('slideshowModal').style.display = 'flex';
+            currentSlide = 0;
+            showSlide();
         }
+
+        function showSlide() {
+            document.getElementById('slideshowImage').src = slideshowImages[currentSlide];
+        }
+
+        function closeSlideshow() {
+            document.getElementById('slideshowModal').style.display = 'none';
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'ArrowRight') {
+                currentSlide = (currentSlide + 1) % slideshowImages.length;
+                showSlide();
+            } else if (e.key === 'ArrowLeft') {
+                currentSlide = (currentSlide - 1 + slideshowImages.length) % slideshowImages.length;
+                showSlide();
+            } else if (e.key === 'Escape') {
+                closeSlideshow();
+            }
+        });
+
+        window.onload = () => {
+            loadFromLocalStorage();
+            showContent('home');
+        };
     </script>
 </body>
 </html>
