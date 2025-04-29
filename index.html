@@ -66,10 +66,8 @@
             align-items: center;
             border: 2px solid #000;
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             margin: 10px;
             cursor: pointer;
-            flex-shrink: 0;
         }
         .plus-box:hover {
             transform: scale(1.05);
@@ -78,7 +76,7 @@
             font-size: 48px;
             color: #000;
         }
-        #videoInput, #imageInput {
+        #videoInput {
             display: none;
         }
         .file-item {
@@ -94,28 +92,11 @@
             overflow: hidden;
             position: relative;
             cursor: pointer;
-            flex-shrink: 0;
         }
-        .file-item img, .file-item video {
+        .file-item video {
             width: 100%;
             height: 100%;
             object-fit: cover;
-        }
-        #slideshowModal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-        #slideshowModal img {
-            max-width: 90%;
-            max-height: 90%;
         }
     </style>
 </head>
@@ -123,14 +104,11 @@
     <div class="sidebar">
         <i class="fas fa-home icon" onclick="showContent('home')"></i>
         <i class="fas fa-film icon" onclick="showContent('video')"></i>
-        <i class="fas fa-image icon" onclick="showContent('image')"></i>
     </div>
 
     <div class="content" id="homeContent">
         <div class="section-title">Videos</div>
         <div class="file-list" id="homeVideoList"></div>
-        <div class="section-title">Pictures</div>
-        <div class="file-list" id="homeImageList"></div>
     </div>
 
     <div class="content" id="videoContent">
@@ -141,37 +119,18 @@
         <div class="file-list" id="videoList"></div>
     </div>
 
-    <div class="content" id="imageContent">
-        <div class="plus-box" onclick="triggerImageDownload()">
-            <span class="plus">+</span>
-        </div>
-        <input type="file" id="imageInput" accept="image/*" multiple />
-        <div class="file-list" id="imageList"></div>
-    </div>
-
-    <div id="slideshowModal" onclick="closeSlideshow()">
-        <img id="slideshowImage">
-    </div>
-
     <script>
-        let slideshowImages = [];
-        let currentSlide = 0;
-
         function showContent(type) {
             document.querySelectorAll('.content').forEach(c => c.style.display = 'none');
             document.querySelectorAll('.icon').forEach(i => i.classList.remove('active'));
 
-            const map = { home: 'homeContent', video: 'videoContent', image: 'imageContent' };
+            const map = { home: 'homeContent', video: 'videoContent' };
             document.getElementById(map[type]).style.display = 'flex';
-            document.querySelectorAll('.icon')[['home', 'video', 'image'].indexOf(type)].classList.add('active');
+            document.querySelectorAll('.icon')[['home', 'video'].indexOf(type)].classList.add('active');
         }
 
         function triggerVideoDownload() {
             document.getElementById('videoInput').click();
-        }
-
-        function triggerImageDownload() {
-            document.getElementById('imageInput').click();
         }
 
         function saveToLocalStorage(type, base64) {
@@ -183,10 +142,8 @@
 
         function loadFromLocalStorage() {
             const videos = JSON.parse(localStorage.getItem('videos')) || [];
-            const images = JSON.parse(localStorage.getItem('images')) || [];
 
             videos.forEach(src => addVideoToDOM(src));
-            images.forEach(src => addImageToDOM(src));
         }
 
         function addVideoToDOM(src) {
@@ -200,20 +157,6 @@
             document.getElementById('homeVideoList').appendChild(box.cloneNode(true));
         }
 
-        function addImageToDOM(src) {
-            slideshowImages.push(src);
-            const box = document.createElement('div');
-            box.className = 'file-item';
-            const img = document.createElement('img');
-            img.src = src;
-            box.appendChild(img);
-            box.onclick = startSlideshow;
-            document.getElementById('imageList').appendChild(box);
-            const clone = box.cloneNode(true);
-            clone.onclick = startSlideshow;
-            document.getElementById('homeImageList').appendChild(clone);
-        }
-
         document.getElementById('videoInput').addEventListener('change', e => {
             Array.from(e.target.files).forEach(file => {
                 if (file.type.startsWith('video/')) {
@@ -225,46 +168,6 @@
                     reader.readAsDataURL(file);
                 }
             });
-        });
-
-        document.getElementById('imageInput').addEventListener('change', e => {
-            Array.from(e.target.files).forEach(file => {
-                if (file.type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                        saveToLocalStorage('image', reader.result);
-                        addImageToDOM(reader.result);
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
-        });
-
-        function startSlideshow() {
-            if (slideshowImages.length === 0) return;
-            document.getElementById('slideshowModal').style.display = 'flex';
-            currentSlide = 0;
-            showSlide();
-        }
-
-        function showSlide() {
-            document.getElementById('slideshowImage').src = slideshowImages[currentSlide];
-        }
-
-        function closeSlideshow() {
-            document.getElementById('slideshowModal').style.display = 'none';
-        }
-
-        document.addEventListener('keydown', e => {
-            if (e.key === 'ArrowRight') {
-                currentSlide = (currentSlide + 1) % slideshowImages.length;
-                showSlide();
-            } else if (e.key === 'ArrowLeft') {
-                currentSlide = (currentSlide - 1 + slideshowImages.length) % slideshowImages.length;
-                showSlide();
-            } else if (e.key === 'Escape') {
-                closeSlideshow();
-            }
         });
 
         window.onload = () => {
