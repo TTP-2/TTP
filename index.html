@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>TTP - AI Innovation</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p2c8bFfDbDRjvI5DH7zMvlwGV9asFdv9p5rbF27yRDI=" crossorigin=""/>
   <style>
     :root {
       --main-color: #14b8a6;
@@ -22,7 +23,7 @@
     }
 
     html {
-      scroll-behavior: smooth; /* Enable smooth scrolling */
+      scroll-behavior: smooth;
     }
 
     body {
@@ -31,7 +32,7 @@
       color: var(--text-dark);
       line-height: 1.6;
       position: relative;
-      overflow: hidden;
+      overflow-x: hidden;
     }
 
     header {
@@ -174,39 +175,18 @@
       color: var(--main-color);
     }
 
+    #map {
+      height: 300px;
+      margin: 2rem;
+      border-radius: var(--border-radius);
+    }
+
     footer {
       text-align: center;
       padding: 2rem;
       font-size: 0.9rem;
       color: var(--text-light);
     }
-
-    .rating-container {
-      text-align: center;
-      padding: 2rem;
-      background-color: #f8fafc;
-      border-top: 1px solid #ddd;
-    }
-
-    .stars {
-      font-size: 2rem;
-      color: #ffcc00;
-      cursor: pointer;
-    }
-
-    .star {
-      margin: 0 5px;
-    }
-
-    .star:hover {
-      color: #ff9900;
-    }
-
-    #ratingMessage {
-      margin-top: 10px;
-      color: #333;
-    }
-
   </style>
 </head>
 <body>
@@ -215,7 +195,7 @@
     <div class="logo">TTP Studios</div>
     <div class="sign-in-container">
       <div class="circle" id="statusCircle"></div>
-      <button class="sign-in-btn" onclick="window.open('https://ttp-2.github.io/TTP/index.html', 'TTPAppWindow', 'width=800,height=600,noopener,noreferrer')">Open in App</button>
+      <button class="sign-in-btn" onclick="window.open('https://your-app-link.com', 'TTPAppWindow', 'width=800,height=600,noopener,noreferrer')">Open in App</button>
       <button class="sign-in-btn" onclick="document.getElementById('signInModal').style.display='flex'">Sign In</button>
     </div>
   </header>
@@ -251,22 +231,13 @@
     </div>
   </div>
 
-  <div class="rating-container">
-    <h3>Rate Us!</h3>
-    <div class="stars" id="ratingStars">
-      <span class="star" onclick="rate(1)">&#9733;</span>
-      <span class="star" onclick="rate(2)">&#9733;</span>
-      <span class="star" onclick="rate(3)">&#9733;</span>
-      <span class="star" onclick="rate(4)">&#9733;</span>
-      <span class="star" onclick="rate(5)">&#9733;</span>
-    </div>
-    <p id="ratingMessage">Click to rate</p>
-  </div>
+  <div id="map"></div>
 
   <footer>
     &copy; 2025 TTP Studios. All rights reserved.
   </footer>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j7kJ+zUB+gSlCJGyVD7Zj2LkSRTi1zP6UoEFLYk=" crossorigin=""></script>
   <script>
     window.onload = function () {
       const savedInitials = localStorage.getItem("userInitials");
@@ -275,6 +246,14 @@
         statusCircle.textContent = savedInitials;
         statusCircle.style.display = 'flex';
       }
+
+      const map = L.map('map').setView([37.7749, -122.4194], 13); // Replace with actual coordinates
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+      L.marker([37.7749, -122.4194]).addTo(map)
+        .bindPopup('TTP Studios - 5A San Marco Lane')
+        .openPopup();
     };
 
     window.onclick = function (event) {
@@ -301,10 +280,6 @@
       } else {
         alert('Please fill out all fields.');
       }
-    }
-
-    function rate(starRating) {
-      document.getElementById('ratingMessage').textContent = `You rated this ${starRating} stars`;
     }
   </script>
 
