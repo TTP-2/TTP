@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>TTP - AI Innovation</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p2c8bFfDbDRjvI5DH7zMvlwGV9asFdv9p5rbF27yRDI=" crossorigin=""/>
   <style>
     :root {
       --main-color: #14b8a6;
@@ -175,12 +174,6 @@
       color: var(--main-color);
     }
 
-    #map {
-      height: 300px;
-      margin: 2rem 2rem 0 2rem; /* Changed here */
-      border-radius: var(--border-radius);
-    }
-
     footer {
       text-align: center;
       padding: 2rem;
@@ -231,13 +224,10 @@
     </div>
   </div>
 
-  <div id="map"></div>
-
   <footer>
     &copy; 2025 TTP Studios. All rights reserved.
   </footer>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j7kJ+zUB+gSlCJGyVD7Zj2LkSRTi1zP6UoEFLYk=" crossorigin=""></script>
   <script>
     window.onload = function () {
       const savedInitials = localStorage.getItem("userInitials");
@@ -246,14 +236,6 @@
         statusCircle.textContent = savedInitials;
         statusCircle.style.display = 'flex';
       }
-
-      const map = L.map('map').setView([37.7749, -122.4194], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(map);
-      L.marker([37.7749, -122.4194]).addTo(map)
-        .bindPopup('TTP Studios - 5A San Marco Lane')
-        .openPopup();
     };
 
     window.onclick = function (event) {
