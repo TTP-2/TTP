@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blank Page with Centered Camera Feed</title>
+    <title>Text Recognition</title>
     <style>
         /* Ensure the body takes up the full height of the screen */
         body, html {
@@ -16,8 +16,8 @@
 
         /* Style the centered div */
         .center-div {
-            width: 300px;
-            height: 200px;
+            width: 500px;  /* Increased size */
+            height: 400px; /* Increased size */
             background-color: lightblue;
             text-align: center;
             display: flex;
@@ -32,24 +32,75 @@
             height: 100%;
             object-fit: cover;
         }
+
+        /* Optional: Add some style to show detection info */
+        .detection-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="center-div">
         <video id="video" autoplay></video>
     </div>
+    <div class="detection-info" id="detection-info">Waiting for text...</div>
+
+    <!-- Include Tesseract.js -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js"></script>
 
     <script>
-        // Access the webcam
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(function(stream) {
-                // Attach the webcam stream to the video element
-                const videoElement = document.getElementById('video');
-                videoElement.srcObject = stream;
-            })
-            .catch(function(error) {
-                console.error('Error accessing webcam:', error);
+        // Set up webcam
+        async function setupWebcam() {
+            const video = document.getElementById('video');
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            
+            // Continuously process frames from the webcam
+            processFrame(video);
+        }
+
+        // Process each frame from the webcam to detect text
+        async function processFrame(video) {
+            const detectionInfo = document.getElementById('detection-info');
+            
+            // Create a canvas to capture the video frame
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Draw the current video frame onto the canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Use Tesseract.js to recognize text in the frame
+            Tesseract.recognize(
+                canvas,
+                'eng', // Language (English)
+                {
+                    logger: (m) => console.log(m), // Log the progress
+                }
+            ).then(({ data: { text } }) => {
+                // Check if the detected text contains "Finn"
+                if (text.toLowerCase().includes('finn')) {
+                    detectionInfo.textContent = 'Detected: "Finn"';
+                } else {
+                    detectionInfo.textContent = 'No matching text detected.';
+                }
+            }).catch((error) => {
+                console.error('Error during text recognition:', error);
             });
+
+            // Call processFrame again for continuous detection
+            requestAnimationFrame(() => processFrame(video));
+        }
+
+        // Start the webcam and text recognition
+        setupWebcam();
     </script>
 </body>
 </html>
