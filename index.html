@@ -21,6 +21,10 @@
       box-sizing: border-box;
     }
 
+    html {
+      scroll-behavior: smooth; /* Enable smooth scrolling */
+    }
+
     body {
       font-family: 'Segoe UI', sans-serif;
       background-color: var(--bg-color);
@@ -176,6 +180,33 @@
       font-size: 0.9rem;
       color: var(--text-light);
     }
+
+    .rating-container {
+      text-align: center;
+      padding: 2rem;
+      background-color: #f8fafc;
+      border-top: 1px solid #ddd;
+    }
+
+    .stars {
+      font-size: 2rem;
+      color: #ffcc00;
+      cursor: pointer;
+    }
+
+    .star {
+      margin: 0 5px;
+    }
+
+    .star:hover {
+      color: #ff9900;
+    }
+
+    #ratingMessage {
+      margin-top: 10px;
+      color: #333;
+    }
+
   </style>
 </head>
 <body>
@@ -220,6 +251,18 @@
     </div>
   </div>
 
+  <div class="rating-container">
+    <h3>Rate Us!</h3>
+    <div class="stars" id="ratingStars">
+      <span class="star" onclick="rate(1)">&#9733;</span>
+      <span class="star" onclick="rate(2)">&#9733;</span>
+      <span class="star" onclick="rate(3)">&#9733;</span>
+      <span class="star" onclick="rate(4)">&#9733;</span>
+      <span class="star" onclick="rate(5)">&#9733;</span>
+    </div>
+    <p id="ratingMessage">Click to rate</p>
+  </div>
+
   <footer>
     &copy; 2025 TTP Studios. All rights reserved.
   </footer>
@@ -258,6 +301,10 @@
       } else {
         alert('Please fill out all fields.');
       }
+    }
+
+    function rate(starRating) {
+      document.getElementById('ratingMessage').textContent = `You rated this ${starRating} stars`;
     }
   </script>
 
