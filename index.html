@@ -26,6 +26,8 @@
       background-color: var(--bg-color);
       color: var(--text-dark);
       line-height: 1.6;
+      position: relative;
+      overflow: hidden;
     }
 
     header {
@@ -179,13 +181,11 @@
 <body>
 
   <header>
-    <div class="logo">
-      TTP Studios
-    </div>
+    <div class="logo">TTP Studios</div>
     <div class="sign-in-container">
       <div class="circle" id="statusCircle"></div>
+      <button class="sign-in-btn" onclick="window.open('https://your-app-link.com', '_blank')">Open in App</button>
       <button class="sign-in-btn" onclick="document.getElementById('signInModal').style.display='flex'">Sign In</button>
-      <button class="sign-in-btn" onclick="logout()">Logout</button>
     </div>
   </header>
 
@@ -225,7 +225,7 @@
   </footer>
 
   <script>
-    window.onload = function() {
+    window.onload = function () {
       const savedInitials = localStorage.getItem("userInitials");
       if (savedInitials) {
         const statusCircle = document.getElementById('statusCircle');
@@ -234,12 +234,12 @@
       }
     };
 
-    window.onclick = function(event) {
+    window.onclick = function (event) {
       const modal = document.getElementById('signInModal');
       if (event.target == modal) {
         modal.style.display = "none";
       }
-    }
+    };
 
     function login() {
       const firstName = document.getElementById('firstName').value;
@@ -248,7 +248,7 @@
 
       if (firstName && lastName && password) {
         const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-        localStorage.setItem("userInitials", initials); // Save to local storage
+        localStorage.setItem("userInitials", initials);
 
         document.getElementById('signInModal').style.display = 'none';
 
@@ -258,13 +258,6 @@
       } else {
         alert('Please fill out all fields.');
       }
-    }
-
-    function logout() {
-      localStorage.removeItem("userInitials"); // Clear the saved initials
-      const statusCircle = document.getElementById('statusCircle');
-      statusCircle.textContent = '';
-      statusCircle.style.display = 'none'; // Hide the circle
     }
   </script>
 
