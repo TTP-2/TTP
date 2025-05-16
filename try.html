@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Centered Webcam</title>
+  <title>Centered Webcam with Face Detection</title>
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
   <style>
     body {
       margin: 0;
@@ -11,30 +12,74 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
+      position: relative;
     }
-    video {
-      border: 4px solid #00ffff;
+    video, canvas {
       border-radius: 16px;
       width: 640px;
       height: 480px;
+      position: absolute;
+    }
+    video {
+      border: 4px solid #00ffff;
       object-fit: cover;
+      z-index: 1;
+    }
+    canvas {
+      z-index: 2;
     }
   </style>
 </head>
 <body>
-  <video id="webcam" autoplay playsinline></video>
+  <video id="webcam" autoplay playsinline muted></video>
+  <canvas id="overlay"></canvas>
 
   <script>
     const video = document.getElementById('webcam');
+    const canvas = document.getElementById('overlay');
+    const context = canvas.getContext('2d');
 
-    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-      .then(stream => {
-        video.srcObject = stream;
-      })
-      .catch(err => {
-        console.error('Error accessing webcam:', err);
-        alert('Could not access webcam. Please allow camera access.');
+    async function setupCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+      return new Promise(resolve => {
+        video.onloadedmetadata = () => {
+          resolve(video);
+        };
       });
+    }
+
+    async function loadModels() {
+      await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/models');
+    }
+
+    async function detectFaces() {
+      const options = new faceapi.TinyFaceDetectorOptions();
+      const detections = await faceapi.detectAllFaces(video, options);
+      context.clearRect(0, 0, canvas.width, canvas.height);
+
+      detections.forEach(det => {
+        const { x, y, width, height } = det.box;
+        context.strokeStyle = 'red';
+        context.lineWidth = 3;
+        context.strokeRect(x, y, width, height);
+      });
+    }
+
+    async function main() {
+      await loadModels();
+      await setupCamera();
+
+      video.play();
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      setInterval(detectFaces, 100);
+    }
+
+    main().catch(err => {
+      console.error('Error initializing face detection:', err);
+    });
   </script>
 </body>
 </html>
