@@ -6,23 +6,23 @@
   <style>
     body {
       margin: 0;
-      background: black;
-      font-family: Arial, sans-serif;
+      background: #000;
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 100vh;
-      color: white;
     }
 
     .wrapper {
       position: relative;
-      width: 480px;
-      height: 360px;
-      overflow: hidden;
+      width: 640px;
+      height: 480px;
       border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0,255,255,0.3);
     }
 
     video, canvas {
@@ -46,24 +46,46 @@
       display: none;
     }
 
+    #countdown {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      font-weight: bold;
+      z-index: 4;
+      display: none;
+    }
+
     button {
       margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
+      padding: 12px 24px;
+      font-size: 18px;
       background: cyan;
+      color: black;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
+    }
+
+    @media (max-width: 700px) {
+      .wrapper {
+        width: 100vw;
+        height: 75vh;
+      }
     }
   </style>
 </head>
 <body>
-  <h2>Time Warp Scan</h2>
+  <h1>Time Warp Scan</h1>
+
   <div class="wrapper">
-    <video id="video" autoplay muted></video>
+    <video id="video" autoplay muted playsinline></video>
     <canvas id="canvas"></canvas>
     <div id="scanLine"></div>
+    <div id="countdown"></div>
   </div>
+
   <button onclick="startScan()">Start Scan</button>
 
   <script>
@@ -71,30 +93,48 @@
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     const scanLine = document.getElementById("scanLine");
+    const countdown = document.getElementById("countdown");
 
     navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
       video.srcObject = stream;
     });
 
-    function startScan() {
-      const width = canvas.width = video.videoWidth || 480;
-      const height = canvas.height = video.videoHeight || 360;
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function startScan() {
+      const width = canvas.width = video.videoWidth || 640;
+      const height = canvas.height = video.videoHeight || 480;
       let y = 0;
+
+      // Clear canvas
+      ctx.clearRect(0, 0, width, height);
+
+      // Countdown
+      countdown.style.display = 'block';
+      for (let i = 3; i > 0; i--) {
+        countdown.textContent = i;
+        await sleep(1000);
+      }
+      countdown.style.display = 'none';
 
       scanLine.style.display = 'block';
       scanLine.style.top = '0px';
 
-      // This interval grabs 1px height from the webcam and draws it to canvas
+      // Perform scan line by line
       const interval = setInterval(() => {
-        ctx.drawImage(video, 0, y, width, 1, 0, y, width, 1); // copy 1 line of pixels
-        scanLine.style.top = `${y}px`;
-        y++;
-
         if (y >= height) {
           clearInterval(interval);
           scanLine.style.display = 'none';
+          return;
         }
-      }, 16); // ~60 lines per second, 6s total scan duration
+
+        // Draw only the 1-pixel row at current scan line
+        ctx.drawImage(video, 0, y, width, 1, 0, y, width, 1);
+        scanLine.style.top = `${y}px`;
+        y++;
+      }, 10); // Controls speed of scan
     }
   </script>
 </body>
