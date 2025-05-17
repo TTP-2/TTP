@@ -1,100 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Time Warp Scan</title>
   <style>
     body {
       margin: 0;
       background: black;
+      font-family: Arial, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 100vh;
-      font-family: Arial, sans-serif;
       color: white;
     }
 
-    video, canvas {
+    .wrapper {
+      position: relative;
+      width: 480px;
+      height: 360px;
+      overflow: hidden;
       border-radius: 12px;
-      max-width: 100%;
+      box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    }
+
+    video, canvas {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     #canvas {
-      position: absolute;
+      z-index: 2;
     }
 
-    .scan-line {
+    #scanLine {
       position: absolute;
       width: 100%;
       height: 2px;
       background: cyan;
-      animation: moveLine 5s linear forwards;
-    }
-
-    @keyframes moveLine {
-      from { top: 0; }
-      to { top: 100%; }
+      z-index: 3;
+      top: 0;
+      display: none;
     }
 
     button {
       margin-top: 20px;
       padding: 10px 20px;
       font-size: 16px;
-      border: none;
       background: cyan;
-      color: black;
+      border: none;
       border-radius: 6px;
       cursor: pointer;
-    }
-
-    .container {
-      position: relative;
-      width: 480px;
-      height: 360px;
     }
   </style>
 </head>
 <body>
-
-  <h1>Time Warp Scan</h1>
-
-  <div class="container">
-    <video id="video" width="480" height="360" autoplay muted></video>
-    <canvas id="canvas" width="480" height="360"></canvas>
-    <div class="scan-line" id="scanLine"></div>
+  <h2>Time Warp Scan</h2>
+  <div class="wrapper">
+    <video id="video" autoplay muted></video>
+    <canvas id="canvas"></canvas>
+    <div id="scanLine"></div>
   </div>
-
-  <button onclick="startTimeWarp()">Start Time Warp Scan</button>
+  <button onclick="startScan()">Start Scan</button>
 
   <script>
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const scanLine = document.getElementById('scanLine');
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const scanLine = document.getElementById("scanLine");
 
-    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+    navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
       video.srcObject = stream;
     });
 
-    function startTimeWarp() {
-      const height = canvas.height;
+    function startScan() {
+      const width = canvas.width = video.videoWidth || 480;
+      const height = canvas.height = video.videoHeight || 360;
       let y = 0;
 
-      scanLine.style.animation = 'none';
-      void scanLine.offsetWidth; // reset animation
-      scanLine.style.animation = 'moveLine 5s linear forwards';
+      scanLine.style.display = 'block';
+      scanLine.style.top = '0px';
 
+      // This interval grabs 1px height from the webcam and draws it to canvas
       const interval = setInterval(() => {
-        ctx.drawImage(video, 0, y, canvas.width, 1, 0, y, canvas.width, 1);
+        ctx.drawImage(video, 0, y, width, 1, 0, y, width, 1); // copy 1 line of pixels
+        scanLine.style.top = `${y}px`;
         y++;
+
         if (y >= height) {
           clearInterval(interval);
+          scanLine.style.display = 'none';
         }
-      }, 1000 / 60); // 60 lines per second = ~6s for 360px height
+      }, 16); // ~60 lines per second, 6s total scan duration
     }
   </script>
-
 </body>
 </html>
