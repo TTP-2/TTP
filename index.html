@@ -37,6 +37,20 @@
       padding: 40px 20px;
       text-align: center;
     }
+
+    .video-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .video-grid iframe {
+      width: 300px;
+      height: 170px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
   </style>
 </head>
 <body>
@@ -47,7 +61,12 @@
   </header>
 
   <main>
-    <!-- Main content here -->
+    <h2>Trending on YouTube</h2>
+    <div class="video-grid">
+      <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allowfullscreen></iframe>
+      <iframe src="https://www.youtube.com/embed/3tmd-ClpJxA" frameborder="0" allowfullscreen></iframe>
+      <iframe src="https://www.youtube.com/embed/lXMskKTw3Bc" frameborder="0" allowfullscreen></iframe>
+    </div>
   </main>
 
 </body>
