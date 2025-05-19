@@ -12,7 +12,7 @@
     }
 
     header {
-      background-color: #e0e0e0; /* Light gray */
+      background-color: #e0e0e0;
       color: #333;
       padding: 15px 30px;
       font-size: 24px;
@@ -33,25 +33,62 @@
       font-size: 26px;
     }
 
-    main {
-      padding: 40px 20px;
-      text-align: center;
+    .plus-button {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background-color: #4CAF50;
+      color: white;
+      font-size: 36px;
+      border: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      cursor: pointer;
+      transition: background-color 0.3s;
     }
 
-    .video-grid {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 20px;
+    .plus-button:hover {
+      background-color: #3e8e41;
     }
 
-    .video-grid iframe {
-      width: 300px;
-      height: 170px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    }
+    
   </style>
+  <script>
+    function showSecondPage() {
+      const container = document.createElement('div');
+      container.style.width = '320px';
+      container.style.height = '240px';
+      container.style.border = '2px solid #ccc';
+      container.style.borderRadius = '10px';
+      container.style.margin = '20px auto';
+      container.style.overflow = 'hidden';
+      container.style.position = 'relative';
+      container.style.backgroundColor = '#000';
+
+      const video = document.createElement('video');
+      video.autoplay = true;
+      video.style.width = '100%';
+      video.style.height = '100%';
+      video.style.objectFit = 'cover';
+
+      container.appendChild(video);
+      document.body.appendChild(container);
+
+      if (navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(stream => {
+            video.srcObject = stream;
+          })
+          .catch(err => {
+            console.error("Error accessing webcam:", err);
+          });
+      } else {
+        alert("Webcam not supported in this browser.");
+      }
+    }
+  </script>
 </head>
 <body>
 
@@ -60,14 +97,7 @@
     <span class="title">WinkFox</span>
   </header>
 
-  <main>
-    <h2>Trending on YouTube</h2>
-    <div class="video-grid">
-      <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allowfullscreen></iframe>
-      <iframe src="https://www.youtube.com/embed/3tmd-ClpJxA" frameborder="0" allowfullscreen></iframe>
-      <iframe src="https://www.youtube.com/embed/lXMskKTw3Bc" frameborder="0" allowfullscreen></iframe>
-    </div>
-  </main>
+  <button class="plus-button" onclick="showSecondPage()">+</button>
 
 </body>
 </html>
