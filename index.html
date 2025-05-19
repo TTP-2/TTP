@@ -77,29 +77,33 @@
       video.style.borderTopLeftRadius = '10px';
       video.style.borderTopRightRadius = '10px';
 
-      const controls = document.createElement('div');
-      controls.style.display = 'flex';
-      controls.style.justifyContent = 'center';
-      controls.style.gap = '10px';
-      controls.style.padding = '10px';
-      controls.style.backgroundColor = '#f0f0f0';
-      controls.style.width = '100%';
+      const snapBtn = document.createElement('button');
+      snapBtn.textContent = '📸';
+      snapBtn.style.margin = '10px';
+      snapBtn.style.padding = '10px 20px';
+      snapBtn.style.border = 'none';
+      snapBtn.style.borderRadius = '20px';
+      snapBtn.style.backgroundColor = '#4CAF50';
+      snapBtn.style.color = 'white';
+      snapBtn.style.cursor = 'pointer';
+      snapBtn.title = 'Take Picture';
 
-      const filters = ['grayscale(100%)', 'sepia(100%)', 'none'];
-      filters.forEach(filter => {
-        const btn = document.createElement('button');
-        btn.style.width = '40px';
-        btn.style.height = '40px';
-        btn.style.borderRadius = '50%';
-        btn.style.border = 'none';
-        btn.style.backgroundColor = '#ccc';
-        btn.style.cursor = 'pointer';
-        btn.title = filter;
-        btn.onclick = () => {
-          video.style.filter = filter;
-        };
-        controls.appendChild(btn);
-      });
+      container.appendChild(video);
+      container.appendChild(snapBtn);
+      document.body.appendChild(container);
+
+      if (navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(stream => {
+            video.srcObject = stream;
+          })
+          .catch(err => {
+            console.error("Error accessing webcam:", err);
+          });
+      } else {
+        alert("Webcam not supported in this browser.");
+      }
+    };
 
       const snapBtn = document.createElement('button');
       snapBtn.textContent = '📸';
