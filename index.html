@@ -53,98 +53,49 @@
       background-color: #3e8e41;
     }
 
-    
-  </style>
-  <script>
-    function showSecondPage() {
-      const container = document.createElement('div');
-      container.style.width = '320px';
-      container.style.border = '2px solid #ccc';
-      container.style.borderRadius = '10px';
-      container.style.margin = '20px auto';
-      container.style.overflow = 'hidden';
-      container.style.position = 'relative';
-      container.style.backgroundColor = '#000';
-      container.style.display = 'flex';
-      container.style.flexDirection = 'column';
-      container.style.alignItems = 'center';
-
-      const video = document.createElement('video');
-      video.autoplay = true;
-      video.style.width = '100%';
-      video.style.height = '240px';
-      video.style.objectFit = 'cover';
-      video.style.borderTopLeftRadius = '10px';
-      video.style.borderTopRightRadius = '10px';
-
-      const snapBtn = document.createElement('button');
-      snapBtn.textContent = '📸';
-      snapBtn.style.margin = '10px';
-      snapBtn.style.padding = '10px 20px';
-      snapBtn.style.border = 'none';
-      snapBtn.style.borderRadius = '20px';
-      snapBtn.style.backgroundColor = '#4CAF50';
-      snapBtn.style.color = 'white';
-      snapBtn.style.cursor = 'pointer';
-      snapBtn.title = 'Take Picture';
-
-      container.appendChild(video);
-      container.appendChild(snapBtn);
-      document.body.appendChild(container);
-
-      if (navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: true })
-          .then(stream => {
-            video.srcObject = stream;
-          })
-          .catch(err => {
-            console.error("Error accessing webcam:", err);
-          });
-      } else {
-        alert("Webcam not supported in this browser.");
-      }
-    };
-
-      const snapBtn = document.createElement('button');
-      snapBtn.textContent = '📸';
-      snapBtn.style.width = '40px';
-      snapBtn.style.height = '40px';
-      snapBtn.style.borderRadius = '50%';
-      snapBtn.style.border = 'none';
-      snapBtn.style.backgroundColor = '#4CAF50';
-      snapBtn.style.color = 'white';
-      snapBtn.style.cursor = 'pointer';
-      snapBtn.title = 'Take Picture';
-
-      controls.appendChild(snapBtn);
-
-      container.appendChild(video);
-      container.appendChild(controls);
-      document.body.appendChild(container);
-
-      if (navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: true })
-          .then(stream => {
-            video.srcObject = stream;
-          })
-          .catch(err => {
-            console.error("Error accessing webcam:", err);
-          });
-      } else {
-        alert("Webcam not supported in this browser.");
-      }
-    })
-          .then(stream => {
-            video.srcObject = stream;
-          })
-          .catch(err => {
-            console.error("Error accessing webcam:", err);
-          });
-      } else {
-        alert("Webcam not supported in this browser.");
-      }
+    .webcam-container {
+      width: 320px;
+      margin: 20px auto;
+      padding: 10px;
+      background: #000;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-  </script>
+
+    video {
+      width: 100%;
+      height: 240px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+
+    .controls {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .controls button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .capture-btn {
+      background-color: #2196F3;
+      color: white;
+    }
+
+    .record-btn {
+      background-color: #f44336;
+      color: white;
+    }
+  </style>
 </head>
 <body>
 
@@ -153,7 +104,95 @@
     <span class="title">WinkFox</span>
   </header>
 
-  <button class="plus-button" onclick="showSecondPage()">+</button>
+  <button class="plus-button" onclick="showWebcam()">+</button>
+
+  <script>
+    let mediaRecorder;
+    let recordedChunks = [];
+
+    function showWebcam() {
+      if (document.getElementById('webcamBox')) return;
+
+      const container = document.createElement('div');
+      container.className = 'webcam-container';
+      container.id = 'webcamBox';
+
+      const video = document.createElement('video');
+      video.autoplay = true;
+      video.id = 'webcamVideo';
+
+      const controls = document.createElement('div');
+      controls.className = 'controls';
+
+      const captureBtn = document.createElement('button');
+      captureBtn.textContent = '📸 Picture';
+      captureBtn.className = 'capture-btn';
+      captureBtn.onclick = () => takePicture(video);
+
+      const recordBtn = document.createElement('button');
+      recordBtn.textContent = '⏺️ Record';
+      recordBtn.className = 'record-btn';
+      recordBtn.onclick = () => toggleRecording(video, recordBtn);
+
+      controls.appendChild(captureBtn);
+      controls.appendChild(recordBtn);
+
+      container.appendChild(video);
+      container.appendChild(controls);
+      document.body.appendChild(container);
+
+      if (navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+          .then(stream => {
+            video.srcObject = stream;
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = function (e) {
+              if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = function () {
+              const blob = new Blob(recordedChunks, { type: 'video/webm' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'recording.webm';
+              a.click();
+              recordedChunks = [];
+            };
+          })
+          .catch(err => {
+            console.error("Error accessing webcam:", err);
+            alert("Could not access webcam.");
+          });
+      } else {
+        alert("Webcam not supported in this browser.");
+      }
+    }
+
+    function takePicture(video) {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      const image = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = image;
+      a.download = 'snapshot.png';
+      a.click();
+    }
+
+    function toggleRecording(video, button) {
+      if (mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        button.textContent = '⏺️ Record';
+      } else {
+        recordedChunks = [];
+        mediaRecorder.start();
+        button.textContent = '⏹️ Stop';
+      }
+    }
+  </script>
 
 </body>
 </html>
