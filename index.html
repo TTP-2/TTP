@@ -142,7 +142,7 @@
       document.body.appendChild(container);
 
       if (navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        navigator.mediaDevices.getUserMedia({ video: true, audio: false })
           .then(stream => {
             video.srcObject = stream;
             mediaRecorder = new MediaRecorder(stream);
