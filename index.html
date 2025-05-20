@@ -67,7 +67,7 @@
 
     video {
       width: 100%;
-      height: 240px;
+      height: 400px;
       object-fit: cover;
       border-radius: 10px;
     }
@@ -76,6 +76,8 @@
       margin-top: 10px;
       display: flex;
       gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     .controls button {
@@ -93,6 +95,11 @@
 
     .record-btn {
       background-color: #f44336;
+      color: white;
+    }
+
+    .filter-btn {
+      background-color: #9c27b0;
       color: white;
     }
   </style>
@@ -125,14 +132,23 @@
       controls.className = 'controls';
 
       const captureBtn = document.createElement('button');
-      captureBtn.textContent = '📸 Picture';
+      captureBtn.textContent = 'Picture';
       captureBtn.className = 'capture-btn';
       captureBtn.onclick = () => takePicture(video);
 
       const recordBtn = document.createElement('button');
-      recordBtn.textContent = '⏺️ Record';
+      recordBtn.textContent = 'Record';
       recordBtn.className = 'record-btn';
       recordBtn.onclick = () => toggleRecording(video, recordBtn);
+
+      const filters = ['grayscale(100%)', 'sepia(100%)', 'invert(100%)', 'none'];
+      filters.forEach(filter => {
+        const filterBtn = document.createElement('button');
+        filterBtn.textContent = filter === 'none' ? 'No Filter' : filter.split('(')[0];
+        filterBtn.className = 'filter-btn';
+        filterBtn.onclick = () => video.style.filter = filter;
+        controls.appendChild(filterBtn);
+      });
 
       controls.appendChild(captureBtn);
       controls.appendChild(recordBtn);
@@ -185,11 +201,11 @@
     function toggleRecording(video, button) {
       if (mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
-        button.textContent = '⏺️ Record';
+        button.textContent = 'Record';
       } else {
         recordedChunks = [];
         mediaRecorder.start();
-        button.textContent = '⏹️ Stop';
+        button.textContent = 'Stop';
       }
     }
   </script>
