@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Leaflet Map with Geolocation, Search & Autocomplete</title>
+  <title>Leaflet Map with Search, Autocomplete & Geolocation</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Leaflet CSS -->
@@ -37,6 +37,7 @@
       outline: none;
       border: none;
     }
+    /* Dropdown container */
     #suggestions {
       position: absolute;
       top: 50px;
@@ -50,6 +51,7 @@
       z-index: 1200;
       display: none;
     }
+    /* Each suggestion item */
     .suggestion-item {
       padding: 8px 12px;
       cursor: pointer;
@@ -89,42 +91,16 @@
   var searchInput = document.getElementById('searchInput');
   var suggestions = document.getElementById('suggestions');
 
-  var marker = null; // current searched place marker
-  var locationMarker = null; // user location marker
+  var marker = null; // marker for searched place
+  var locationMarker = null; // blue circle for user location
 
-  // Geolocation: try to get user position and place red marker
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(function(position) {
-      var lat = position.coords.latitude;
-      var lon = position.coords.longitude;
-
-      // Create a red marker for user location
-      var redIcon = L.icon({
-        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-red.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-        shadowSize: [41, 41]
-      });
-
-      locationMarker = L.marker([lat, lon], {icon: redIcon}).addTo(map).bindPopup("You are here").openPopup();
-
-      // Center and zoom to user location
-      map.setView([lat, lon], 15);
-    }, function(error) {
-      console.log("Geolocation error: " + error.message);
-      // keep default view if error or denied
-    });
-  }
-
-  // Clear suggestions dropdown
+  // Function to clear suggestions
   function clearSuggestions() {
     suggestions.innerHTML = '';
     suggestions.style.display = 'none';
   }
 
-  // Show suggestions in dropdown
+  // Function to create and add suggestions to dropdown
   function showSuggestions(places) {
     clearSuggestions();
     if (places.length === 0) return;
@@ -140,7 +116,7 @@
     suggestions.style.display = 'block';
   }
 
-  // Select a place from search or suggestions
+  // Select place (from suggestion or enter)
   function selectPlace(place) {
     clearSuggestions();
     searchInput.value = place.display_name;
@@ -148,19 +124,18 @@
     var lat = place.lat;
     var lon = place.lon;
 
-    // Remove old searched place marker if any
+    // Remove old marker if exists
     if (marker) {
       map.removeLayer(marker);
     }
-
-    // Add new marker for searched place
+    // Add marker to map
     marker = L.marker([lat, lon]).addTo(map);
 
-    // Center map to searched place
+    // Zoom and center map on location
     map.setView([lat, lon], 15);
   }
 
-  // Debounce function to limit API calls while typing
+  // Debounce helper to limit API calls
   function debounce(func, delay) {
     let timeout;
     return function(...args) {
@@ -169,7 +144,7 @@
     };
   }
 
-  // Fetch suggestions from Nominatim for autocomplete
+  // Fetch suggestions from Nominatim
   const fetchSuggestions = debounce(function(query) {
     if (query.length < 3) {
       clearSuggestions();
@@ -183,22 +158,22 @@
       .catch(() => clearSuggestions());
   }, 300);
 
-  // Listen to input typing
+  // Listen for input typing
   searchInput.addEventListener('input', (e) => {
     const query = e.target.value.trim();
     fetchSuggestions(query);
   });
 
-  // Listen to Enter key press
+  // Listen for Enter key to search first suggestion or exact typed query
   searchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
-      e.preventDefault();
+      e.preventDefault(); // prevent form submit if any
 
       if (suggestions.children.length > 0) {
-        // Select first suggestion on Enter
+        // Select the first suggestion
         suggestions.children[0].click();
       } else {
-        // If no suggestions, search typed query
+        // If no suggestions, do a search by the typed query directly
         var query = searchInput.value.trim();
         if (query.length === 0) return;
 
@@ -216,12 +191,43 @@
     }
   });
 
-  // Close suggestions if clicking outside
+  // Hide suggestions if clicking outside
   document.addEventListener('click', function(e) {
     if (!searchInput.contains(e.target) && !suggestions.contains(e.target)) {
       clearSuggestions();
     }
   });
+
+  // Geolocation: show blue circle marker for user location
+  function onLocationFound(e) {
+    var radius = e.accuracy / 2;
+
+    if (locationMarker) {
+      map.removeLayer(locationMarker);
+    }
+
+    locationMarker = L.circleMarker(e.latlng, {
+      radius: 10,
+      color: 'blue',
+      fillColor: '#30f',
+      fillOpacity: 0.7
+    }).addTo(map);
+
+    // Center map to user location and zoom in
+    map.setView(e.latlng, 16);
+  }
+
+  function onLocationError(e) {
+    console.warn('Geolocation error:', e.message);
+    // Optionally show alert or fallback location here
+  }
+
+  map.on('locationfound', onLocationFound);
+  map.on('locationerror', onLocationError);
+
+  // Ask for location when page loads
+  map.locate({ setView: false, maxZoom: 16, watch: false });
+
 </script>
 
 </body>
