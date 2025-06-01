@@ -64,7 +64,6 @@
       background-color: #007bff;
       color: white;
       box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-      user-select: none;
     }
     .route-button.active {
       background-color: red;
@@ -101,11 +100,7 @@
   let routeControl = null;
   let routeMarkers = [];
   let routePoints = [];
-
-  // Routing mode: true means user can place route points
-  let routingMode = false;
-  // Route active means the route is shown on map (after user presses stop button)
-  let routeActive = false;
+  let isRoutingActive = false;
 
   function clearSuggestions() {
     suggestions.innerHTML = '';
@@ -197,61 +192,42 @@
   map.locate({ setView: false, maxZoom: 16, watch: false });
 
   startRouteBtn.addEventListener('click', () => {
-    if (!routingMode) {
-      // Start routing mode: allow placing points, but do NOT show route or change button text yet
-      routingMode = true;
-      routeActive = false;
-      routePoints = [];
-      routeMarkers.forEach(m => map.removeLayer(m));
-      routeMarkers = [];
-      if (routeControl) {
-        map.removeControl(routeControl);
-        routeControl = null;
-      }
-      alert('Routing mode started. Click two points on the map to set your route.');
-      // Button text and color remain "Start Routing"
-    } else {
-      // Stop routing mode: show the route if 2 points are set, else clear any partial route
-      if (routePoints.length === 2) {
-        // Show route on map
-        routeControl = L.Routing.control({
-          waypoints: routePoints,
-          routeWhileDragging: false,
-          addWaypoints: false,
-          show: false,
-          createMarker: () => null
-        }).addTo(map);
-        routeActive = true;
-      } else {
-        // If less than 2 points, clear markers and route
-        routeMarkers.forEach(m => map.removeLayer(m));
-        routeMarkers = [];
-        if (routeControl) {
-          map.removeControl(routeControl);
-          routeControl = null;
-        }
-        routePoints = [];
-        routeActive = false;
-      }
-      routingMode = false;
-      startRouteBtn.textContent = 'Start Routing';
-      startRouteBtn.classList.remove('active');
+    isRoutingActive = !isRoutingActive;
+    startRouteBtn.textContent = isRoutingActive ? 'Stop Routing' : 'Start Routing';
+    startRouteBtn.classList.toggle('active');
+
+    // Clear previous route
+    routePoints = [];
+    routeMarkers.forEach(m => map.removeLayer(m));
+    routeMarkers = [];
+    if (routeControl) {
+      map.removeControl(routeControl);
+      routeControl = null;
     }
+    if (isRoutingActive) alert('Click two points on the map to set a route.');
   });
 
   map.on('click', e => {
-    if (!routingMode) return;
-
-    if (routePoints.length >= 2) {
-      alert('You already set two points. Press "Stop Routing" to finish.');
-      return;
-    }
-
+    if (!isRoutingActive) return;
     routePoints.push(e.latlng);
+
+    // Add one marker at a time
     const newMarker = L.marker(e.latlng).addTo(map);
     routeMarkers.push(newMarker);
 
-    // Do NOT change button text or color here, only on button click
+    if (routePoints.length === 2) {
+      routeControl = L.Routing.control({
+        waypoints: routePoints,
+        routeWhileDragging: false,
+        addWaypoints: false,
+        show: false,
+        createMarker: () => null
+      }).addTo(map);
+
+      isRoutingActive = false;
+      startRouteBtn.textContent = 'Start Routing';
+      startRouteBtn.classList.remove('active');
+    }
   });
 </script>
 
