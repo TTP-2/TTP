@@ -13,7 +13,10 @@
     body {
       background-color: white;
       display: flex;
-      height: 100vh;
+      transition: background-image 0.5s ease;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
     }
     .sidebar {
       width: 60px;
@@ -69,18 +72,13 @@
       fill: #000;
     }
     .content {
-      margin-left: 60px; /* push content to the right of sidebar */
+      margin-left: 60px;
       padding: 20px;
       flex-grow: 1;
       height: 100vh;
       overflow: auto;
       position: relative;
       z-index: 1;
-
-      background-position: center;
-      background-repeat: no-repeat;
-      background-size: cover;
-      transition: background-image 0.5s ease;
     }
   </style>
 </head>
@@ -103,18 +101,18 @@
   <script>
     const highlight = document.querySelector('.highlight');
     const buttons = document.querySelectorAll('.sidebar button');
-    const content = document.querySelector('.content');
+    const body = document.body;
 
     function moveHighlight(button) {
       const offsetTop = button.offsetTop;
       highlight.style.top = offsetTop + 'px';
     }
 
-    function updateContentBackground(page) {
+    function updateBackground(page) {
       if (page === 'home') {
-        content.style.backgroundImage = "url('background.png')";
+        body.style.backgroundImage = "url('background.png')";
       } else {
-        content.style.backgroundImage = 'none';
+        body.style.backgroundImage = 'none';
       }
     }
 
@@ -125,7 +123,7 @@
         moveHighlight(button);
 
         const page = button.getAttribute('data-page');
-        updateContentBackground(page);
+        updateBackground(page);
       });
     });
 
@@ -133,7 +131,7 @@
     const activeButton = document.querySelector('.sidebar button.active');
     if (activeButton) {
       moveHighlight(activeButton);
-      updateContentBackground(activeButton.getAttribute('data-page'));
+      updateBackground(activeButton.getAttribute('data-page'));
     }
   </script>
 </body>
