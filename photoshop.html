@@ -5,12 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Blank White Website</title>
   <style>
-    body {
+    html, body {
       margin: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+    body {
       background-color: white;
       display: flex;
       height: 100vh;
-      overflow: hidden;
     }
     .sidebar {
       width: 60px;
@@ -66,10 +69,14 @@
       fill: #000;
     }
     .content {
-      margin-left: 60px;
+      margin-left: 60px; /* push content to the right of sidebar */
       padding: 20px;
       flex-grow: 1;
       height: 100vh;
+      overflow: auto;
+      position: relative;
+      z-index: 1;
+
       background-position: center;
       background-repeat: no-repeat;
       background-size: cover;
