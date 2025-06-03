@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Blank Website</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      background-color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .face {
+      position: relative;
+      width: 148px;
+      height: 148px;
+    }
+    .eye {
+      width: 26px;
+      height: 26px;
+      background-color: black;
+      border-radius: 50%;
+      position: absolute;
+      top: 38px;
+      animation: blink 1s infinite;
+      transform-origin: center;
+    }
+    .eye.left {
+      left: 32px;
+    }
+    .eye.right {
+      right: 32px;
+    }
+    .mouth {
+      width: 48px;
+      height: 26px;
+      background-color: black;
+      border-radius: 0 0 48px 48px;
+      position: absolute;
+      bottom: 33px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    @keyframes blink {
+      0%, 100% { transform: scaleY(1); }
+      40%, 60% { transform: scaleY(0.1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="face">
+    <div class="eye left"></div>
+    <div class="eye right"></div>
+    <div class="mouth"></div>
+  </div>
+</body>
+</html>
