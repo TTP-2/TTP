@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Blank Website</title>
   <style>
     body {
@@ -27,8 +27,8 @@
       border-radius: 50%;
       position: absolute;
       top: 38px;
-      animation: blink 1s infinite;
-      transform-origin: center;
+      animation: blink 3s infinite;
+      animation-fill-mode: forwards;
     }
     .eye.left {
       left: 32px;
@@ -48,8 +48,15 @@
     }
 
     @keyframes blink {
-      0%, 100% { transform: scaleY(1); }
-      40%, 60% { transform: scaleY(0.1); }
+      0%, 5%, 100% {
+        transform: scaleY(1);
+      }
+      10%, 15% {
+        transform: scaleY(0.1);
+      }
+      20%, 95% {
+        transform: scaleY(1);
+      }
     }
   </style>
 </head>
