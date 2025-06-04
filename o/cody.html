@@ -70,14 +70,6 @@
       left: 50%;
       transform: translateX(-50%);
     }
-    .message {
-      margin-top: 20px;
-      font-size: 24px;
-      color: black;
-      white-space: pre-wrap;
-      max-width: 90%;
-      text-align: left;
-    }
     @keyframes blink {
       0%, 5%, 100% {
         transform: scaleY(1);
@@ -99,13 +91,12 @@
     <div class="eye right"></div>
     <div class="mouth"></div>
   </div>
-  <div id="message" class="message"></div>
 
   <script>
-    const messageDiv = document.getElementById('message');
-
-    function showMessage(text) {
-      messageDiv.textContent = text;
+    function speakText(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.voice = speechSynthesis.getVoices().find(voice => voice.name.toLowerCase().includes('google') || voice.name.toLowerCase().includes('robot')) || null;
+      speechSynthesis.speak(utterance);
     }
 
     async function fetchWikipediaSummary(query) {
@@ -114,12 +105,12 @@
         if (!response.ok) throw new Error('Not found');
         const data = await response.json();
         if (data.extract) {
-          showMessage(data.extract);
+          speakText(data.extract);
         } else {
-          showMessage("I couldn't find anything on that.");
+          speakText("I couldn't find anything on that.");
         }
       } catch (error) {
-        showMessage("Error getting information.");
+        speakText("Error getting information.");
       }
     }
 
@@ -134,10 +125,9 @@
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
             const transcript = event.results[i][0].transcript.trim().toLowerCase();
-            showMessage(transcript);
 
             if (transcript === "hi") {
-              showMessage("Hi");
+              speakText("Hi");
             }
 
             const askMatch = transcript.match(/^what is (.*?)\??$/);
@@ -155,7 +145,7 @@
 
       recognition.start();
     } else {
-      showMessage('Speech recognition not supported in this browser.');
+      speakText('Speech recognition not supported in this browser.');
     }
   </script>
 </body>
