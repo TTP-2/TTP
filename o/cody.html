@@ -15,6 +15,7 @@
       align-items: center;
       height: 100vh;
       position: relative;
+      flex-direction: column;
     }
     .face {
       position: relative;
@@ -69,6 +70,14 @@
       left: 50%;
       transform: translateX(-50%);
     }
+    .message {
+      margin-top: 20px;
+      font-size: 24px;
+      color: black;
+      white-space: pre-wrap;
+      max-width: 90%;
+      text-align: left;
+    }
     @keyframes blink {
       0%, 5%, 100% {
         transform: scaleY(1);
@@ -90,39 +99,41 @@
     <div class="eye right"></div>
     <div class="mouth"></div>
   </div>
+  <div id="message" class="message"></div>
 
   <script>
-    window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.lang = 'en-US';
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 10;
+    const messageDiv = document.getElementById('message');
 
-    recognition.onresult = function(event) {
-      let transcript = '';
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          transcript += event.results[i][0].transcript;
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = function(event) {
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            const transcript = event.results[i][0].transcript.trim().toLowerCase();
+            if (transcript.includes("hi")) {
+              messageDiv.style.display = 'block';
+              messageDiv.textContent = 'Hi';
+              const utterance = new SpeechSynthesisUtterance('Hi');
+              speechSynthesis.speak(utterance);
+            }
+          }
         }
-      }
-      transcript = transcript.trim().toLowerCase();
-      console.log("Heard:", transcript);
-      if (transcript.includes("open page") || transcript.includes("open cody")) {
-        window.open('https://ttp-2.github.io/TTP/o/cody.html', 'newWindow', 'width=600,height=400');
-      }
-    };
+      };
 
-    recognition.onerror = function(event) {
-      console.error("Speech recognition error:", event);
-      setTimeout(() => recognition.start(), 1000); // Retry quickly after error
-    };
+      recognition.onerror = function(event) {
+        console.error('Speech recognition error:', event.error);
+      };
 
-    recognition.onend = function() {
-      setTimeout(() => recognition.start(), 100); // Immediate restart after end
-    };
-
-    recognition.start();
+      recognition.start();
+    } else {
+      messageDiv.style.display = 'block';
+      messageDiv.textContent = 'Speech recognition not supported in this browser.';
+    }
   </script>
 </body>
 </html>
