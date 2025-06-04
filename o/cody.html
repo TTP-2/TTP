@@ -97,7 +97,7 @@
     recognition.continuous = true;
     recognition.lang = 'en-US';
     recognition.interimResults = true;
-    recognition.maxAlternatives = 5;
+    recognition.maxAlternatives = 10;
 
     recognition.onresult = function(event) {
       let transcript = '';
@@ -115,10 +115,11 @@
 
     recognition.onerror = function(event) {
       console.error("Speech recognition error:", event);
+      setTimeout(() => recognition.start(), 1000); // Retry quickly after error
     };
 
     recognition.onend = function() {
-      recognition.start(); // restart automatically for better continuous listening
+      setTimeout(() => recognition.start(), 100); // Immediate restart after end
     };
 
     recognition.start();
