@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cody | chat</title>
+  <title>Blank Website</title>
   <style>
     body {
       margin: 0;
@@ -108,16 +108,20 @@
       messageDiv.textContent = text;
     }
 
-    function loadMemory() {
-      const saved = localStorage.getItem('memory');
-      return saved ? JSON.parse(saved) : {};
+    async function fetchWikipediaSummary(query) {
+      try {
+        const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`);
+        if (!response.ok) throw new Error('Not found');
+        const data = await response.json();
+        if (data.extract) {
+          showMessage(data.extract);
+        } else {
+          showMessage("I couldn't find anything on that.");
+        }
+      } catch (error) {
+        showMessage("Error getting information.");
+      }
     }
-
-    function saveMemory(memory) {
-      localStorage.setItem('memory', JSON.stringify(memory));
-    }
-
-    const memory = loadMemory();
 
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -136,23 +140,10 @@
               showMessage("Hi");
             }
 
-            const teachMatch = transcript.match(/^(.*?) is (.*?)$/);
-            if (teachMatch) {
-              const subject = teachMatch[1].trim();
-              const fact = teachMatch[2].trim();
-              memory[fact] = subject;
-              saveMemory(memory);
-              showMessage(`Got it. ${subject} is ${fact}`);
-            }
-
             const askMatch = transcript.match(/^what is (.*?)\??$/);
             if (askMatch) {
               const query = askMatch[1].trim();
-              if (memory[query]) {
-                showMessage(memory[query]);
-              } else {
-                showMessage("I don't know yet.");
-              }
+              fetchWikipediaSummary(query);
             }
           }
         }
