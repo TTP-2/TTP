@@ -80,38 +80,9 @@
         transform: scaleY(1);
       }
     }
-
-    button {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      padding: 8px 14px;
-      background-color: #222;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.25);
-      transition: background-color 0.3s ease, box-shadow 0.3s ease;
-      user-select: none;
-      z-index: 10;
-    }
-
-    button:hover {
-      background-color: #444;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.35);
-    }
-
-    button:active {
-      background-color: #111;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-    }
   </style>
 </head>
 <body>
-  <button onclick="window.open('https://ttp-2.github.io/TTP/o/cody.html', 'newWindow', 'width=600,height=400')">Open</button>
   <div class="face">
     <div class="antenna"></div>
     <div class="antenna-dot"></div>
@@ -125,9 +96,17 @@
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.lang = 'en-US';
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 5;
 
     recognition.onresult = function(event) {
-      const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          transcript += event.results[i][0].transcript;
+        }
+      }
+      transcript = transcript.trim().toLowerCase();
       console.log("Heard:", transcript);
       if (transcript.includes("open page") || transcript.includes("open cody")) {
         window.open('https://ttp-2.github.io/TTP/o/cody.html', 'newWindow', 'width=600,height=400');
@@ -136,6 +115,10 @@
 
     recognition.onerror = function(event) {
       console.error("Speech recognition error:", event);
+    };
+
+    recognition.onend = function() {
+      recognition.start(); // restart automatically for better continuous listening
     };
 
     recognition.start();
