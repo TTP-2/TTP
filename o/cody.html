@@ -103,6 +103,11 @@
 
   <script>
     const messageDiv = document.getElementById('message');
+    const memory = {};
+
+    function showMessage(text) {
+      messageDiv.textContent = text;
+    }
 
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -115,11 +120,28 @@
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
             const transcript = event.results[i][0].transcript.trim().toLowerCase();
-            if (transcript.includes("hi")) {
-              messageDiv.style.display = 'block';
-              messageDiv.textContent = 'Hi';
-              const utterance = new SpeechSynthesisUtterance('Hi');
-              speechSynthesis.speak(utterance);
+            showMessage(transcript);
+
+            if (transcript === "hi") {
+              showMessage("Hi");
+            }
+
+            const teachMatch = transcript.match(/^(.*?) is (.*?)$/);
+            if (teachMatch) {
+              const subject = teachMatch[1].trim();
+              const fact = teachMatch[2].trim();
+              memory[fact] = subject;
+              showMessage(`Got it. ${subject} is ${fact}`);
+            }
+
+            const askMatch = transcript.match(/^what is (.*?)\??$/);
+            if (askMatch) {
+              const query = askMatch[1].trim();
+              if (memory[query]) {
+                showMessage(memory[query]);
+              } else {
+                showMessage("I don't know yet.");
+              }
             }
           }
         }
@@ -131,8 +153,7 @@
 
       recognition.start();
     } else {
-      messageDiv.style.display = 'block';
-      messageDiv.textContent = 'Speech recognition not supported in this browser.';
+      showMessage('Speech recognition not supported in this browser.');
     }
   </script>
 </body>
