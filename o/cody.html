@@ -26,16 +26,16 @@
     }
     .antenna {
       position: absolute;
-      top: -47px;
+      top: -44px;
       left: 50%;
       transform: translateX(-50%);
       width: 4px;
-      height: 45px;
+      height: 44px;
       background-color: black;
     }
     .antenna-dot {
       position: absolute;
-      top: -59px;
+      top: -56px;
       left: 50%;
       transform: translateX(-50%);
       width: 12px;
@@ -119,5 +119,26 @@
     <div class="eye right"></div>
     <div class="mouth"></div>
   </div>
+
+  <script>
+    window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = function(event) {
+      const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+      console.log("Heard:", transcript);
+      if (transcript.includes("open page") || transcript.includes("open cody")) {
+        window.open('https://ttp-2.github.io/TTP/o/cody.html', 'newWindow', 'width=600,height=400');
+      }
+    };
+
+    recognition.onerror = function(event) {
+      console.error("Speech recognition error:", event);
+    };
+
+    recognition.start();
+  </script>
 </body>
 </html>
