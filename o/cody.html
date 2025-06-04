@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Blank Website</title>
+  <title>Cody | chat</title>
   <style>
     body {
       margin: 0;
@@ -103,11 +103,21 @@
 
   <script>
     const messageDiv = document.getElementById('message');
-    const memory = {};
 
     function showMessage(text) {
       messageDiv.textContent = text;
     }
+
+    function loadMemory() {
+      const saved = localStorage.getItem('memory');
+      return saved ? JSON.parse(saved) : {};
+    }
+
+    function saveMemory(memory) {
+      localStorage.setItem('memory', JSON.stringify(memory));
+    }
+
+    const memory = loadMemory();
 
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -131,6 +141,7 @@
               const subject = teachMatch[1].trim();
               const fact = teachMatch[2].trim();
               memory[fact] = subject;
+              saveMemory(memory);
               showMessage(`Got it. ${subject} is ${fact}`);
             }
 
