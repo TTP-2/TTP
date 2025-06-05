@@ -82,21 +82,6 @@
         transform: scaleY(1);
       }
     }
-    #answer {
-      margin-top: 20px;
-      max-width: 400px;
-      text-align: center;
-      font-size: 16px;
-      color: #333;
-      padding: 0 10px;
-      min-height: 80px; /* keep space for answer so page doesn’t jump */
-    }
-    #instructions {
-      margin-top: 10px;
-      color: #666;
-      font-size: 14px;
-      min-height: 18px; /* keep space for instructions so page doesn’t jump */
-    }
   </style>
 </head>
 <body>
@@ -109,88 +94,5 @@
   </div>
   <div id="instructions">Click the face and ask a question out loud.</div>
   <div id="answer"></div>
-
-  <script>
-    const face = document.querySelector('.face');
-    const answerEl = document.getElementById('answer');
-    const instructionsEl = document.getElementById('instructions');
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      instructionsEl.textContent = 'Sorry, your browser does not support Speech Recognition.';
-    }
-
-    let recognition = SpeechRecognition ? new SpeechRecognition() : null;
-    if (recognition) {
-      recognition.lang = 'en-US';
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      async function startListening() {
-        answerEl.textContent = '';
-        instructionsEl.textContent = 'Click the face and ask a question out loud.';
-        try {
-          recognition.start();
-        } catch(e) {
-          // Recognition may already be started; ignore
-        }
-      }
-
-      face.addEventListener('click', () => {
-        startListening();
-      });
-
-      recognition.onresult = async (event) => {
-        const spokenText = event.results[0][0].transcript;
-        instructionsEl.textContent = 'Processing your question...';
-
-        try {
-          const response = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(spokenText)}&format=json&no_redirect=1&skip_disambig=1`);
-          if (!response.ok) throw new Error('Network response was not ok');
-          const data = await response.json();
-
-          let answerText = '';
-          if (data.AbstractText) {
-            answerText = data.AbstractText;
-          } else if (data.RelatedTopics && data.RelatedTopics.length > 0 && data.RelatedTopics[0].Text) {
-            answerText = data.RelatedTopics[0].Text;
-          } else {
-            answerText = "Sorry, I couldn't find an answer on the internet.";
-          }
-          answerEl.textContent = answerText;
-          speak(answerText);
-        } catch (error) {
-          answerEl.textContent = "Sorry, I couldn't find an answer on the internet.";
-          speak("Sorry, I couldn't find an answer on the internet.");
-        }
-      };
-
-      recognition.onerror = (event) => {
-        // silently ignore or could add minimal error handling
-      };
-
-      recognition.onspeechend = () => {
-        recognition.stop();
-      };
-
-      recognition.onend = () => {
-        // Automatically restart listening to keep it always listening
-        startListening();
-      };
-
-      // Start listening as soon as page loads
-      startListening();
-    }
-    
-    function speak(text) {
-      if (!('speechSynthesis' in window)) {
-        return;
-      }
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
-    }
-  </script>
 </body>
 </html>
