@@ -24,6 +24,7 @@
       border-radius: 50%;
       border: 4px solid black;
       box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
     }
     .antenna {
       position: absolute;
@@ -81,15 +82,92 @@
         transform: scaleY(1);
       }
     }
+    #answer {
+      margin-top: 20px;
+      max-width: 400px;
+      text-align: center;
+      font-size: 16px;
+      color: #333;
+      padding: 0 10px;
+    }
+    #instructions {
+      margin-top: 10px;
+      color: #666;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
-  <div class="face">
-    <div class="antenna"></div>
-    <div class="antenna-dot"></div>
-    <div class="eye left"></div>
-    <div class="eye right"></div>
-    <div class="mouth"></div>
-  </div>
+  <div class="face" title="Click to ask a question out loud"></div>
+  <div id="instructions">Click the face and ask a question out loud.</div>
+  <div id="answer"></div>
+
+  <script>
+    const face = document.querySelector('.face');
+    const answerEl = document.getElementById('answer');
+    const instructionsEl = document.getElementById('instructions');
+
+    // Check for SpeechRecognition API support
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      instructionsEl.textContent = 'Sorry, your browser does not support Speech Recognition.';
+    }
+
+    const recognition = SpeechRecognition ? new SpeechRecognition() : null;
+    if (recognition) {
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      face.addEventListener('click', () => {
+        answerEl.textContent = '';
+        instructionsEl.textContent = 'Listening... Speak now!';
+        recognition.start();
+      });
+
+      recognition.onresult = async (event) => {
+        const spokenText = event.results[0][0].transcript;
+        instructionsEl.textContent = `You asked: "${spokenText}"`;
+        // Fetch Wikipedia summary
+        try {
+          const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(spokenText)}`);
+          if (!response.ok) throw new Error('Not found');
+          const data = await response.json();
+
+          let answerText = '';
+          if (data.extract) {
+            answerText = data.extract;
+          } else {
+            answerText = "Sorry, I couldn't find an answer on Wikipedia.";
+          }
+          answerEl.textContent = answerText;
+          speak(answerText);
+        } catch (error) {
+          answerEl.textContent = "Sorry, I couldn't find an answer on Wikipedia.";
+          speak("Sorry, I couldn't find an answer on Wikipedia.");
+        }
+      };
+
+      recognition.onerror = (event) => {
+        instructionsEl.textContent = 'Error occurred in recognition: ' + event.error;
+      };
+
+      recognition.onspeechend = () => {
+        recognition.stop();
+        instructionsEl.textContent = 'Processing your question...';
+      };
+    }
+
+    // Speech synthesis to speak answer
+    function speak(text) {
+      if (!('speechSynthesis' in window)) {
+        return; // Speech synthesis not supported
+      }
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      window.speechSynthesis.cancel(); // Cancel previous if any
+      window.speechSynthesis.speak(utterance);
+    }
+  </script>
 </body>
 </html>
