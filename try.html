@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pitch to Binary Letter</title>
+  <title>Pitch to Word Recognizer</title>
   <style>
     body {
       margin: 0;
@@ -42,20 +42,6 @@
     .translate-button {
       right: 130px;
     }
-    #textInput {
-      position: fixed;
-      bottom: 60px;
-      right: 10px;
-      width: 300px;
-      padding: 8px;
-      font-family: monospace;
-      font-size: 14px;
-      border: 1px solid green;
-      background-color: black;
-      color: green;
-      outline: none;
-      z-index: 20;
-    }
     .bottom-line {
       position: fixed;
       height: 2px;
@@ -69,11 +55,11 @@
       position: fixed;
       top: 10px;
       left: 10px;
-      font-size: 12px;
-      line-height: 1.2;
+      font-size: 14px;
+      line-height: 1.4;
       color: limegreen;
       white-space: pre-wrap;
-      max-width: 45vw;
+      max-width: 80vw;
       max-height: 90vh;
       overflow-y: auto;
       z-index: 15;
@@ -82,12 +68,9 @@
   </style>
 </head>
 <body>
-  <input type="text" id="textInput" placeholder="Type sentence and press Enter" autocomplete="off" />
   <button class="mic-button" id="micButton">Start Mic</button>
-  <button class="translate-button" id="translateButton">Translate</button>
   <div class="center-line"></div>
   <div class="bottom-line"></div>
-
   <pre id="outputText"></pre>
 
   <script>
@@ -98,19 +81,9 @@
       M: "01", N: "10", O: "11", P: "00",
       Q: "01", R: "10", S: "11", T: "00",
       U: "01", V: "10", W: "11", X: "00",
-      Y: "01", Z: "10",
-      " ": "00"
+      Y: "01", Z: "10"
     };
 
-    // Inverse map: code to letter, first found wins for duplicates
-    const codeToLetter = {};
-    for (const [letter, code] of Object.entries(letterToCode)) {
-      if (!(code in codeToLetter)) {
-        codeToLetter[code] = letter;
-      }
-    }
-
-    // Pitch ranges for letters, 30 Hz steps from 100 Hz up, for simplicity
     const letterPitchRanges = {};
     const baseFreq = 100;
     const step = 30;
@@ -121,14 +94,10 @@
 
     const outputText = document.getElementById('outputText');
     const micButton = document.getElementById('micButton');
-    const translateButton = document.getElementById('translateButton');
-    const textInput = document.getElementById('textInput');
 
-    let audioContext;
-    let analyserNode;
-    let microphoneStream;
-    let dataArray;
-    let rafId;
+    let audioContext, analyserNode, microphoneStream, dataArray, rafId;
+    let currentWord = "";
+    let lastDetectedTime = Date.now();
 
     micButton.onclick = () => {
       if (audioContext) {
@@ -139,23 +108,6 @@
         micButton.textContent = 'Stop Mic';
       }
     };
-
-    translateButton.onclick = () => {
-      const codes = outputText.textContent.trim().split(/\s+/);
-      let translated = '';
-      for (const code of codes) {
-        translated += (codeToLetter[code] || '?');
-      }
-      alert("Translated text:\n" + translated);
-    };
-
-    textInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        playTextPitches(textInput.value.toUpperCase());
-        textInput.value = '';
-      }
-    });
 
     async function startMic() {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -184,10 +136,7 @@
     function autoCorrelate(buffer, sampleRate) {
       let SIZE = buffer.length;
       let rms = 0;
-      for (let i = 0; i < SIZE; i++) {
-        let val = buffer[i];
-        rms += val * val;
-      }
+      for (let i = 0; i < SIZE; i++) rms += buffer[i] * buffer[i];
       rms = Math.sqrt(rms / SIZE);
       if (rms < 0.01) return -1;
 
@@ -204,14 +153,13 @@
           break;
         }
       }
-
       buffer = buffer.slice(r1, r2);
       SIZE = buffer.length;
 
       let c = new Array(SIZE).fill(0);
       for (let lag = 0; lag < SIZE; lag++) {
         for (let i = 0; i < SIZE - lag; i++) {
-          c[lag] = c[lag] + buffer[i] * buffer[i + lag];
+          c[lag] += buffer[i] * buffer[i + lag];
         }
       }
 
@@ -227,87 +175,46 @@
       }
 
       let T0 = maxPos;
-
       let x1 = c[T0 - 1];
       let x2 = c[T0];
       let x3 = c[T0 + 1];
       let a = (x1 + x3 - 2 * x2) / 2;
       let b = (x3 - x1) / 2;
-      if (a)
-        T0 = T0 - b / (2 * a);
+      if (a) T0 = T0 - b / (2 * a);
 
       let freq = sampleRate / T0;
-      if (freq > 1000 || freq < 80) return -1;
-      return freq;
+      return (freq > 1000 || freq < 80) ? -1 : freq;
     }
 
     function detectPitch() {
       analyserNode.getFloatTimeDomainData(dataArray);
       const pitch = autoCorrelate(dataArray, audioContext.sampleRate);
 
+      const now = Date.now();
       if (pitch !== -1) {
-        let detectedLetter = null;
         for (const [letter, [low, high]] of Object.entries(letterPitchRanges)) {
           if (pitch >= low && pitch < high) {
-            detectedLetter = letter;
+            currentWord += letter;
+            lastDetectedTime = now;
+            updateOutput();
             break;
           }
         }
-        if (detectedLetter) {
-          const code = letterToCode[detectedLetter];
-          outputText.textContent += code + " ";
-          outputText.scrollTop = outputText.scrollHeight;
+      } else {
+        if (now - lastDetectedTime > 1000 && currentWord.length > 0) {
+          outputText.textContent += currentWord + " ";
+          currentWord = "";
         }
       }
+
       rafId = requestAnimationFrame(detectPitch);
     }
 
-    async function playTextPitches(text) {
-      if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      }
-
-      for (const char of text) {
-        const freq = getFrequencyForLetter(char);
-        if (freq) {
-          await playTone(freq, 500);
-          await sleep(100);
-        }
-      }
-    }
-
-    function getFrequencyForLetter(letter) {
-      // Map letter to baseFreq + index*step, same as detection
-      const idx = letters.indexOf(letter);
-      if (idx >= 0) {
-        return baseFreq + idx * step + step / 2; // center freq in the range
-      }
-      return null;
-    }
-
-    function playTone(frequency, duration) {
-      return new Promise(resolve => {
-        const osc = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.value = frequency;
-
-        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // volume
-
-        osc.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        osc.start();
-        setTimeout(() => {
-          osc.stop();
-          resolve();
-        }, duration);
-      });
-    }
-
-    function sleep(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
+    function updateOutput() {
+      const displayText = outputText.textContent.trim().split(" ");
+      displayText[displayText.length - 1] = currentWord;
+      outputText.textContent = displayText.join(" ") + " ";
+      outputText.scrollTop = outputText.scrollHeight;
     }
   </script>
 </body>
