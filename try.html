@@ -27,7 +27,6 @@
 
     const createScene = function () {
       const scene = new BABYLON.Scene(engine);
-      scene.clearColor = new BABYLON.Color3(0.7, 0.9, 1); // Light blue sky
 
       const camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
       camera.setTarget(BABYLON.Vector3.Zero());
@@ -40,6 +39,13 @@
       const groundMaterial = new BABYLON.StandardMaterial("groundMat", scene);
       groundMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1); // white
       ground.material = groundMaterial;
+
+      // Sky dome with single image
+      const skyDome = BABYLON.MeshBuilder.CreateSphere("skyDome", {diameter: 1000, sideOrientation: BABYLON.Mesh.BACKSIDE}, scene);
+      const skyMaterial = new BABYLON.StandardMaterial("skyMat", scene);
+      skyMaterial.diffuseTexture = new BABYLON.Texture("sky.png", scene);
+      skyMaterial.backFaceCulling = false;
+      skyDome.material = skyMaterial;
 
       return scene;
     };
