@@ -24,10 +24,9 @@
       transform: translateX(-1px);
       z-index: 10;
     }
-    .mic-button {
+    .mic-button, .translate-button {
       position: fixed;
       bottom: 10px;
-      right: 10px;
       padding: 10px 15px;
       background-color: black;
       color: green;
@@ -35,6 +34,13 @@
       cursor: pointer;
       font-size: 16px;
       z-index: 20;
+      user-select: none;
+    }
+    .mic-button {
+      right: 10px;
+    }
+    .translate-button {
+      right: 130px;
     }
     .bottom-line {
       position: fixed;
@@ -63,6 +69,7 @@
 </head>
 <body>
   <button class="mic-button" id="micButton">Start Mic</button>
+  <button class="translate-button" id="translateButton">Translate</button>
   <div class="center-line"></div>
   <div class="bottom-line"></div>
 
@@ -79,6 +86,14 @@
       Y: "01", Z: "10"
     };
 
+    // Inverse map: code to letter, first found wins for duplicates
+    const codeToLetter = {};
+    for (const [letter, code] of Object.entries(letterToCode)) {
+      if (!(code in codeToLetter)) {
+        codeToLetter[code] = letter;
+      }
+    }
+
     const letterPitchRanges = {};
     const baseFreq = 100;
     const step = 30;
@@ -89,6 +104,7 @@
 
     const outputText = document.getElementById('outputText');
     const micButton = document.getElementById('micButton');
+    const translateButton = document.getElementById('translateButton');
 
     let audioContext;
     let analyserNode;
@@ -104,6 +120,15 @@
         startMic();
         micButton.textContent = 'Stop Mic';
       }
+    };
+
+    translateButton.onclick = () => {
+      const codes = outputText.textContent.trim().split(/\s+/);
+      let translated = '';
+      for (const code of codes) {
+        translated += (codeToLetter[code] || '?');
+      }
+      alert("Translated text:\n" + translated);
     };
 
     async function startMic() {
