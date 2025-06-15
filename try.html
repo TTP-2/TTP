@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pitch to Binary Letter</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: black;
+      user-select: none;
+      color: green;
+      font-family: monospace;
+    }
+    .center-line {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 2px;
+      background-color: green;
+      transform: translateX(-1px);
+    }
+    .mic-button {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      padding: 10px 15px;
+      background-color: black;
+      color: green;
+      border: 1px solid green;
+      cursor: pointer;
+      font-size: 16px;
+      z-index: 2000;
+    }
+    .bottom-line {
+      position: fixed;
+      height: 2px;
+      background-color: green;
+      bottom: 100px;
+      left: 50%;
+      right: 0;
+    }
+    .alphabet-box {
+      position: fixed;
+      top: 110px;
+      left: 10px;
+      background-color: black;
+      border: 1px solid green;
+      padding: 10px;
+      color: limegreen;
+      display: grid;
+      grid-template-columns: repeat(6, auto);
+      gap: 5px;
+      max-width: 300px;
+      user-select: none;
+      z-index: 1000;
+    }
+    .alphabet-box span {
+      font-size: 18px;
+    }
+    .detected-letter {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 120px;
+      color: limegreen;
+      user-select: none;
+      pointer-events: none;
+      font-weight: bold;
+      text-shadow: 0 0 15px limegreen;
+      z-index: 1500;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <button class="mic-button" id="micButton">Start Mic</button>
+  <div class="center-line"></div>
+  <div class="bottom-line"></div>
+  <div class="alphabet-box" id="alphabetBox">
+    <!-- binary codes show here -->
+  </div>
+  <div class="detected-letter" id="detectedLetter"></div>
+
+  <script>
+    const letterToCode = {
+      A: "01", B: "10", C: "11", D: "00",
+      E: "01", F: "10", G: "11", H: "00",
+      I: "01", J: "10", K: "11", L: "00",
+      M: "01", N: "10", O: "11", P: "00",
+      Q: "01", R: "10", S: "11", T: "00",
+      U: "01", V: "10", W: "11", X: "00",
+      Y: "01", Z: "10"
+    };
+
+    const letterPitchRanges = {};
+    const baseFreq = 100;
+    const step = 30;
+    const letters = Object.keys(letterToCode);
+    letters.forEach((letter, i) => {
+      letterPitchRanges[letter] = [baseFreq + i * step, baseFreq + (i+1) * step];
+    });
+
+    const alphabetBox = document.getElementById('alphabetBox');
+    const detectedLetterDiv = document.getElementById('detectedLetter');
+    const micButton = document.getElementById('micButton');
+
+    let audioContext;
+    let analyserNode;
+    let microphoneStream;
+    let dataArray;
+    let rafId;
+
+    micButton.onclick = () => {
+      if (audioContext) {
+        stopMic();
+        micButton.textContent = 'Start Mic';
+      } else {
+        startMic();
+        micButton.textContent = 'Stop Mic';
+      }
+    };
+
+    async function startMic() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Microphone access not supported.");
+        return;
+      }
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      microphoneStream = audioContext.createMediaStreamSource(stream);
+      analyserNode = audioContext.createAnalyser();
+      analyserNode.fftSize = 2048;
+      microphoneStream.connect(analyserNode);
+      dataArray = new Float32Array(analyserNode.fftSize);
+
+      detectPitch();
+    }
+
+    function stopMic() {
+      if (microphoneStream) microphoneStream.disconnect();
+      if (analyserNode) analyserNode.disconnect();
+      if (audioContext) audioContext.close();
+      audioContext = null;
+      cancelAnimationFrame(rafId);
+      detectedLetterDiv.textContent = "";
+      alphabetBox.innerHTML = "";
+    }
+
+    function autoCorrelate(buffer, sampleRate) {
+      let SIZE = buffer.length;
+      let rms = 0;
+      for (let i = 0; i < SIZE; i++) {
+        let val = buffer[i];
+        rms += val * val;
+      }
+      rms = Math.sqrt(rms / SIZE);
+      if (rms < 0.01)
+        return -1;
+
+      let r1 = 0, r2 = SIZE - 1, threshold = 0.2;
+      for (let i = 0; i < SIZE / 2; i++) {
+        if (Math.abs(buffer[i]) < threshold) {
+          r1 = i;
+          break;
+        }
+      }
+      for (let i = 1; i < SIZE / 2; i++) {
+        if (Math.abs(buffer[SIZE - i]) < threshold) {
+          r2 = SIZE - i;
+          break;
+        }
+      }
+
+      buffer = buffer.slice(r1, r2);
+      SIZE = buffer.length;
+
+      let c = new Array(SIZE).fill(0);
+      for (let lag = 0; lag < SIZE; lag++) {
+        for (let i = 0; i < SIZE - lag; i++) {
+          c[lag] = c[lag] + buffer[i] * buffer[i + lag];
+        }
+      }
+
+      let d = 0;
+      while (c[d] > c[d + 1]) d++;
+      let maxPos = d;
+      let maxVal = -1;
+      for (let i = d; i < SIZE; i++) {
+        if (c[i] > maxVal) {
+          maxVal = c[i];
+          maxPos = i;
+        }
+      }
+
+      let T0 = maxPos;
+
+      let x1 = c[T0 - 1];
+      let x2 = c[T0];
+      let x3 = c[T0 + 1];
+      let a = (x1 + x3 - 2 * x2) / 2;
+      let b = (x3 - x1) / 2;
+      if (a)
+        T0 = T0 - b / (2 * a);
+
+      let freq = sampleRate / T0;
+      if (freq > 1000 || freq < 80) return -1;
+      return freq;
+    }
+
+    function detectPitch() {
+      analyserNode.getFloatTimeDomainData(dataArray);
+      const pitch = autoCorrelate(dataArray, audioContext.sampleRate);
+
+      if (pitch !== -1) {
+        let detectedLetter = null;
+        for (const [letter, [low, high]] of Object.entries(letterPitchRanges)) {
+          if (pitch >= low && pitch < high) {
+            detectedLetter = letter;
+            break;
+          }
+        }
+        if (detectedLetter) {
+          detectedLetterDiv.textContent = detectedLetter;
+
+          const code = letterToCode[detectedLetter];
+          alphabetBox.innerHTML = "";
+          for (let i = 0; i < 30; i++) {
+            const span = document.createElement('span');
+            span.textContent = code[i % code.length];
+            alphabetBox.appendChild(span);
+          }
+        } else {
+          detectedLetterDiv.textContent = "";
+          alphabetBox.innerHTML = "";
+        }
+      } else {
+        detectedLetterDiv.textContent = "";
+        alphabetBox.innerHTML = "";
+      }
+      rafId = requestAnimationFrame(detectPitch);
+    }
+  </script>
+</body>
+</html>
