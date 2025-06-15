@@ -44,6 +44,7 @@
       const skyDome = BABYLON.MeshBuilder.CreateSphere("skyDome", {diameter: 1000, sideOrientation: BABYLON.Mesh.BACKSIDE}, scene);
       const skyMaterial = new BABYLON.StandardMaterial("skyMat", scene);
       skyMaterial.diffuseTexture = new BABYLON.Texture("sky.png", scene);
+      skyMaterial.emissiveColor = new BABYLON.Color3(1, 1, 1); // full brightness
       skyMaterial.backFaceCulling = false;
       skyDome.material = skyMaterial;
 
