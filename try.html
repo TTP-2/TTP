@@ -1,221 +1,52 @@
 <!DOCTYPE html>
-<html lang="en" >
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pitch to Word Recognizer</title>
+  <meta charset="utf-8">
+  <title>White Platform</title>
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
   <style>
-    body {
+    html, body {
       margin: 0;
-      background-color: black;
-      user-select: none;
-      color: green;
-      font-family: monospace;
-      overflow-wrap: break-word;
-      padding: 10px;
+      padding: 0;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
     }
-    .center-line {
-      position: fixed;
-      top: 0;
-      bottom: 0;
-      left: 50%;
-      width: 2px;
-      background-color: green;
-      transform: translateX(-1px);
-      z-index: 10;
-    }
-    .mic-button, .translate-button {
-      position: fixed;
-      bottom: 10px;
-      padding: 10px 15px;
-      background-color: black;
-      color: green;
-      border: 1px solid green;
-      cursor: pointer;
-      font-size: 16px;
-      z-index: 20;
-      user-select: none;
-    }
-    .mic-button {
-      right: 10px;
-    }
-    .translate-button {
-      right: 130px;
-    }
-    .bottom-line {
-      position: fixed;
-      height: 2px;
-      background-color: green;
-      bottom: 100px;
-      left: 50%;
-      right: 0;
-      z-index: 10;
-    }
-    #outputText {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      font-size: 14px;
-      line-height: 1.4;
-      color: limegreen;
-      white-space: pre-wrap;
-      max-width: 80vw;
-      max-height: 90vh;
-      overflow-y: auto;
-      z-index: 15;
-      user-select: text;
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
   </style>
 </head>
 <body>
-  <button class="mic-button" id="micButton">Start Mic</button>
-  <div class="center-line"></div>
-  <div class="bottom-line"></div>
-  <pre id="outputText"></pre>
-
+  <canvas id="renderCanvas"></canvas>
   <script>
-    const letterToCode = {
-      A: "01", B: "10", C: "11", D: "00",
-      E: "01", F: "10", G: "11", H: "00",
-      I: "01", J: "10", K: "11", L: "00",
-      M: "01", N: "10", O: "11", P: "00",
-      Q: "01", R: "10", S: "11", T: "00",
-      U: "01", V: "10", W: "11", X: "00",
-      Y: "01", Z: "10"
+    const canvas = document.getElementById("renderCanvas");
+    const engine = new BABYLON.Engine(canvas, true);
+
+    const createScene = function () {
+      const scene = new BABYLON.Scene(engine);
+      scene.clearColor = new BABYLON.Color3(0.7, 0.9, 1); // Light blue sky
+
+      const camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
+      camera.setTarget(BABYLON.Vector3.Zero());
+      camera.attachControl(canvas, true);
+
+      const light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+      light.intensity = 0.9;
+
+      const ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 1000, height: 1000}, scene);
+      const groundMaterial = new BABYLON.StandardMaterial("groundMat", scene);
+      groundMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1); // white
+      ground.material = groundMaterial;
+
+      return scene;
     };
 
-    const letterPitchRanges = {};
-    const baseFreq = 100;
-    const step = 30;
-    const letters = Object.keys(letterToCode);
-    letters.forEach((letter, i) => {
-      letterPitchRanges[letter] = [baseFreq + i * step, baseFreq + (i + 1) * step];
-    });
-
-    const outputText = document.getElementById('outputText');
-    const micButton = document.getElementById('micButton');
-
-    let audioContext, analyserNode, microphoneStream, dataArray, rafId;
-    let currentWord = "";
-    let lastDetectedTime = Date.now();
-
-    micButton.onclick = () => {
-      if (audioContext) {
-        stopMic();
-        micButton.textContent = 'Start Mic';
-      } else {
-        startMic();
-        micButton.textContent = 'Stop Mic';
-      }
-    };
-
-    async function startMic() {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert("Microphone access not supported.");
-        return;
-      }
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      microphoneStream = audioContext.createMediaStreamSource(stream);
-      analyserNode = audioContext.createAnalyser();
-      analyserNode.fftSize = 2048;
-      microphoneStream.connect(analyserNode);
-      dataArray = new Float32Array(analyserNode.fftSize);
-
-      detectPitch();
-    }
-
-    function stopMic() {
-      if (microphoneStream) microphoneStream.disconnect();
-      if (analyserNode) analyserNode.disconnect();
-      if (audioContext) audioContext.close();
-      audioContext = null;
-      cancelAnimationFrame(rafId);
-    }
-
-    function autoCorrelate(buffer, sampleRate) {
-      let SIZE = buffer.length;
-      let rms = 0;
-      for (let i = 0; i < SIZE; i++) rms += buffer[i] * buffer[i];
-      rms = Math.sqrt(rms / SIZE);
-      if (rms < 0.01) return -1;
-
-      let r1 = 0, r2 = SIZE - 1, threshold = 0.2;
-      for (let i = 0; i < SIZE / 2; i++) {
-        if (Math.abs(buffer[i]) < threshold) {
-          r1 = i;
-          break;
-        }
-      }
-      for (let i = 1; i < SIZE / 2; i++) {
-        if (Math.abs(buffer[SIZE - i]) < threshold) {
-          r2 = SIZE - i;
-          break;
-        }
-      }
-      buffer = buffer.slice(r1, r2);
-      SIZE = buffer.length;
-
-      let c = new Array(SIZE).fill(0);
-      for (let lag = 0; lag < SIZE; lag++) {
-        for (let i = 0; i < SIZE - lag; i++) {
-          c[lag] += buffer[i] * buffer[i + lag];
-        }
-      }
-
-      let d = 0;
-      while (c[d] > c[d + 1]) d++;
-      let maxPos = d;
-      let maxVal = -1;
-      for (let i = d; i < SIZE; i++) {
-        if (c[i] > maxVal) {
-          maxVal = c[i];
-          maxPos = i;
-        }
-      }
-
-      let T0 = maxPos;
-      let x1 = c[T0 - 1];
-      let x2 = c[T0];
-      let x3 = c[T0 + 1];
-      let a = (x1 + x3 - 2 * x2) / 2;
-      let b = (x3 - x1) / 2;
-      if (a) T0 = T0 - b / (2 * a);
-
-      let freq = sampleRate / T0;
-      return (freq > 1000 || freq < 80) ? -1 : freq;
-    }
-
-    function detectPitch() {
-      analyserNode.getFloatTimeDomainData(dataArray);
-      const pitch = autoCorrelate(dataArray, audioContext.sampleRate);
-
-      const now = Date.now();
-      if (pitch !== -1) {
-        for (const [letter, [low, high]] of Object.entries(letterPitchRanges)) {
-          if (pitch >= low && pitch < high) {
-            currentWord += letter;
-            lastDetectedTime = now;
-            updateOutput();
-            break;
-          }
-        }
-      } else {
-        if (now - lastDetectedTime > 1000 && currentWord.length > 0) {
-          outputText.textContent += currentWord + " ";
-          currentWord = "";
-        }
-      }
-
-      rafId = requestAnimationFrame(detectPitch);
-    }
-
-    function updateOutput() {
-      const displayText = outputText.textContent.trim().split(" ");
-      displayText[displayText.length - 1] = currentWord;
-      outputText.textContent = displayText.join(" ") + " ";
-      outputText.scrollTop = outputText.scrollHeight;
-    }
+    const scene = createScene();
+    engine.runRenderLoop(() => scene.render());
+    window.addEventListener("resize", () => engine.resize());
   </script>
 </body>
 </html>
