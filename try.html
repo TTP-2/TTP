@@ -11,6 +11,8 @@
       user-select: none;
       color: green;
       font-family: monospace;
+      overflow-wrap: break-word;
+      padding: 10px;
     }
     .center-line {
       position: fixed;
@@ -20,6 +22,7 @@
       width: 2px;
       background-color: green;
       transform: translateX(-1px);
+      z-index: 10;
     }
     .mic-button {
       position: fixed;
@@ -31,7 +34,7 @@
       border: 1px solid green;
       cursor: pointer;
       font-size: 16px;
-      z-index: 2000;
+      z-index: 20;
     }
     .bottom-line {
       position: fixed;
@@ -40,38 +43,21 @@
       bottom: 100px;
       left: 50%;
       right: 0;
+      z-index: 10;
     }
-    .alphabet-box {
+    #outputText {
       position: fixed;
-      top: 110px;
+      top: 10px;
       left: 10px;
-      background-color: black;
-      border: 1px solid green;
-      padding: 10px;
+      font-size: 12px;
+      line-height: 1.2;
       color: limegreen;
-      display: grid;
-      grid-template-columns: repeat(6, auto);
-      gap: 5px;
-      max-width: 300px;
-      user-select: none;
-      z-index: 1000;
-    }
-    .alphabet-box span {
-      font-size: 18px;
-    }
-    .detected-letter {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 120px;
-      color: limegreen;
-      user-select: none;
-      pointer-events: none;
-      font-weight: bold;
-      text-shadow: 0 0 15px limegreen;
-      z-index: 1500;
-      font-family: monospace;
+      white-space: pre-wrap;
+      max-width: 45vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      z-index: 15;
+      user-select: text;
     }
   </style>
 </head>
@@ -79,10 +65,8 @@
   <button class="mic-button" id="micButton">Start Mic</button>
   <div class="center-line"></div>
   <div class="bottom-line"></div>
-  <div class="alphabet-box" id="alphabetBox">
-    <!-- binary codes show here -->
-  </div>
-  <div class="detected-letter" id="detectedLetter"></div>
+
+  <pre id="outputText"></pre>
 
   <script>
     const letterToCode = {
@@ -100,11 +84,10 @@
     const step = 30;
     const letters = Object.keys(letterToCode);
     letters.forEach((letter, i) => {
-      letterPitchRanges[letter] = [baseFreq + i * step, baseFreq + (i+1) * step];
+      letterPitchRanges[letter] = [baseFreq + i * step, baseFreq + (i + 1) * step];
     });
 
-    const alphabetBox = document.getElementById('alphabetBox');
-    const detectedLetterDiv = document.getElementById('detectedLetter');
+    const outputText = document.getElementById('outputText');
     const micButton = document.getElementById('micButton');
 
     let audioContext;
@@ -145,8 +128,6 @@
       if (audioContext) audioContext.close();
       audioContext = null;
       cancelAnimationFrame(rafId);
-      detectedLetterDiv.textContent = "";
-      alphabetBox.innerHTML = "";
     }
 
     function autoCorrelate(buffer, sampleRate) {
@@ -157,8 +138,7 @@
         rms += val * val;
       }
       rms = Math.sqrt(rms / SIZE);
-      if (rms < 0.01)
-        return -1;
+      if (rms < 0.01) return -1;
 
       let r1 = 0, r2 = SIZE - 1, threshold = 0.2;
       for (let i = 0; i < SIZE / 2; i++) {
@@ -223,22 +203,10 @@
           }
         }
         if (detectedLetter) {
-          detectedLetterDiv.textContent = detectedLetter;
-
           const code = letterToCode[detectedLetter];
-          alphabetBox.innerHTML = "";
-          for (let i = 0; i < 30; i++) {
-            const span = document.createElement('span');
-            span.textContent = code[i % code.length];
-            alphabetBox.appendChild(span);
-          }
-        } else {
-          detectedLetterDiv.textContent = "";
-          alphabetBox.innerHTML = "";
+          outputText.textContent += code + " ";
+          outputText.scrollTop = outputText.scrollHeight;
         }
-      } else {
-        detectedLetterDiv.textContent = "";
-        alphabetBox.innerHTML = "";
       }
       rafId = requestAnimationFrame(detectPitch);
     }
